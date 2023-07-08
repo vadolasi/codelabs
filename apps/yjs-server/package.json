@@ -4,9 +4,15 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "sucrase-node index.ts"
   },
   "keywords": [],
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "@hocuspocus/server": "^2.2.1"
+  },
+  "devDependencies": {
+    "sucrase": "^3.32.0"
+  }
 }

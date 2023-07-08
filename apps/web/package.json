@@ -9,8 +9,12 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@hocuspocus/provider": "^2.2.1",
+    "@uiw/react-codemirror": "^4.21.7",
     "preact": "^10.15.1",
-    "wouter-preact": "^2.11.0"
+    "wouter-preact": "^2.11.0",
+    "y-codemirror.next": "^0.3.2",
+    "yjs": "^13.6.6"
   },
   "devDependencies": {
     "@preact/preset-vite": "^2.5.0",
