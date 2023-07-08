@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "sucrase-node index.ts"
+    "dev": "nodemon index.ts"
   },
   "keywords": [],
   "author": "",
@@ -13,6 +13,7 @@
     "@hocuspocus/server": "^2.2.1"
   },
   "devDependencies": {
+    "nodemon": "^2.0.22",
     "sucrase": "^3.32.0"
   }
 }

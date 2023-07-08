@@ -3,10 +3,31 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
+  "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "nodemon --exec node --loader ts-node/esm/transpile-only src/index.ts",
+    "postinstall": "prisma generate"
   },
   "keywords": [],
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "@graphql-yoga/render-graphiql": "^4.0.3",
+    "@prisma/client": "4.16.2",
+    "class-validator": "^0.14.0",
+    "graphql": "^16.7.1",
+    "graphql-ws": "^5.14.0",
+    "graphql-yoga": "^4.0.3",
+    "nanoid": "^4.0.2",
+    "reflect-metadata": "^0.1.13",
+    "type-graphql": "2.0.0-beta.1",
+    "typedi": "^0.10.0",
+    "uWebSockets.js": "github:uNetworking/uWebSockets.js#v20.30.0"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.22",
+    "prisma": "^4.16.2",
+    "ts-node": "^10.9.1",
+    "tsconfig-paths": "^4.2.0"
+  }
 }
