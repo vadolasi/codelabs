@@ -1,6 +1,10 @@
 import { Service } from "typedi"
 import { PrismaService } from "../../prisma.ts"
 import { GraphQLError } from "graphql"
+import jwt from "jsonwebtoken"
+import { customAlphabet } from "nanoid/async"
+
+const nanoid = customAlphabet("abcdefghijklmnopqrstuvwxyz0123456789", 10)
 
 @Service()
 export class RoomsService {
@@ -8,21 +12,26 @@ export class RoomsService {
     private readonly prisma: PrismaService
   ) {}
 
-  async createRoom() {
-
+  async createRoom(username: string) {
+    return await this.prisma.room.create({ data: { id: await nanoid(), owner: username } })
   }
 
-  async getAll() {
-    return this.prisma.room.findMany()
-  }
-
-  async getOne(id: string) {
-    const room = this.prisma.room.findUnique({ where: { id } })
+  async getRoomAccessToken(username: string, roomId: string) {
+    const room = await this.prisma.room.findUnique({ where: { id: roomId } })
 
     if (!room) {
       throw new GraphQLError("Room not found")
     }
 
-    return room
+    let mainRoles: string[] = [`user|${username}:write`, "main:read"]
+    if (room.owner === username) {
+      mainRoles = ["*:write"]
+    }
+
+    return jwt.sign({ userId: username, roomId, roles: mainRoles }, process.env.JWT_SECRET!)
+  }
+
+  async getAll() {
+    return this.prisma.room.findMany()
   }
 }

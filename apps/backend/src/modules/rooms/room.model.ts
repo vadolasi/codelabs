@@ -2,6 +2,6 @@ import { Field, ID, ObjectType } from "type-graphql";
 
 @ObjectType()
 export class Room {
-  @Field(type => ID)
+  @Field(_type => ID)
   id: string
 }

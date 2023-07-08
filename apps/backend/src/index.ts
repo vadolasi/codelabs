@@ -2,11 +2,15 @@ import "reflect-metadata"
 import { App, HttpRequest, HttpResponse } from "uWebSockets.js"
 import { createYoga } from "graphql-yoga"
 import { makeBehavior } from "graphql-ws/lib/use/uWebSockets"
-import { ExecutionArgs, execute, subscribe } from "graphql"
+import { ExecutionArgs, execute, subscribe, printSchema } from "graphql"
 import { renderGraphiQL } from "@graphql-yoga/render-graphiql"
 import { RoomsResolver } from "./modules/rooms/rooms.resolver.ts"
 import { buildSchema } from "type-graphql"
 import { Container } from "typedi"
+import { writeFile } from "fs/promises"
+import { config } from "dotenv"
+
+config()
 
 interface ServerContext {
   req: HttpRequest
@@ -17,6 +21,10 @@ const schema = await buildSchema({
   resolvers: [RoomsResolver],
   container: Container
 })
+
+if (process.env.NODE_ENV !== "production") {
+  await writeFile("./src/schema.graphql", printSchema(schema))
+}
 
 export const yoga = createYoga<ServerContext>({
   schema,

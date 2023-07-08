@@ -1,0 +1,12 @@
+type Query {
+  getRooms: [Room!]!
+}
+
+type Room {
+  id: ID!
+}
+
+type Mutation {
+  createRoom(username: String!): Room!
+  joinRoom(username: String!, id: String!): String!
+}

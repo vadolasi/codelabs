@@ -8,13 +8,23 @@ import { RoomsService } from "./rooms.service.ts"
 export class RoomsResolver {
   constructor(private roomsService: RoomsService) {}
 
-  @Mutation(returns => Room)
-  async createRoom() {
-    return await this.roomsService.createRoom()
+  @Mutation(_returns => Room)
+  async createRoom(
+    @Arg("username") username: string
+  ) {
+    return await this.roomsService.createRoom(username)
   }
 
-  @Query(returns => Room)
-  async room(@Arg("id") id: string) {
-    return await this.roomsService.getOne(id)
+  @Mutation(_returns => String)
+  async joinRoom(
+    @Arg("id") id: string,
+    @Arg("username") username: string
+  ) {
+    return await this.roomsService.getRoomAccessToken(username, id)
+  }
+
+  @Query(_returns => [Room])
+  async getRooms() {
+    return []
   }
 }

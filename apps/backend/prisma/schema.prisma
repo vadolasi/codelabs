@@ -8,5 +8,6 @@ datasource db {
 }
 
 model Room {
-  id String @id
+  id    String @id
+  owner String
 }
