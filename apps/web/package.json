@@ -4,22 +4,35 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "concurrently \"vite\" \"graphql-codegen --watch\"",
     "build": "tsc && vite build",
     "preview": "vite preview"
   },
   "dependencies": {
     "@hocuspocus/provider": "^2.2.1",
     "@uiw/react-codemirror": "^4.21.7",
+    "graphql": "^16.7.1",
+    "immer": "^10.0.2",
+    "nanoid": "^4.0.2",
     "preact": "^10.15.1",
+    "react-beautiful-dnd": "^13.1.1",
+    "react-hot-toast": "^2.4.1",
+    "urql": "^4.0.4",
     "wouter-preact": "^2.11.0",
     "y-codemirror.next": "^0.3.2",
-    "yjs": "^13.6.6"
+    "yjs": "^13.6.6",
+    "zustand": "^4.3.9"
   },
   "devDependencies": {
+    "@graphql-codegen/cli": "^4.0.1",
+    "@graphql-codegen/client-preset": "^4.0.1",
+    "@graphql-typed-document-node/core": "^3.2.0",
+    "@parcel/watcher": "^2.2.0",
     "@preact/preset-vite": "^2.5.0",
+    "@types/react-beautiful-dnd": "^13.1.4",
     "@unocss/preset-attributify": "^0.53.4",
-    "typescript": "^5.0.2",
+    "concurrently": "^8.2.0",
+    "typescript": "^5.1.6",
     "unocss": "^0.53.4",
     "vite": "^4.4.0"
   }
