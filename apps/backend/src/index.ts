@@ -53,7 +53,6 @@ export const yoga = createYoga<ServerContext>({
 })
 
 const server = Server.configure({
-  port: 8001,
   async onAuthenticate(data) {
     const { documentName, token } = data
 
@@ -101,7 +100,7 @@ yogaRouter.use(yoga)
 
 app.use(yoga.graphqlEndpoint, yogaRouter)
 
-app.ws("/collaboration/:document", (websocket, request) => {
+app.ws("/", (websocket, request) => {
   server.handleConnection(websocket, request)
 })
 

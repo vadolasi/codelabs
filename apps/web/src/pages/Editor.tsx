@@ -1,16 +1,13 @@
-import CodeMirror from "@uiw/react-codemirror"
-import * as Y from "yjs"
 // @ts-ignore
 import { yCollab } from "y-codemirror.next"
-import { HocuspocusProvider } from "@hocuspocus/provider"
 import { useLocation } from "wouter-preact"
 import { graphql } from "../gql"
 import { useMutation } from "urql"
-import { create } from "zustand"
-import { nanoid } from "nanoid"
 import { useEffect } from "preact/hooks"
 import toast from "react-hot-toast"
-import { immer } from "zustand/middleware/immer"
+import jwt_decode from "jwt-decode"
+import { useStore } from "../store"
+import Workspace from "../components/Workspace"
 
 const joinRoomMutation = graphql(/* GraphQL */`
   mutation JoinRoom($username: String!, $roomId: String!) {
@@ -21,91 +18,26 @@ const joinRoomMutation = graphql(/* GraphQL */`
   }
 `)
 
-interface File {
-  opened: boolean
-  id: string
-  path: string
-  name: string
-  type: "file" | "folder"
-  extensions: any[]
-}
-
-interface Workspace {
-  id: string
-  readOnly: boolean
-  roomId: string
-  currentFile: string | null
-  files: File[]
-}
-
-interface State {
-  token: string | null
-  workspaces: Workspace[]
-}
-
-interface Actions {
-  setToken: (token: string) => void
-  addWorkspace: (roomId: string, id: string, readOnly: boolean) => void
-  addFile: (workspaceId: string, path: string, name: string, type: "file" | "folder") => void
-  currentFile: (workspaceId: string) => File
-}
-
-const useStore = create(immer<State & Actions>((set, get) => ({
-  token: null,
-  workspaces: [],
-  setToken: (token) => set(() => ({ token })),
-  addWorkspace: (roomId, id, readOnly) => set(state => {
-    state.workspaces.push({
-      files: [],
-      id,
-      readOnly,
-      roomId,
-      currentFile: null
-    })
-  }),
-  addFile: (workspaceId, path, name, type) => set(state => {
-    const index = state.workspaces.findIndex(workspace => workspace.id === workspaceId)
-    const id = nanoid()
-    const workspace = state.workspaces[index]
-    const provider = new HocuspocusProvider({
-      url: "ws://127.0.0.1:8000",
-      name: `${workspace.roomId}:${workspaceId}:${id}`,
-      token: state.token
-    })
-    const ytext = provider.document.getText("codemirror")
-    const undoManager = new Y.UndoManager(ytext)
-
-    const userColor = `#${Math.floor(Math.random() * 16777215).toString(16)}`
-
-    provider.awareness.setLocalStateField("user", {
-      name: "Anonymous " + Math.floor(Math.random() * 100),
-      color: userColor,
-      colorLight: userColor
-    })
-
-    workspace.files.push({
-      id,
-      extensions: [yCollab(ytext, provider.awareness, { undoManager })],
-      name,
-      path,
-      type,
-      opened: true
-    })
-  }),
-  currentFile: (workspaceId: string) => {
-    const workspaces = get().workspaces
-    const workspace = workspaces[workspaces.findIndex(workspace => workspace.id === workspaceId)]
-
-    return workspace.files[workspace.files.findIndex(file => file.id === workspace.currentFile)]
-  }
-})))
-
 interface Props {
   id: string
 }
 
+function getPermission(document: string, roles: string[]): "write" | "read" | "none" {
+  const availableRoles = roles
+    .filter(role => role.startsWith(document) || role.startsWith("*"))
+    .map(role => role.split(":")[1])
+
+  if (availableRoles.includes("write")) {
+    return "write"
+  } else if (availableRoles.includes("read")) {
+    return "read"
+  }
+
+  return "none"
+}
+
 export default function Editor({ id }: Props) {
-  const { workspaces, currentFile, setToken, addWorkspace } = useStore()
+  const { workspaces, setToken, addWorkspace } = useStore()
 
   const [, executeJoinRoom] = useMutation(joinRoomMutation)
   const [, navigate] = useLocation()
@@ -120,36 +52,31 @@ export default function Editor({ id }: Props) {
               toast.error("A sala que você está tentando acessar não foi encontrada")
           }
         } else {
-          setToken(data?.joinRoom!)
-          addWorkspace(id, "main", true)
-          addWorkspace(id, `user|vadolasi`, false)
+          const token = data?.joinRoom!
+          setToken(token)
+          const { roles } = jwt_decode<{ roles: string[] }>(token)
+
+          const mainPermission = getPermission("__main__", roles)
+
+          if (mainPermission === "none") {
+            addWorkspace(id, `user|vadolasi`, false)
+          } else {
+            addWorkspace(id, "__main__", mainPermission === "read")
+          }
         }
       })
   }, [])
 
   return (
     <div _w="screen" _h="screen" _flex="~">
-      {workspaces.map(workspace => (
-        <div key={workspace.id} _w="full" _h="full" _grow="~">
-          <div _flex="~ col">
-            {workspace.files.map(file => file.opened && (
-              <div key={file.id}></div>
-            ))}
-          </div>
-          {workspace.currentFile ? (
-            <CodeMirror
-              extensions={currentFile(workspace.id).extensions}
-              width="100%"
-              height="100%"
-              className="grow"
-              readOnly={workspace.readOnly}
-              editable={!workspace.readOnly}
-            />
-          ) : (
-            <h1>Nenhum arquivo selecionado</h1>
-          )}
-        </div>
-      ))}
+      <div _flex="~" _h="full">
+        <div _flex="~ col" _w="12" _bg="red-500"></div>
+      </div>
+      <div _flex="~" _w="full" _h="full">
+        {workspaces.map(workspace => (
+          <Workspace key={id} id={workspace.id} />
+        ))}
+      </div>
     </div>
   )
 }

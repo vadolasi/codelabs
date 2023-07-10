@@ -117,6 +117,9 @@ importers:
       immer:
         specifier: ^10.0.2
         version: 10.0.2
+      jwt-decode:
+        specifier: ^3.1.2
+        version: 3.1.2
       nanoid:
         specifier: ^4.0.2
         version: 4.0.2
@@ -4260,6 +4263,10 @@ packages:
     dependencies:
       jwa: 1.4.1
       safe-buffer: 5.2.1
+    dev: false
+
+  /jwt-decode@3.1.2:
+    resolution: {integrity: sha512-UfpWE/VZn0iP50d8cz9NrZLM9lSWhcJ+0Gt/nm4by88UL+J1SiKN8/5dkjMmbEzwL2CAe+67GsegCbIKtbp75A==}
     dev: false
 
   /kleur@4.1.5:

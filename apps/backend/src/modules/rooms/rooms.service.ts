@@ -23,7 +23,7 @@ export class RoomsService {
       throw new GraphQLError("Room not found")
     }
 
-    let mainRoles: string[] = [`user|${username}:write`, "main:read"]
+    let mainRoles: string[] = [`user|${username}:write`, "__main__:read"]
     if (room.owner === username) {
       mainRoles = ["*:write"]
     }
