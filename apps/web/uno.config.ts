@@ -1,4 +1,4 @@
-import { defineConfig, presetUno, presetAttributify } from "unocss"
+import { defineConfig, presetUno, presetAttributify, presetIcons } from "unocss"
 
 export default defineConfig({
   presets: [
@@ -6,6 +6,7 @@ export default defineConfig({
     presetAttributify({
       prefix: "_",
       prefixedOnly: true
-    })
+    }),
+    presetIcons()
   ]
 })

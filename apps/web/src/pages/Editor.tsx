@@ -8,6 +8,7 @@ import toast from "react-hot-toast"
 import jwt_decode from "jwt-decode"
 import { useStore } from "../store"
 import Workspace from "../components/Workspace"
+import Sidebar from "../components/Sidebar"
 
 const joinRoomMutation = graphql(/* GraphQL */`
   mutation JoinRoom($username: String!, $roomId: String!) {
@@ -69,11 +70,9 @@ export default function Editor({ id }: Props) {
 
   return (
     <div _w="screen" _h="screen" _flex="~">
-      <div _flex="~" _h="full">
-        <div _flex="~ col" _w="12" _bg="red-500"></div>
-      </div>
+      <Sidebar />
       <div _flex="~" _w="full" _h="full">
-        {workspaces.map(workspace => (
+        {Object.values(workspaces).map(workspace => (
           <Workspace key={id} id={workspace.id} />
         ))}
       </div>

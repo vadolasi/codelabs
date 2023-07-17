@@ -1,70 +1,84 @@
 import { create } from "zustand"
 import { immer } from "zustand/middleware/immer"
 
-export interface File {
-  opened: boolean
+export interface FileSystemItemBase {
   id: string
-  path: string
   name: string
-  type: "file" | "folder"
+  parent: string
 }
+
+export type File = FileSystemItemBase & {
+  type: "file"
+}
+
+export type Folder = FileSystemItemBase & {
+  type: "folder"
+  children: string[]
+}
+
+export type FileSystemItem = File | Folder
 
 export interface Workspace {
   id: string
   readOnly: boolean
   roomId: string
   currentFile: string | null
-  files: File[]
-  fileEditorOptions: {
-    [key: string]: any[]
+  files: {
+    [key: string]: FileSystemItem
   }
+  openedFiles: string[]
 }
 
 export interface State {
   token: string | null
-  workspaces: Workspace[]
+  workspaces: {
+    [key: string]: Workspace
+  }
 }
 
 export interface Actions {
   setToken: (token: string) => void
   addWorkspace: (roomId: string, id: string, readOnly: boolean) => void
-  addFile: (id: string, workspaceId: string, path: string, name: string, type: "file" | "folder", extensions: any[]) => void
-  currentFile: (workspaceId: string) => File
+  addFile: (id: string, workspaceId: string, parent: string, name: string, type: "file" | "folder") => void
 }
 
-export const useStore = create(immer<State & Actions>((set, get) => ({
+export const useStore = create(immer<State & Actions>(set => ({
   token: null,
-  workspaces: [],
+  workspaces: {},
   setToken: (token) => set(() => ({ token })),
-  addWorkspace: (roomId, id, readOnly) => set(state => {
-    state.workspaces.push({
-      files: [],
+  addWorkspace: (roomId, id, readOnly, ) => set(state => {
+    state.workspaces[id] = {
+      files: {},
       id,
       readOnly,
       roomId,
       currentFile: null,
-      fileEditorOptions: {}
-    })
+      openedFiles: []
+    }
   }),
-  addFile: (id, workspaceId, path, name, type, extensions) => set(state => {
-    const index = state.workspaces.findIndex(workspace => workspace.id === workspaceId)
-    const workspace = state.workspaces[index]
-    workspace.fileEditorOptions[id] = extensions
+  addFile: (id, workspaceId, parent, name, type) => set(state => {
+    const workspace = state.workspaces[workspaceId]
+    workspace.openedFiles.push(id)
 
-    workspace.files.push({
-      id,
-      name,
-      path,
-      type,
-      opened: true
-    })
+    switch (type) {
+      case "file":
+        workspace.files[id] = {
+          id,
+          name,
+          parent,
+          type
+        }
+        break
+      case "folder":
+        workspace.files[id] = {
+          id,
+          name,
+          parent,
+          type,
+          children: []
+        }
+    }
 
     workspace.currentFile = id
-  }),
-  currentFile: (workspaceId: string) => {
-    const workspaces = get().workspaces
-    const workspace = workspaces[workspaces.findIndex(workspace => workspace.id === workspaceId)]
-
-    return workspace.files[workspace.files.findIndex(file => file.id === workspace.currentFile)]
-  }
+  })
 })))

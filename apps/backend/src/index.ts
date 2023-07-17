@@ -15,6 +15,9 @@ import cors from "cors"
 import morgan from "morgan"
 import { Server } from "@hocuspocus/server"
 import jwt from "jsonwebtoken"
+import { Logger } from "@hocuspocus/extension-logger"
+import { Database } from "@hocuspocus/extension-database"
+import { PrismaService } from "./prisma.ts"
 
 config()
 
@@ -52,7 +55,37 @@ export const yoga = createYoga<ServerContext>({
   plugins: [useGraphQlJit()]
 })
 
+const prisma = Container.get(PrismaService)
+
 const server = Server.configure({
+  extensions: [
+    new Logger(),
+    new Database({
+      fetch: async ({ documentName }) => {
+        const document = await prisma.document.findUnique({ where: { name: documentName } })
+
+        if (document) {
+          return new Uint8Array(document.data.buffer)
+        }
+
+        return null
+      },
+      store: async ({ documentName, state }) => {
+        await prisma.document.upsert({
+          where: {
+            name: documentName
+          },
+          create: {
+            name: documentName,
+            data: state
+          },
+          update: {
+            data: state
+          }
+        })
+      }
+    })
+  ],
   async onAuthenticate(data) {
     const { documentName, token } = data
 

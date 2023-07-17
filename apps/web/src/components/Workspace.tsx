@@ -1,64 +1,52 @@
-import CodeMirror from "@uiw/react-codemirror"
+import type { FunctionComponent } from "preact"
 import Button from "../components/Button"
-import { File, useStore } from "../store"
+import { FileSystemItem, useStore } from "../store"
 import { HocuspocusProvider } from "@hocuspocus/provider"
 import { nanoid } from "nanoid"
 import * as Y from "yjs"
 // @ts-ignore
 import { yCollab } from "y-codemirror.next"
+import Editor from "./Editor"
 
 interface Props {
   id: string
 }
 
-export default function Workspace({ id }: Props) {
-  const { workspaces, addFile: addFileToStore, currentFile, token } = useStore()
-  const workspace = workspaces.find(workspace => workspace.id === id)!
+const Workspace: FunctionComponent<Props> = ({ id }) => {
+  const { workspaces, addFile: addFileToStore, token } = useStore()
+  const workspace = workspaces[id]
 
-  const provider = new HocuspocusProvider({
+  const ydoc = new Y.Doc()
+
+  new HocuspocusProvider({
     url: "ws://localhost:8000",
     name: `${workspace.roomId}:${id}:__files__`,
+    document: ydoc,
     token
   })
 
-  const files = provider.document.getArray<File>()
-  files.observe(() => {
-    files.toArray().map(file => {
-      if (!workspace.files.map(file => file.id).includes(file.id)) {
-        const provider = new HocuspocusProvider({
-          url: "ws://localhost:8000",
-          name: `${workspace.roomId}:${id}:${file.id}`,
-          token: token
-        })
-        const ytext = provider.document.getText("codemirror")
-        const undoManager = new Y.UndoManager(ytext)
-
-        const userColor = `#${Math.floor(Math.random() * 16777215).toString(16)}`
-
-        provider.awareness.setLocalStateField("user", {
-          name: "Anonymous " + Math.floor(Math.random() * 100),
-          color: userColor,
-          colorLight: userColor
-        })
-
+  const handleUpdate = (files: FileSystemItem[]) => {
+    files.map(file => {
+      if (!Object.keys(workspace.files).includes(file.id)) {
         addFileToStore(
           file.id,
           workspace.id,
-          file.path,
+          file.parent,
           file.name,
-          file.type,
-          [yCollab(ytext, provider.awareness, { undoManager })]
+          file.type
         )
       }
     })
-  })
+  }
+
+  const files = ydoc.getArray<FileSystemItem>(`${workspace.roomId}:__files__`)
+  files.observe(() => handleUpdate(files.toArray()))
 
   const addFile = () => {
     files.push([{
       id: nanoid(),
       name: "test.txt",
-      path: "/",
-      opened: true,
+      parent: "__main__",
       type: "file"
     }])
   }
@@ -66,24 +54,18 @@ export default function Workspace({ id }: Props) {
   return (
     <div key={id} _flex="~ col" _w="full" _h="full" _grow="~">
       <div _flex="~">
-        {workspace.files.map(file => file.opened && (
+        {Object.values(workspace.files).map(file => workspace.openedFiles.includes(file.id) && (
           <div key={file.id}>{file.name}</div>
         ))}
         <Button onClick={addFile}>+</Button>
       </div>
       {workspace.currentFile ? (
-        <CodeMirror
-          extensions={workspace.fileEditorOptions[currentFile(workspace.id).id]}
-          width="100%"
-          height="100%"
-          _grow="~"
-          readOnly={workspace.readOnly}
-          editable={!workspace.readOnly}
-          theme="dark"
-        />
+        <Editor workspaceId={workspace.id} fileId={workspace.currentFile} />
       ) : (
         <h1>Nenhum arquivo selecionado</h1>
       )}
     </div>
   )
 }
+
+export default Workspace

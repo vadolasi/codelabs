@@ -11,3 +11,8 @@ model Room {
   id    String @id
   owner String
 }
+
+model Document {
+  name String @id
+  data Bytes
+}
