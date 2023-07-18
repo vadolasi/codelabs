@@ -1,9 +1,5 @@
 import type { FunctionComponent } from "preact"
-import Button from "../components/Button"
-import { FileSystemItem, useStore } from "../store"
-import { HocuspocusProvider } from "@hocuspocus/provider"
-import { nanoid } from "nanoid"
-import * as Y from "yjs"
+import { FileSystemItem, Folder, useStore } from "../store"
 // @ts-ignore
 import { yCollab } from "y-codemirror.next"
 import Editor from "./Editor"
@@ -13,43 +9,36 @@ interface Props {
 }
 
 const Workspace: FunctionComponent<Props> = ({ id }) => {
-  const { workspaces, addFile: addFileToStore, token } = useStore()
+  const { workspaces, addFile, updateFile } = useStore()
   const workspace = workspaces[id]
+  const files = workspace.filesRemoteHandler!
 
-  const ydoc = new Y.Doc()
-
-  new HocuspocusProvider({
-    url: "ws://localhost:8000",
-    name: `${workspace.roomId}:${id}:__files__`,
-    document: ydoc,
-    token
-  })
-
-  const handleUpdate = (files: FileSystemItem[]) => {
-    files.map(file => {
-      if (!Object.keys(workspace.files).includes(file.id)) {
-        addFileToStore(
-          file.id,
-          workspace.id,
-          file.parent,
-          file.name,
-          file.type
-        )
+  files.on("change", (changes: Map<string, { action: "add" | "delete" | "update", newValue?: FileSystemItem, oldValue?: FileSystemItem }>) => {
+    changes.forEach(({ action, newValue }) => {
+      switch (action) {
+        case "add":
+          addFile(
+            newValue?.id!,
+            id,
+            newValue?.parent!,
+            newValue?.name!,
+            newValue?.type!,
+            (newValue as Folder)?.children
+          )
+          break
+        case "update":
+          updateFile(
+            id,
+            newValue?.id!,
+            newValue!
+          )
+          break
+        default:
+          console.log(action, newValue)
+          break
       }
     })
-  }
-
-  const files = ydoc.getArray<FileSystemItem>(`${workspace.roomId}:__files__`)
-  files.observe(() => handleUpdate(files.toArray()))
-
-  const addFile = () => {
-    files.push([{
-      id: nanoid(),
-      name: "test.txt",
-      parent: "__main__",
-      type: "file"
-    }])
-  }
+  })
 
   return (
     <div key={id} _flex="~ col" _w="full" _h="full" _grow="~">
@@ -57,7 +46,6 @@ const Workspace: FunctionComponent<Props> = ({ id }) => {
         {Object.values(workspace.files).map(file => workspace.openedFiles.includes(file.id) && (
           <div key={file.id}>{file.name}</div>
         ))}
-        <Button onClick={addFile}>+</Button>
       </div>
       {workspace.currentFile ? (
         <Editor workspaceId={workspace.id} fileId={workspace.currentFile} />

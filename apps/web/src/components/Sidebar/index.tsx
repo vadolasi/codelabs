@@ -19,7 +19,7 @@ const Sidebar: FunctionComponent = () => {
         <div _h="full" _w="50">
           <TabContent id="files" activeTab={activeTab}>
             {Object.values(workspaces).map(workspace => (
-              <div _w="full">
+              <div _h="full" _w="full" _flex="~ col">
                 <div _h="5" _w="full">
                   <span>Workspace: {workspace.id}</span>
                 </div>

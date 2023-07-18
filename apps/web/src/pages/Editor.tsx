@@ -9,6 +9,8 @@ import jwt_decode from "jwt-decode"
 import { useStore } from "../store"
 import Workspace from "../components/Workspace"
 import Sidebar from "../components/Sidebar"
+import { HocuspocusProvider } from "@hocuspocus/provider"
+import { YKeyValue } from "y-utility/y-keyvalue"
 
 const joinRoomMutation = graphql(/* GraphQL */`
   mutation JoinRoom($username: String!, $roomId: String!) {
@@ -60,9 +62,21 @@ export default function Editor({ id }: Props) {
           const mainPermission = getPermission("__main__", roles)
 
           if (mainPermission === "none") {
-            addWorkspace(id, `user|vadolasi`, false)
+            const { document } = new HocuspocusProvider({
+              url: "ws://localhost:8000",
+              name: `${id}:user|vadolasi:__files__`,
+              token
+            })
+
+            addWorkspace(id, `user|vadolasi`, false, new YKeyValue(document.getArray("files")))
           } else {
-            addWorkspace(id, "__main__", mainPermission === "read")
+            const { document } = new HocuspocusProvider({
+              url: "ws://localhost:8000",
+              name: `${id}:__main__:__files__`,
+              token
+            })
+
+            addWorkspace(id, "__main__", mainPermission === "read", new YKeyValue(document.getArray("files")))
           }
         }
       })

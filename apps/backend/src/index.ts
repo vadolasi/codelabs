@@ -18,6 +18,7 @@ import jwt from "jsonwebtoken"
 import { Logger } from "@hocuspocus/extension-logger"
 import { Database } from "@hocuspocus/extension-database"
 import { PrismaService } from "./prisma.ts"
+import { YKeyValue } from "y-utility/y-keyvalue"
 
 config()
 
@@ -112,6 +113,19 @@ const server = Server.configure({
     }
 
     throw new Error("Not authorized!")
+  },
+  async onLoadDocument(data) {
+    if (data.documentName.endsWith("__files__")) {
+      new YKeyValue(data.document.getArray<any>("files")).set("__main__", {
+        id: "__main__",
+        name: "",
+        parent: "",
+        type: "folder",
+        children: []
+      })
+
+      return data.document
+    }
   }
 })
 

@@ -33,7 +33,8 @@
     "reflect-metadata": "^0.1.13",
     "type-graphql": "2.0.0-beta.1",
     "typedi": "^0.10.0",
-    "uWebSockets.js": "github:uNetworking/uWebSockets.js#v20.30.0"
+    "uWebSockets.js": "github:uNetworking/uWebSockets.js#v20.30.0",
+    "y-utility": "^0.1.3"
   },
   "devDependencies": {
     "@types/cors": "^2.8.13",
