@@ -1,0 +1,18 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("POSTGRES_URL")
+}
+
+model Room {
+  id    String @id
+  owner String
+}
+
+model Document {
+  name String @id
+  data Bytes
+}
