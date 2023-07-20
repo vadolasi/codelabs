@@ -43,7 +43,13 @@ if (process.env.NODE_ENV !== "production") {
 
 const { app } = expressWebsockets(express())
 app.use(cors())
-app.use(helmet())
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      "script-src": ["'self'", "'unsafe-inline'"],
+    }
+  }
+}))
 app.use(morgan("tiny"))
 
 export const yoga = createYoga({
@@ -130,9 +136,9 @@ yogaRouter.use(
   helmet({
     contentSecurityPolicy: {
       directives: {
-        "style-src": ["'self'", 'unpkg.com'],
-        "script-src": ["'self'", 'unpkg.com', "'unsafe-inline'"],
-        "img-src": ["'self'", 'raw.githubusercontent.com']
+        "style-src": ["'self'", "unpkg.com"],
+        "script-src": ["'self'", "unpkg.com", "'unsafe-inline'"],
+        "img-src": ["'self'", "raw.githubusercontent.com"]
       }
     }
   })
