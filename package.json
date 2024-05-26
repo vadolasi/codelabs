@@ -1,0 +1,23 @@
+{
+  "name": "codelabs",
+  "devDependencies": {
+    "@biomejs/biome": "1.7.3",
+    "@types/bun": "latest",
+    "gitmoji-cli": "9.2.0",
+    "husky": "9.0.11",
+    "lint-staged": "15.2.5",
+    "turbo": "^1.13.3"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:web": "turbo dev --filter=web --filter=server",
+    "commit": "gitmoji -c",
+    "prepare": "husky"
+  }
+}

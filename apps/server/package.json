@@ -1,0 +1,27 @@
+{
+  "name": "server",
+  "version": "1.0.50",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "bun run --watch src/index.ts",
+    "generate": "drizzle-kit generate:sqlite --schema ./src/db/schema.ts",
+    "migrate": "bun run ./src/db/migrate.ts"
+  },
+  "dependencies": {
+    "@elysiajs/cors": "^1.0.2",
+    "@elysiajs/server-timing": "^1.0.2",
+    "drizzle-orm": "^0.30.10",
+    "elysia": "latest",
+    "elysia-msgpack": "^0.2.1",
+    "jsonwebtoken": "^9.0.2",
+    "nanoid": "^5.0.7",
+    "resend": "^3.2.0",
+    "transactional": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/jsonwebtoken": "^9.0.6",
+    "bun-types": "latest",
+    "drizzle-kit": "^0.21.2"
+  },
+  "module": "src/index.js"
+}
