@@ -4,22 +4,29 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "bun run --watch src/index.ts",
-    "generate": "drizzle-kit generate:sqlite --schema ./src/db/schema.ts",
-    "migrate": "bun run ./src/db/migrate.ts"
+    "generate": "drizzle-kit generate",
+    "migrate": "drizzle-kit migrate",
+    "studio": "drizzle-kit studio",
+    "setup:dev": "bun run --cwd ../../node_modules/better-sqlite3 build-debug"
   },
   "dependencies": {
-    "@elysiajs/cors": "^1.0.2",
     "@elysiajs/server-timing": "^1.0.2",
+    "@sinclair/typebox": "^0.32.31",
     "drizzle-orm": "^0.30.10",
     "elysia": "latest",
+    "elysia-helmet": "^1.0.2",
     "elysia-msgpack": "^0.2.1",
     "jsonwebtoken": "^9.0.2",
+    "lodash": "^4.17.21",
     "nanoid": "^5.0.7",
+    "oslo": "^1.2.0",
     "resend": "^3.2.0",
     "transactional": "workspace:*"
   },
   "devDependencies": {
     "@types/jsonwebtoken": "^9.0.6",
+    "@types/lodash": "^4.17.4",
+    "better-sqlite3": "^11.0.0",
     "bun-types": "latest",
     "drizzle-kit": "^0.21.2"
   },

@@ -11,13 +11,13 @@
   "peerDependencies": {
     "typescript": "^5.0.0"
   },
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ],
   "scripts": {
     "dev:web": "turbo dev --filter=web --filter=server",
     "commit": "gitmoji -c",
-    "prepare": "husky"
-  }
+    "prepare": "[ \"$NODE_ENV\" = production ] && exit 0; husky"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ]
 }

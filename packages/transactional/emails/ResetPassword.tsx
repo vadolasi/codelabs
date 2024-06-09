@@ -14,16 +14,15 @@ interface WaitlistEmailProps {
   link: string
 }
 
-const EmailConfirmationEmail = ({ link }: WaitlistEmailProps) => (
+const ResetPasswordEmail = ({ link }: WaitlistEmailProps) => (
   <Tailwind>
     <Html lang="pt-BR">
       <Head />
-      <Preview>Confirme seu email do Codelabs</Preview>
+      <Preview>Resetar senha do Codelabs</Preview>
       <Body>
         <Container>
-          <Text>Olá,</Text>
           <Text>
-            Obrigado por se inscrever no Codelabs! Por favor, confirme seu email clicando no botão abaixo.
+            Você solicitou a alteração da sua senha no Codelabs! Por favor, clique no botão abaixo para confirmar.
           </Text>
           <Button href={link} className="bg-blue-500 p-3 text-white rounded font-bold">
             Confirmar email
@@ -33,11 +32,7 @@ const EmailConfirmationEmail = ({ link }: WaitlistEmailProps) => (
             {link}
           </Text>
           <Text>
-            Caso você não tenha se inscrito no Codelabs, por favor ignore este email.
-          </Text>
-          <Text>
-            Obrigado,
-            Equipe Codelabs
+            Caso você não tenha solicitado a alteração da sua senha no Codelabs, por favor ignore este email.
           </Text>
         </Container>
       </Body>
@@ -45,4 +40,4 @@ const EmailConfirmationEmail = ({ link }: WaitlistEmailProps) => (
   </Tailwind>
 )
 
-export default EmailConfirmationEmail
+export default ResetPasswordEmail
