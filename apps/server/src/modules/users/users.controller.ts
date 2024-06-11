@@ -1,5 +1,6 @@
 import Elysia, { t } from "elysia";
 import UsersService from "./users.service";
+import { authMiddleware } from "../../middleware";
 
 export const usersController = new Elysia()
 	.decorate({ usersService: UsersService })
@@ -31,7 +32,7 @@ export const usersController = new Elysia()
 
 					tokenCookie.set({
 						value: token,
-						expires: new Date(Date.now() + 1000 * 60 * 15),
+						expires: new Date(Date.now() + 1000 * 60 * 60),
 					});
 					refreshTokenCookie.set({
 						value: refreshToken,
@@ -106,9 +107,20 @@ export const usersController = new Elysia()
 					return "Password reset";
 				},
 				{ body: t.Object({ token: t.String(), password: t.String() }) },
+			)
+			.post(
+				"/logout",
+				async ({
+					cookie: { token: tokenCookie, refreshToken: refreshTokenCookie },
+				}) => {
+					tokenCookie.set({ value: "", expires: new Date(0) });
+					refreshTokenCookie.set({ value: "", expires: new Date(0) });
+
+					return "Logged out";
+				},
 			),
 	)
-	.group("/users/check", (group) =>
+	.group("/check", (group) =>
 		group
 			.get(
 				"/email",
@@ -122,4 +134,9 @@ export const usersController = new Elysia()
 					usersService.checkUsername({ username }),
 				{ query: t.Object({ username: t.String() }) },
 			),
+	)
+	.group("/users", (group) =>
+		group.use(authMiddleware).get("/me", async ({ user }) => {
+			return user;
+		}),
 	);

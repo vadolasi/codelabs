@@ -55,7 +55,7 @@ const ForgotPasswordPage: React.FC = () => {
       <Input label="Email or Username" error={errors.emailOrUsername?.message} {...register("emailOrUsername")} />
       <Button type="submit">Send email</Button>
       <p className="mt-4 text-center">
-        <Link to="/auth/lpgin" className="text-cyan-500">Back to login</Link>
+        <Link to="/auth/login" className="text-cyan-500">Back to login</Link>
       </p>
     </form>
   )

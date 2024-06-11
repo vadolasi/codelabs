@@ -5,7 +5,6 @@ import react from "@vitejs/plugin-react-swc";
 import Pages from "vite-plugin-pages";
 import wasm from "vite-plugin-wasm";
 import topLevelAwait from "vite-plugin-top-level-await";
-import basicSsl from "@vitejs/plugin-basic-ssl";
 
 export default defineConfig({
 	plugins: [
@@ -15,11 +14,13 @@ export default defineConfig({
 		Pages(),
 		wasm(),
 		topLevelAwait(),
-		basicSsl(),
 	],
 	server: {
 		proxy: {
-			"/api": "http://localhost:3000",
+			"/api": {
+				target: "http://localhost:3000",
+				ws: true,
+			},
 		},
 	},
 });

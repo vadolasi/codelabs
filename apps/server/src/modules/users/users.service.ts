@@ -1,6 +1,5 @@
 import { refreshTokens, users } from "./schema";
 import { db } from "../../db";
-import jwt from "jsonwebtoken";
 import { HTTPError } from "../../error";
 import EmailConfirmationEmail from "transactional/emails/EmailConfirmation";
 import ResetPasswordEmail from "transactional/emails/ResetPassword";
@@ -8,23 +7,14 @@ import { Resend } from "resend";
 import { eq } from "drizzle-orm";
 import env from "../../env";
 import _ from "lodash";
+import { createSigner, createVerifier, TokenError } from "fast-jwt";
 
 const resend = new Resend(env.RESEND_API_KEY);
+const sign = createSigner({ key: async () => env.JWT_SECRET, expiresIn: "1h" });
+const verify = createVerifier({ key: async () => env.JWT_SECRET });
 
 async function sendEmail(email: string) {
-	const token = await new Promise<string>((resolve, reject) => {
-		jwt.sign(
-			{ email, emailConfirmation: true },
-			env.JWT_SECRET,
-			(err: Error | null, token: string | undefined) => {
-				if (err || !token) {
-					reject(err);
-				} else {
-					resolve(token);
-				}
-			},
-		);
-	});
+	const token = await sign({ email, emailConfirmation: true });
 
 	const link = `${env.URL}/auth/confirm-email/?token=${token}`;
 
@@ -82,7 +72,7 @@ export async function confirmEmail({ token }: { token: string }) {
 	let email: string;
 
 	try {
-		const payload = jwt.verify(token, env.JWT_SECRET) as {
+		const payload = (await verify(token)) as {
 			email: string;
 			emailConfirmation: boolean;
 		};
@@ -93,8 +83,10 @@ export async function confirmEmail({ token }: { token: string }) {
 
 		email = payload.email;
 	} catch (err) {
-		if (err instanceof jwt.TokenExpiredError) {
-			throw new HTTPError(401, "Invalid or expired token");
+		if (err instanceof TokenError) {
+			if (err.code === "FAST_JWT_EXPIRED") {
+				throw new HTTPError(401, "Invalid or expired token");
+			}
 		}
 
 		throw new HTTPError(400, "Invalid token");
@@ -156,18 +148,10 @@ export async function login({
 		throw new HTTPError(401, "Invalid email or password");
 	}
 
-	const token = await new Promise<string>((resolve, reject) => {
-		jwt.sign(
-			{ id: user.id },
-			env.JWT_SECRET,
-			(err: Error | null, token: string | undefined) => {
-				if (err || !token) {
-					reject(err);
-				} else {
-					resolve(token);
-				}
-			},
-		);
+	const token = await sign({
+		id: user.id,
+		email: user.email,
+		username: user.username,
 	});
 
 	const [{ id: refreshToken }] = await db
@@ -192,19 +176,7 @@ export async function refreshToken({
 		throw new HTTPError(401, "Invalid refresh token");
 	}
 
-	const token = await new Promise<string>((resolve, reject) => {
-		jwt.sign(
-			{ id: refreshTokenObj.userId },
-			env.JWT_SECRET,
-			(err: Error | null, token: string | undefined) => {
-				if (err || !token) {
-					reject(err);
-				} else {
-					resolve(token);
-				}
-			},
-		);
-	});
+	const token = await sign({ id: refreshTokenObj.userId });
 
 	return { token };
 }
@@ -221,19 +193,7 @@ export async function forgotPassword({
 		throw new HTTPError(404, "User not found");
 	}
 
-	const token = await new Promise<string>((resolve, reject) => {
-		jwt.sign(
-			{ id: user.id, resetPassword: true },
-			env.JWT_SECRET,
-			(err: Error | null, token: string | undefined) => {
-				if (err || !token) {
-					reject(err);
-				} else {
-					resolve(token);
-				}
-			},
-		);
-	});
+	const token = sign({ id: user.id, resetPassword: true });
 
 	const link = `${env.URL}/auth/reset-password/?token=${token}`;
 
@@ -251,7 +211,7 @@ export async function forgotPassword({
 
 export async function checkResetPasswordToken({ token }: { token: string }) {
 	try {
-		const payload = jwt.verify(token, env.JWT_SECRET) as {
+		const payload = (await verify(token)) as {
 			id: string;
 			resetPassword: boolean;
 		};
@@ -262,8 +222,10 @@ export async function checkResetPasswordToken({ token }: { token: string }) {
 
 		return payload.id;
 	} catch (err) {
-		if (err instanceof jwt.TokenExpiredError) {
-			throw new HTTPError(401, "Invalid or expired token");
+		if (err instanceof TokenError) {
+			if (err.code === "FAST_JWT_EXPIRED") {
+				throw new HTTPError(401, "Invalid or expired token");
+			}
 		}
 
 		throw new HTTPError(400, "Invalid token");
