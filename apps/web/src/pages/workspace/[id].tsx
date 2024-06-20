@@ -1,4 +1,5 @@
 import Editor, { useMonaco } from "@monaco-editor/react";
+import { Mutex } from "async-mutex";
 import { Loro } from "loro-crdt";
 import { useEffect } from "react";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
@@ -26,21 +27,67 @@ const WorkspacePage: React.FC = () => {
 
       workspace.ws.onmessage = (ev) => {
         doc.import(new Uint8Array(ev.data));
-        editor.setValue(doc.getText("/").toString());
       };
 
-      editor.onDidChangeContent((ev) => {
-        if (!ev.isFlush) {
-          const docText = doc.getText("/");
-          for (const change of ev.changes.sort(
-            (change1, change2) => change2.rangeOffset - change1.rangeOffset,
-          )) {
-            docText.delete(change.rangeOffset, change.rangeLength);
-            docText.insert(change.rangeOffset, change.text);
+      const docText = doc.getText("/");
+
+      let fromRemote = false;
+
+      const mutex = new Mutex();
+
+      docText.subscribe(({ events, by }) => {
+        mutex.runExclusive(async () => {
+          if (by === "import") {
+            fromRemote = true;
+            for (const event of events) {
+              if (event.diff.type === "text") {
+                let index = 0;
+
+                for (const change of event.diff.diff) {
+                  if (change.retain) {
+                    index += change.retain;
+                  } else if (change.insert) {
+                    const pos = editor.getPositionAt(index);
+                    const range = new monaco.Selection(
+                      pos.lineNumber,
+                      pos.column,
+                      pos.lineNumber,
+                      pos.column,
+                    );
+                    editor.applyEdits([{ range, text: change.insert }]);
+                    index += change.insert.length;
+                  } else if (change.delete) {
+                    const pos = editor.getPositionAt(index);
+                    const endPos = editor.getPositionAt(index + change.delete);
+                    const range = new monaco.Selection(
+                      pos.lineNumber,
+                      pos.column,
+                      endPos.lineNumber,
+                      endPos.column,
+                    );
+                    editor.applyEdits([{ range, text: "" }]);
+                  }
+                }
+              }
+            }
+            fromRemote = false;
           }
-          doc.commit();
-          workspace.ws.send(doc.exportFrom(lastVersion));
-          lastVersion = doc.version();
+        });
+      });
+
+      editor.onDidChangeContent((ev) => {
+        if (!fromRemote) {
+          mutex.runExclusive(async () => {
+            for (const change of ev.changes.sort(
+              (change1, change2) => change2.rangeOffset - change1.rangeOffset,
+            )) {
+              docText.delete(change.rangeOffset, change.rangeLength);
+              docText.insert(change.rangeOffset, change.text);
+            }
+            doc.commit();
+            workspace.ws.send(doc.exportFrom(lastVersion));
+            lastVersion = doc.version();
+          });
         }
       });
     }
