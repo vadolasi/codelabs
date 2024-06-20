@@ -1,50 +1,49 @@
-import { useForm } from "react-hook-form"
-import { z } from "zod"
-import { zodResolver } from "@hookform/resolvers/zod"
-import Input from "../../components/Input"
-import Button from "../../components/Button"
-import { useMutation } from "@tanstack/react-query"
-import client from "../../httpClient"
-import { Link } from "react-router-dom"
-import { toast } from "react-hot-toast"
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation } from "@tanstack/react-query";
+import { useForm } from "react-hook-form";
+import { toast } from "react-hot-toast";
+import { Link } from "react-router-dom";
+import { z } from "zod";
+import Button from "../../components/Button";
+import Input from "../../components/Input";
+import client from "../../utils/httpClient";
 
 const schema = z.object({
-  emailOrUsername: z.string()
-    .min(1, "Required field")
-})
-type FormValues = z.infer<typeof schema>
+  email: z.string().min(1, "Required field"),
+});
+type FormValues = z.infer<typeof schema>;
 
 const ForgotPasswordPage: React.FC = () => {
   const { mutateAsync: sendEmail } = useMutation({
-    mutationFn: async ({ emailOrUsername }: FormValues) => {
-      const { error, data } = await client.api.auth["forgot-password"].post({
-        emailOrUsername: emailOrUsername
-      })
+    mutationFn: async ({ email }: FormValues) => {
+      const { error, data } = await client.api.auth["reset-password"].post({
+        email,
+      });
 
       if (error) {
-        throw new Error(error.value as string)
+        throw new Error(error.value as string);
       }
 
-      return data
-    }
-  })
+      return data;
+    },
+  });
 
   const {
     register,
     handleSubmit,
-    formState: { errors }
+    formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
-    mode: "onBlur"
-  })
+    mode: "onBlur",
+  });
 
-  const onSubmit = ({ emailOrUsername }: FormValues) => {
-    toast.promise(sendEmail({ emailOrUsername }), {
+  const onSubmit = ({ email }: FormValues) => {
+    toast.promise(sendEmail({ email }), {
       loading: "Sending email...",
       success: "Email sent",
-      error: (error) => error.message
-    })
-  }
+      error: (error) => error.message,
+    });
+  };
 
   return (
     <form
@@ -52,13 +51,19 @@ const ForgotPasswordPage: React.FC = () => {
       onSubmit={handleSubmit(onSubmit)}
     >
       <h1 className="text-2xl font-semibold mb-4">Login</h1>
-      <Input label="Email or Username" error={errors.emailOrUsername?.message} {...register("emailOrUsername")} />
+      <Input
+        label="Email or Username"
+        error={errors.email?.message}
+        {...register("email")}
+      />
       <Button type="submit">Send email</Button>
       <p className="mt-4 text-center">
-        <Link to="/auth/login" className="text-cyan-500">Back to login</Link>
+        <Link to="/auth/login" className="text-cyan-500">
+          Back to login
+        </Link>
       </p>
     </form>
-  )
-}
+  );
+};
 
-export default ForgotPasswordPage
+export default ForgotPasswordPage;

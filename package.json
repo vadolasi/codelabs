@@ -17,8 +17,10 @@
     "commit": "gitmoji -c",
     "prepare": "[ \"$NODE_ENV\" = production ] && exit 0; husky"
   },
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ]
+  "workspaces": ["apps/*", "packages/*"],
+  "lint-staged": {
+    "*.{js,ts,cjs,mjs,d.cts,d.mts,jsx,tsx,json,jsonc}": [
+      "biome check --no-errors-on-unmatched"
+    ]
+  }
 }

@@ -1,142 +1,62 @@
 import Elysia, { t } from "elysia";
+import { rateLimit } from "../../utils/rateLimit";
+import authMiddleware from "../auth/auth.middleware";
 import UsersService from "./users.service";
-import { authMiddleware } from "../../middleware";
 
-export const usersController = new Elysia()
-	.decorate({ usersService: UsersService })
-	.group("/auth", (group) =>
-		group
-			.post(
-				"/register",
-				({ usersService, body: { email, username, password } }) =>
-					usersService.register({ email, username, password }),
-				{
-					body: t.Object({
-						email: t.String(),
-						username: t.String(),
-						password: t.String(),
-					}),
-				},
-			)
-			.post(
-				"/login",
-				async ({
-					usersService,
-					body: { emailOrUsername, password },
-					cookie: { token: tokenCookie, refreshToken: refreshTokenCookie },
-				}) => {
-					const { token, refreshToken, user } = await usersService.login({
-						emailOrUsername,
-						password,
-					});
+export const usersController = new Elysia({ prefix: "/users" })
+  .decorate({ usersService: new UsersService() })
+  .use(authMiddleware)
+  .guard((guard) =>
+    guard.use(rateLimit("not_logged")).post(
+      "/register",
+      async ({
+        usersService,
+        body: { email, firstName, lastName, password },
+        cookie: { session: sessionCookie },
+      }) => {
+        const cookie = await usersService.register({
+          email,
+          firstName,
+          lastName,
+          password,
+        });
 
-					tokenCookie.set({
-						value: token,
-						expires: new Date(Date.now() + 1000 * 60 * 60),
-					});
-					refreshTokenCookie.set({
-						value: refreshToken,
-						expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7),
-					});
+        sessionCookie.set({
+          value: cookie.value,
+          expires: cookie.attributes.expires,
+          maxAge: cookie.attributes.maxAge,
+        });
 
-					return user;
-				},
-				{
-					body: t.Object({ emailOrUsername: t.String(), password: t.String() }),
-				},
-			)
-			.post(
-				"/refresh-token",
-				async ({
-					usersService,
-					cookie: { token: tokenCookie, refreshToken: refreshTokenCookie },
-				}) => {
-					const { token } = await usersService.refreshToken({
-						refreshToken: refreshTokenCookie.value,
-					});
-
-					tokenCookie.set({
-						value: token,
-						expires: new Date(Date.now() + 1000 * 60 * 60),
-					});
-
-					return "Token refreshed";
-				},
-			)
-			.post(
-				"/resent-email-confirmation",
-				async ({ usersService, body: { emailOrUsername } }) => {
-					await usersService.resendEmail({ emailOrUsername });
-
-					return "Email confirmation resent";
-				},
-				{ body: t.Object({ emailOrUsername: t.String() }) },
-			)
-			.post(
-				"/confirm-email",
-				async ({ usersService, body: { token } }) => {
-					await usersService.confirmEmail({ token });
-
-					return "Email confirmed";
-				},
-				{ body: t.Object({ token: t.String() }) },
-			)
-			.post(
-				"/forgot-password",
-				async ({ usersService, body: { emailOrUsername } }) => {
-					await usersService.forgotPassword({ emailOrUsername });
-
-					return "Email sent";
-				},
-				{ body: t.Object({ emailOrUsername: t.String() }) },
-			)
-			.post(
-				"/check-forgot-password-token",
-				async ({ usersService, body: { token } }) => {
-					await usersService.checkResetPasswordToken({ token });
-
-					return "Token valid";
-				},
-				{ body: t.Object({ token: t.String() }) },
-			)
-			.post(
-				"/reset-password",
-				async ({ usersService, body: { token, password } }) => {
-					await usersService.resetPassword({ token, password });
-
-					return "Password reset";
-				},
-				{ body: t.Object({ token: t.String(), password: t.String() }) },
-			)
-			.post(
-				"/logout",
-				async ({
-					cookie: { token: tokenCookie, refreshToken: refreshTokenCookie },
-				}) => {
-					tokenCookie.set({ value: "", expires: new Date(0) });
-					refreshTokenCookie.set({ value: "", expires: new Date(0) });
-
-					return "Logged out";
-				},
-			),
-	)
-	.group("/check", (group) =>
-		group
-			.get(
-				"/email",
-				({ usersService, query: { email } }) =>
-					usersService.checkEmail({ email }),
-				{ query: t.Object({ email: t.String() }) },
-			)
-			.get(
-				"/username",
-				({ usersService, query: { username } }) =>
-					usersService.checkUsername({ username }),
-				{ query: t.Object({ username: t.String() }) },
-			),
-	)
-	.group("/users", (group) =>
-		group.use(authMiddleware).get("/me", async ({ user }) => {
-			return user;
-		}),
-	);
+        return "User registered";
+      },
+      {
+        body: t.Object({
+          email: t.String(),
+          firstName: t.String(),
+          lastName: t.String(),
+          password: t.String(),
+        }),
+        cookie: t.Object({
+          session: t.String(),
+        }),
+      },
+    ),
+  )
+  .guard((guard) =>
+    guard
+      .use(rateLimit("not_logged"))
+      .get(
+        "/check/email",
+        ({ usersService, query: { email } }) =>
+          usersService.checkEmail({ email }),
+        { query: t.Object({ email: t.String() }) },
+      ),
+  )
+  .group("/users", (group) =>
+    group
+      .use(rateLimit("not_logged"))
+      .guard({ isSignIn: true })
+      .get("/me", async ({ user }) => {
+        return user;
+      }),
+  );

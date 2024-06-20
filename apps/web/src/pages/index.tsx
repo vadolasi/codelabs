@@ -1,7 +1,11 @@
+import DefaultLayout from "../layouts/default";
+
 const IndexPage = () => {
   return (
-    <h1>Olá mundo!</h1>
-  )
-}
+    <DefaultLayout>
+      <h1>Dashboard</h1>
+    </DefaultLayout>
+  );
+};
 
-export default IndexPage
+export default IndexPage;

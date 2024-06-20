@@ -1,14 +1,9 @@
-import { createRoot } from "react-dom/client"
-import { BrowserRouter } from "react-router-dom"
-import App from "./app"
+import { createRoot } from "react-dom/client";
+import App from "./app";
 
-import "./index.css"
+import "./index.css";
 
 // biome-ignore lint/style/noNonNullAssertion: <explanation>
-const app = createRoot(document.getElementById("root")!)
+const app = createRoot(document.getElementById("root")!);
 
-app.render(
-  <BrowserRouter>
-    <App />
-  </BrowserRouter>
-)
+app.render(<App />);

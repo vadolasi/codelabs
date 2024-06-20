@@ -1,17 +1,17 @@
-import React from "react"
 import {
   Body,
+  Button,
   Container,
   Head,
   Html,
   Preview,
-  Text,
   Tailwind,
-  Button
-} from "@react-email/components"
+  Text,
+} from "@react-email/components";
+import React from "react";
 
 interface WaitlistEmailProps {
-  link: string
+  link: string;
 }
 
 const ResetPasswordEmail = ({ link }: WaitlistEmailProps) => (
@@ -22,9 +22,13 @@ const ResetPasswordEmail = ({ link }: WaitlistEmailProps) => (
       <Body>
         <Container>
           <Text>
-            Você solicitou a alteração da sua senha no Codelabs! Por favor, clique no botão abaixo para confirmar.
+            Você solicitou a alteração da sua senha no Codelabs! Por favor,
+            clique no botão abaixo para confirmar.
           </Text>
-          <Button href={link} className="bg-blue-500 p-3 text-white rounded font-bold">
+          <Button
+            href={link}
+            className="bg-blue-500 p-3 text-white rounded font-bold"
+          >
             Confirmar email
           </Button>
           <Text>
@@ -32,12 +36,13 @@ const ResetPasswordEmail = ({ link }: WaitlistEmailProps) => (
             {link}
           </Text>
           <Text>
-            Caso você não tenha solicitado a alteração da sua senha no Codelabs, por favor ignore este email.
+            Caso você não tenha solicitado a alteração da sua senha no Codelabs,
+            por favor ignore este email.
           </Text>
         </Container>
       </Body>
     </Html>
   </Tailwind>
-)
+);
 
-export default ResetPasswordEmail
+export default ResetPasswordEmail;

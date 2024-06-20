@@ -1,20 +1,19 @@
-import React from "react"
 import {
   Body,
   Container,
   Head,
   Html,
   Preview,
-  Text,
   Tailwind,
-  Button
-} from "@react-email/components"
+  Text,
+} from "@react-email/components";
+import React from "react";
 
 interface WaitlistEmailProps {
-  link: string
+  code: string;
 }
 
-const EmailConfirmationEmail = ({ link }: WaitlistEmailProps) => (
+const EmailConfirmationEmail = ({ code }: WaitlistEmailProps) => (
   <Tailwind>
     <Html lang="pt-BR">
       <Head />
@@ -23,26 +22,20 @@ const EmailConfirmationEmail = ({ link }: WaitlistEmailProps) => (
         <Container>
           <Text>Olá,</Text>
           <Text>
-            Obrigado por se inscrever no Codelabs! Por favor, confirme seu email clicando no botão abaixo.
+            Obrigado por se inscrever no Codelabs! Confirme seu email utilizando
+            o código abaixo.
           </Text>
-          <Button href={link} className="bg-blue-500 p-3 text-white rounded font-bold">
-            Confirmar email
-          </Button>
-          <Text>
-            Ou copie e cole o link abaixo no seu navegador:
-            {link}
+          <Text className="bg-blue-500 p-3 text-white rounded font-bold text-xl tracking-wide">
+            {code}
           </Text>
           <Text>
-            Caso você não tenha se inscrito no Codelabs, por favor ignore este email.
-          </Text>
-          <Text>
-            Obrigado,
-            Equipe Codelabs
+            Caso você não tenha se inscrito no Codelabs, por favor ignore este
+            email.
           </Text>
         </Container>
       </Body>
     </Html>
   </Tailwind>
-)
+);
 
-export default EmailConfirmationEmail
+export default EmailConfirmationEmail;

@@ -1,89 +1,64 @@
-import { useForm } from "react-hook-form"
-import { z } from "zod"
-import { zodResolver } from "@hookform/resolvers/zod"
-import Input from "../../components/Input"
-import Button from "../../components/Button"
-import { useMutation } from "@tanstack/react-query"
-import client from "../../httpClient"
-import { Link, useNavigate } from "react-router-dom"
-import { toast } from "react-hot-toast"
-import { md5 } from "hash-wasm"
-import useStore from "../../store"
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation } from "@tanstack/react-query";
+import { sha256 } from "hash-wasm";
+import { useForm } from "react-hook-form";
+import { toast } from "react-hot-toast";
+import { Link, useNavigate } from "react-router-dom";
+import { z } from "zod";
+import Button from "../../components/Button";
+import Input from "../../components/Input";
+import client from "../../utils/httpClient";
+import useStore from "../../utils/store";
 
 const schema = z.object({
-  emailOrUsername: z.string()
-    .min(1, "Required field"),
-  password: z.string()
-    .min(1, "Required field")
-})
-type FormValues = z.infer<typeof schema>
+  email: z.string().min(1, "Required field"),
+  password: z.string().min(1, "Required field"),
+});
+type FormValues = z.infer<typeof schema>;
 
 const LoginPage: React.FC = () => {
-  const setUser = useStore(state => state.setUser)
-  const navigate = useNavigate()
+  const setUser = useStore((state) => state.setUser);
+  const navigate = useNavigate();
 
   const { mutateAsync: login } = useMutation({
-    mutationFn: async ({ emailOrUsername, password }: FormValues) => {
+    mutationFn: async ({ email, password }: FormValues) => {
       const { error, data } = await client.api.auth.login.post({
-        emailOrUsername: emailOrUsername,
-        password: await md5(password)
-      })
+        email,
+        password: await sha256(password),
+      });
 
       if (error) {
-        throw new Error(error.value as string)
+        throw new Error(error.value as string);
       }
 
-      return data
+      return data;
     },
-    onSuccess: ({ email, username }) => {
-      setUser({ email, username })
-      navigate("/")
-    }
-  })
-
-  const { mutateAsync: resendEmail } = useMutation({
-    mutationFn: async (emailOrUsername: string) => {
-      const { error } = await client.api.auth["resent-email-confirmation"].post({ emailOrUsername })
-
-      if (error) {
-        throw new Error(error.value as string)
-      }
-    }
-  })
+    onSuccess: ({ email, firstName, lastName }) => {
+      setUser({ email, firstName, lastName });
+      navigate("/");
+    },
+  });
 
   const {
     register,
     handleSubmit,
-    formState: { errors }
+    formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
-    mode: "onBlur"
-  })
+    mode: "onBlur",
+  });
 
-  const onSubmit = ({ emailOrUsername, password }: FormValues) => {
-    toast.promise(login({ emailOrUsername, password }), {
+  const onSubmit = ({ email, password }: FormValues) => {
+    toast.promise(login({ email, password }), {
       loading: "Logging in...",
       success: "Logged in successfully",
-      error: (error) => error.message === "Email not confirmed"
-        ? (
-          <>
-            Email not confirmed.&ensp;
-            <button
-              type="button"
-              onClick={() => toast.promise(resendEmail(emailOrUsername), {
-                loading: "Resending email...",
-                success: "Email confirmation resent",
-                error: "Error resending email"
-              })}
-              className="text-cyan-500"
-            >
-              Resend
-            </button>
-          </>
-        )
-        : error.message
-    })
-  }
+      error: (error) => {
+        navigate("/auth/confirm-email", { state: { email } });
+
+        return error.message;
+      },
+    });
+  };
 
   return (
     <form
@@ -91,17 +66,31 @@ const LoginPage: React.FC = () => {
       onSubmit={handleSubmit(onSubmit)}
     >
       <h1 className="text-2xl font-semibold mb-4">Login</h1>
-      <Input label="Email or Username" error={errors.emailOrUsername?.message} {...register("emailOrUsername")} />
-      <Input label="Password" error={errors.password?.message} type="password" {...register("password")} />
+      <Input
+        label="Email"
+        error={errors.email?.message}
+        {...register("email")}
+      />
+      <Input
+        label="Password"
+        error={errors.password?.message}
+        type="password"
+        {...register("password")}
+      />
       <Button type="submit">Login</Button>
       <p className="mt-4 text-center">
-        Don't have an account? <a href="/auth/register" className="text-cyan-500">Register</a>
+        Don't have an account?{" "}
+        <a href="/auth/register" className="text-cyan-500">
+          Register
+        </a>
       </p>
       <p className="mt-4 text-center">
-        <Link to="/auth/forgot-password" className="text-cyan-500">Forgot password?</Link>
+        <Link to="/auth/forgot-password" className="text-cyan-500">
+          Forgot password?
+        </Link>
       </p>
     </form>
-  )
-}
+  );
+};
 
-export default LoginPage
+export default LoginPage;
