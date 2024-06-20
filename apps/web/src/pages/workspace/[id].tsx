@@ -16,7 +16,7 @@ const WorkspacePage: React.FC = () => {
   const id = params.id as string;
 
   useEffect(() => {
-    if (monaco && user) {
+    if (monaco?.editor.getModels()[0] && user) {
       const workspace = client.api.workspaces.ws({ id }).subscribe();
       workspace.ws.binaryType = "arraybuffer";
 

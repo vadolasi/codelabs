@@ -1,4 +1,4 @@
-import { Navigate } from "react-router";
+import { Navigate, useLocation } from "react-router";
 import useStore from "../utils/store";
 
 const DefaultLayout: React.FC<{ children: React.ReactNode }> = ({
@@ -6,8 +6,10 @@ const DefaultLayout: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   const user = useStore((state) => state.user);
 
+  const { pathname } = useLocation();
+
   if (!user) {
-    return <Navigate to="/auth/login" />;
+    return <Navigate to={`/auth/login?redirect=${pathname}`} />;
   }
 
   return children;

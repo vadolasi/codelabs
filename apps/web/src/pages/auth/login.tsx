@@ -3,7 +3,7 @@ import { useMutation } from "@tanstack/react-query";
 import { sha256 } from "hash-wasm";
 import { useForm } from "react-hook-form";
 import { toast } from "react-hot-toast";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { z } from "zod";
 import Button from "../../components/Button";
 import Input from "../../components/Input";
@@ -20,6 +20,9 @@ const LoginPage: React.FC = () => {
   const setUser = useStore((state) => state.setUser);
   const navigate = useNavigate();
 
+  const [params] = useSearchParams();
+  const redirect = params.get("redirect") || "/";
+
   const { mutateAsync: login } = useMutation({
     mutationFn: async ({ email, password }: FormValues) => {
       const { error, data } = await client.api.auth.login.post({
@@ -35,7 +38,7 @@ const LoginPage: React.FC = () => {
     },
     onSuccess: ({ email, firstName, lastName }) => {
       setUser({ email, firstName, lastName });
-      navigate("/");
+      navigate(redirect);
     },
   });
 
