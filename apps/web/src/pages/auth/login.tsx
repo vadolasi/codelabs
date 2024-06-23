@@ -36,8 +36,8 @@ const LoginPage: React.FC = () => {
 
       return data;
     },
-    onSuccess: ({ email, firstName, lastName }) => {
-      setUser({ email, firstName, lastName });
+    onSuccess: ({ email, firstName, lastName, id }) => {
+      setUser({ email, firstName, lastName, id });
       navigate(redirect);
     },
   });

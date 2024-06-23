@@ -2,10 +2,11 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { immer } from "zustand/middleware/immer";
 
-interface User {
+export interface User {
   firstName: string;
   lastName: string;
   email: string;
+  id: string;
 }
 
 interface Store {

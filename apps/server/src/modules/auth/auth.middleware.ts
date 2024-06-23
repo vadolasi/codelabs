@@ -54,8 +54,9 @@ const authMiddleware = new Elysia()
   .macro(({ onBeforeHandle }) => ({
     isSignIn(_value: boolean) {
       onBeforeHandle(({ user }) => {
-        if (!user || !user.emailVerified)
+        if (!user || !user.emailVerified) {
           throw new HTTPError(401, "Unauthorized");
+        }
       });
     },
   }));

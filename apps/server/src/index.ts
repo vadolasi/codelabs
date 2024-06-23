@@ -22,7 +22,7 @@ const app = new Elysia({
     maxRequestBodySize: 1024 * 1024,
   },
 })
-  .use(msgpack())
+  .use(msgpack({ moreTypes: true }))
   .error({
     HTTPError,
   })
