@@ -38,6 +38,7 @@ const app = new Elysia({
   .use(authController)
   .use(usersController)
   .use(workspacesController)
+  .get("/status", () => "OK")
   .listen(3000);
 
 if (env.NODE_ENV !== "PRODUCTION") {

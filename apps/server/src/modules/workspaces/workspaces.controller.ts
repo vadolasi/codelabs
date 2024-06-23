@@ -11,7 +11,7 @@ setInterval(() => {
   }
 }, 1000 * 60);
 
-export const workspacesController = new Elysia({ prefix: "workspaces" })
+export const workspacesController = new Elysia({ prefix: "/workspaces" })
   .use(authMiddleware)
   .guard({ isSignIn: true })
   .use(rateLimit("logged"))

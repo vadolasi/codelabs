@@ -153,6 +153,8 @@ const WorkspacePage: React.FC = () => {
               });
             }
           });
+
+          monaco.editor.getEditors()[0].onDidChangeCursorPosition(console.log);
         }
 
         tab = { path: activeTab, model: editor };
