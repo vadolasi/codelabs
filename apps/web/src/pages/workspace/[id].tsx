@@ -20,10 +20,11 @@ const WorkspacePage: React.FC = () => {
   const params = useParams();
   const user = useStore((state) => state.user) as User;
   const id = params.id as string;
+  const treeId = "a"; // user.id;
 
   const { data } = useSuspenseQuery({
     queryKey: ["workspace", id, user.id],
-    queryFn: () => client.api.workspaces({ id })({ userId: user.id }).put(),
+    queryFn: () => client.api.workspaces({ id })({ userId: treeId }).put(),
   });
 
   const [tabs, setTabs] = useState<
@@ -31,9 +32,9 @@ const WorkspacePage: React.FC = () => {
   >(new Map());
   const [activeTab, setActiveTab] = useState<string | null>(null);
 
-  const { doc, treeProvider, rootId } = useMemo(() => {
+  const { treeProvider, rootId, docTree, doc, presence } = useMemo(() => {
     const workspace = client.api
-      .workspaces({ id })({ userId: user.id })
+      .workspaces({ id })({ userId: treeId })
       .subscribe();
     workspace.ws.binaryType = "arraybuffer";
 
@@ -57,19 +58,25 @@ const WorkspacePage: React.FC = () => {
     workspace.ws.onmessage = (ev) => {
       doc.import(new Uint8Array(ev.data));
     };
-    return { doc, treeProvider, rootId };
-  }, [data, id, user]);
 
+    const presence = doc.getMap("presence");
+
+    return { treeProvider, rootId, docTree, doc, presence };
+  }, [data, id]);
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: dont need
   useEffect(() => {
     if (monaco && activeTab) {
-      const docText = doc
-        .getTree("fileTree")
+      const docText = docTree
         .getNodeByID(activeTab as `${number}@${number}`)
         .data.getOrCreateContainer("content", new LoroText());
       let tab = tabs.get(activeTab) as {
         path: string;
         model: Monaco.editor.ITextModel;
       };
+
+      let subscription: number;
+      let disposable: Monaco.IDisposable;
 
       if (!tab) {
         let editor = monaco.editor.getModel(
@@ -87,7 +94,7 @@ const WorkspacePage: React.FC = () => {
 
           const mutex = new Mutex();
 
-          docText.subscribe(({ events, by }) => {
+          subscription = docText.subscribe(({ events, by }) => {
             mutex.runExclusive(async () => {
               if (by === "import") {
                 fromRemote = true;
@@ -139,7 +146,7 @@ const WorkspacePage: React.FC = () => {
             });
           });
 
-          editor.onDidChangeContent((ev) => {
+          disposable = editor.onDidChangeContent((ev) => {
             if (!fromRemote && !ev.isFlush) {
               mutex.runExclusive(async () => {
                 for (const change of ev.changes.sort(
@@ -153,8 +160,6 @@ const WorkspacePage: React.FC = () => {
               });
             }
           });
-
-          monaco.editor.getEditors()[0].onDidChangeCursorPosition(console.log);
         }
 
         tab = { path: activeTab, model: editor };
@@ -162,9 +167,68 @@ const WorkspacePage: React.FC = () => {
         editor.setValue(docText.toString());
 
         setTabs((tabs) => new Map(tabs.set(activeTab, tab)));
+
+        const disposableCursor = monaco.editor
+          .getEditors()[0]
+          .onDidChangeCursorSelection(({ selection }) => {
+            presence.set(user.id, {
+              name: `${user.firstName} ${user.lastName}`,
+              cursor: [
+                selection.startLineNumber,
+                selection.startColumn,
+                selection.endLineNumber,
+                selection.endColumn,
+              ],
+              activeTab,
+            });
+            doc.commit();
+          });
+
+        let currentDecorations: string[] = [];
+
+        const presenceSubscription = presence.subscribe(() => {
+          const newDecorations: Monaco.editor.IModelDeltaDecoration[] = [];
+          for (const key of presence.keys().filter((key) => key !== user.id)) {
+            const userPresence = presence.get(key) as {
+              name: string;
+              cursor: [number, number, number, number];
+              activeTab: string;
+            };
+
+            if (userPresence.activeTab === activeTab) {
+              newDecorations.push({
+                range: new monaco.Range(
+                  userPresence.cursor[0],
+                  userPresence.cursor[1],
+                  userPresence.cursor[2],
+                  userPresence.cursor[3],
+                ),
+                options: {
+                  isWholeLine: false,
+                  className: "cursor-decoration",
+                  afterContentClassName: "cursor-decoration-head",
+                  hoverMessage: {
+                    value: userPresence.name,
+                  },
+                },
+              });
+            }
+          }
+          currentDecorations = editor.deltaDecorations(
+            currentDecorations,
+            newDecorations,
+          );
+        });
+
+        return () => {
+          disposable.dispose();
+          disposableCursor.dispose();
+          docText.unsubscribe(subscription);
+          presence.unsubscribe(presenceSubscription);
+        };
       }
     }
-  }, [doc, monaco, activeTab, tabs]);
+  }, [activeTab]);
 
   return (
     <DefaultLayout>
@@ -222,7 +286,7 @@ const WorkspacePage: React.FC = () => {
                             New file
                           </ContextMenu.Item>
                           <ContextMenu.Item className="select-none cursor-pointer">
-                            New folde
+                            New folder
                           </ContextMenu.Item>
                         </ContextMenu.Content>
                       </ContextMenu.Portal>
@@ -253,7 +317,7 @@ const WorkspacePage: React.FC = () => {
                   New file
                 </ContextMenu.Item>
                 <ContextMenu.Item className="select-none cursor-pointer">
-                  New folde
+                  New folder
                 </ContextMenu.Item>
               </ContextMenu.Content>
             </ContextMenu.Portal>

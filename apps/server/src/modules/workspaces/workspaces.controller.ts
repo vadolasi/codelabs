@@ -20,9 +20,9 @@ export const workspacesController = new Elysia({ prefix: "/workspaces" })
     ({ params }) => {
       let doc: Loro;
 
-      if (workspaces.has(params.id)) {
+      if (workspaces.has(`${params.id}:${params.userId}`)) {
         // biome-ignore lint/style/noNonNullAssertion: Already checked
-        doc = workspaces.get(params.id)!;
+        doc = workspaces.get(`${params.id}:${params.userId}`)!;
       } else {
         doc = new Loro();
 
@@ -35,7 +35,7 @@ export const workspacesController = new Elysia({ prefix: "/workspaces" })
         }
 
         doc.commit();
-        workspaces.set(params.id, doc);
+        workspaces.set(`${params.id}:${params.userId}`, doc);
       }
 
       return doc.exportSnapshot();
@@ -53,7 +53,9 @@ export const workspacesController = new Elysia({ prefix: "/workspaces" })
     },
     message(ws, body) {
       // biome-ignore lint/style/noNonNullAssertion: Already checked
-      workspaces.get(ws.data.params.id)!.import(body);
+      workspaces
+        .get(`${ws.data.params.id}:${ws.data.params.userId}`)!
+        .import(body);
       ws.raw.publish(`${ws.data.params.id}:${ws.data.params.userId}`, body);
     },
   });
