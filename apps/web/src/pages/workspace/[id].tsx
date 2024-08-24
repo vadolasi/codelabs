@@ -1,14 +1,12 @@
-import Editor, { useMonaco } from "@monaco-editor/react";
 import * as ContextMenu from "@radix-ui/react-context-menu";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { Mutex } from "async-mutex";
 import { Loro, LoroText } from "loro-crdt";
-import type * as Monaco from "monaco-editor";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Tree, UncontrolledTreeEnvironment } from "react-complex-tree";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { useParams } from "react-router";
-import LoadingIndicator from "../../components/LoadingIndicator";
+import Editor from "../../components/Editor";
+import codemirrorCollab from "../../components/Editor/plugins/collab";
 import DefaultLayout from "../../layouts/default";
 import cn from "../../utils/cn";
 import client from "../../utils/httpClient";
@@ -16,7 +14,6 @@ import useStore, { type User } from "../../utils/store";
 import LoroDataProviderImplementation from "./dataProviser";
 
 const WorkspacePage: React.FC = () => {
-  const monaco = useMonaco();
   const params = useParams();
   const user = useStore((state) => state.user) as User;
   const id = params.id as string;
@@ -27,12 +24,10 @@ const WorkspacePage: React.FC = () => {
     queryFn: () => client.api.workspaces({ id })({ userId: treeId }).put(),
   });
 
-  const [tabs, setTabs] = useState<
-    Map<string, { path: string; model: Monaco.editor.ITextModel }>
-  >(new Map());
+  const [tabs, setTabs] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<string | null>(null);
 
-  const { treeProvider, rootId, docTree, doc, presence } = useMemo(() => {
+  const { treeProvider, rootId, docTree, doc } = useMemo(() => {
     const workspace = client.api
       .workspaces({ id })({ userId: treeId })
       .subscribe();
@@ -65,169 +60,23 @@ const WorkspacePage: React.FC = () => {
   }, [data, id]);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: dont need
-  useEffect(() => {
-    if (monaco && activeTab) {
+  const { extensions, initialValue } = useMemo(() => {
+    if (activeTab) {
+      if (!tabs.includes(activeTab as string)) {
+        setTabs((tabs) => [...tabs, activeTab as string]);
+      }
+
       const docText = docTree
         .getNodeByID(activeTab as `${number}@${number}`)
         .data.getOrCreateContainer("content", new LoroText());
-      let tab = tabs.get(activeTab) as {
-        path: string;
-        model: Monaco.editor.ITextModel;
+
+      return {
+        extensions: [codemirrorCollab(doc, activeTab, user.id)],
+        initialValue: docText.toString(),
       };
-
-      let subscription: number;
-      let disposable: Monaco.IDisposable;
-
-      if (!tab) {
-        let editor = monaco.editor.getModel(
-          monaco.Uri.parse(activeTab),
-        ) as Monaco.editor.ITextModel;
-
-        if (!editor) {
-          editor = monaco.editor.createModel(
-            docText.toString(),
-            "typescript",
-            monaco.Uri.parse(activeTab),
-          );
-
-          let fromRemote = false;
-
-          const mutex = new Mutex();
-
-          subscription = docText.subscribe(({ events, by }) => {
-            mutex.runExclusive(async () => {
-              if (by === "import") {
-                fromRemote = true;
-                for (const { diff: event } of events) {
-                  if (event.type === "text") {
-                    let index = 0;
-                    const edits: Monaco.editor.IIdentifiedSingleEditOperation[] =
-                      [];
-
-                    for (const change of event.diff) {
-                      if (change.retain) {
-                        index += change.retain;
-                      } else if (change.insert) {
-                        const pos = editor.getPositionAt(index);
-                        const range = new monaco.Selection(
-                          pos.lineNumber,
-                          pos.column,
-                          pos.lineNumber,
-                          pos.column,
-                        );
-                        edits.push({
-                          range,
-                          text: change.insert,
-                        });
-                        index += change.insert.length;
-                      } else if (change.delete) {
-                        const pos = editor.getPositionAt(index);
-                        const endPos = editor.getPositionAt(
-                          index + change.delete,
-                        );
-                        const range = new monaco.Selection(
-                          pos.lineNumber,
-                          pos.column,
-                          endPos.lineNumber,
-                          endPos.column,
-                        );
-                        edits.push({
-                          range,
-                          text: "",
-                        });
-                      }
-
-                      editor.applyEdits(edits);
-                    }
-                  }
-                }
-                fromRemote = false;
-              }
-            });
-          });
-
-          disposable = editor.onDidChangeContent((ev) => {
-            if (!fromRemote && !ev.isFlush) {
-              mutex.runExclusive(async () => {
-                for (const change of ev.changes.sort(
-                  (change1, change2) =>
-                    change2.rangeOffset - change1.rangeOffset,
-                )) {
-                  docText.delete(change.rangeOffset, change.rangeLength);
-                  docText.insert(change.rangeOffset, change.text);
-                }
-                doc.commit();
-              });
-            }
-          });
-        }
-
-        tab = { path: activeTab, model: editor };
-
-        editor.setValue(docText.toString());
-
-        setTabs((tabs) => new Map(tabs.set(activeTab, tab)));
-
-        const disposableCursor = monaco.editor
-          .getEditors()[0]
-          .onDidChangeCursorSelection(({ selection }) => {
-            presence.set(user.id, {
-              name: `${user.firstName} ${user.lastName}`,
-              cursor: [
-                selection.startLineNumber,
-                selection.startColumn,
-                selection.endLineNumber,
-                selection.endColumn,
-              ],
-              activeTab,
-            });
-            doc.commit();
-          });
-
-        let currentDecorations: string[] = [];
-
-        const presenceSubscription = presence.subscribe(() => {
-          const newDecorations: Monaco.editor.IModelDeltaDecoration[] = [];
-          for (const key of presence.keys().filter((key) => key !== user.id)) {
-            const userPresence = presence.get(key) as {
-              name: string;
-              cursor: [number, number, number, number];
-              activeTab: string;
-            };
-
-            if (userPresence.activeTab === activeTab) {
-              newDecorations.push({
-                range: new monaco.Range(
-                  userPresence.cursor[0],
-                  userPresence.cursor[1],
-                  userPresence.cursor[2],
-                  userPresence.cursor[3],
-                ),
-                options: {
-                  isWholeLine: false,
-                  className: "cursor-decoration",
-                  afterContentClassName: "cursor-decoration-head",
-                  hoverMessage: {
-                    value: userPresence.name,
-                  },
-                },
-              });
-            }
-          }
-          currentDecorations = editor.deltaDecorations(
-            currentDecorations,
-            newDecorations,
-          );
-        });
-
-        return () => {
-          disposable.dispose();
-          disposableCursor.dispose();
-          docText.unsubscribe(subscription);
-          presence.unsubscribe(presenceSubscription);
-        };
-      }
     }
+
+    return { extensions: [], initialValue: "" };
   }, [activeTab]);
 
   return (
@@ -331,41 +180,27 @@ const WorkspacePage: React.FC = () => {
         </PanelResizeHandle>
         <Panel order={2} id="main">
           <div className="rounded h-full overflow-hidden">
-            {activeTab === null ? (
+            {activeTab ? (
+              <div className="h-full">
+                <div className="flex gap-2 list-none">
+                  {tabs.map((tab) => (
+                    <button
+                      type="button"
+                      key={tab}
+                      className={cn(activeTab === tab && "font-bold")}
+                      onClick={() => setActiveTab(tab)}
+                    >
+                      {tab}
+                    </button>
+                  ))}
+                </div>
+                <Editor extensions={extensions} initialValue={initialValue} />
+              </div>
+            ) : (
               <div className="flex items-center justify-center w-full h-full">
                 <h2 className="text-2xl">Select a file</h2>
               </div>
-            ) : tabs.get(activeTab) === undefined ? (
-              <div
-                className={cn("flex items-center justify-center w-full h-full")}
-              >
-                <LoadingIndicator />
-              </div>
-            ) : (
-              <div className="flex gap-2 list-none">
-                {[...tabs.keys()].map((tab) => (
-                  <button
-                    type="button"
-                    key={tab}
-                    className={cn(activeTab === tab && "font-bold")}
-                    onClick={() => setActiveTab(tab)}
-                  >
-                    {tab}
-                  </button>
-                ))}
-              </div>
             )}
-            <Editor
-              height={activeTab === null ? "0" : "100%"}
-              loading={
-                <LoadingIndicator
-                  className={cn(activeTab === null && "hidden")}
-                />
-              }
-              path={activeTab && tabs.get(activeTab)?.model ? activeTab : ""}
-              theme="vs-dark"
-              className={cn(activeTab === null && "hidden")}
-            />
           </div>
         </Panel>
       </PanelGroup>

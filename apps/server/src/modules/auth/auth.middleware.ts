@@ -1,7 +1,6 @@
-import Elysia from "elysia";
+import Elysia, { error } from "elysia";
 import type { Session, User } from "lucia";
 import { verifyRequestOrigin } from "oslo/request";
-import { HTTPError } from "../../error";
 import { lucia } from "./auth.utils";
 
 const authMiddleware = new Elysia()
@@ -29,7 +28,7 @@ const authMiddleware = new Elysia()
       }
 
       const { session, user } = await lucia.validateSession(
-        context.cookie.session.value,
+        context.cookie.session?.value || "",
       );
       if (session?.fresh) {
         const sessionCookie = lucia.createSessionCookie(session.id);
@@ -55,7 +54,7 @@ const authMiddleware = new Elysia()
     isSignIn(_value: boolean) {
       onBeforeHandle(({ user }) => {
         if (!user || !user.emailVerified) {
-          throw new HTTPError(401, "Unauthorized");
+          error(401, "Unauthorized");
         }
       });
     },

@@ -10,29 +10,29 @@
     "setup:dev": "bun run --cwd ../../node_modules/better-sqlite3 build-debug"
   },
   "dependencies": {
-    "@elysiajs/server-timing": "^1.0.2",
-    "@lucia-auth/adapter-drizzle": "^1.0.7",
-    "@sinclair/typebox": "^0.32.31",
-    "drizzle-orm": "^0.30.10",
-    "elysia": "latest",
+    "@elysiajs/server-timing": "^1.1.0",
+    "@lucia-auth/adapter-drizzle": "^1.1.0",
+    "@sinclair/typebox": "^0.32.35",
+    "drizzle-orm": "^0.32.2",
+    "elysia": "^1.1.7",
     "elysia-helmet": "^1.0.2",
     "elysia-ip": "^1.0.7",
-    "elysia-msgpack": "^0.2.1",
+    "elysia-msgpack": "^1.0.0",
     "elysia-rate-limit": "^4.1.0",
     "lodash": "^4.17.21",
-    "loro-crdt": "^0.16.4-alpha.0",
+    "loro-crdt": "^0.16.7",
     "lucia": "^3.2.0",
     "nanoid": "^5.0.7",
-    "oslo": "^1.2.0",
-    "resend": "^3.2.0",
+    "oslo": "^1.2.1",
+    "resend": "^3.5.0",
     "transactional": "workspace:*"
   },
   "devDependencies": {
     "@types/jsonwebtoken": "^9.0.6",
-    "@types/lodash": "^4.17.4",
-    "better-sqlite3": "^11.0.0",
+    "@types/lodash": "^4.17.7",
+    "better-sqlite3": "^11.2.1",
     "bun-types": "latest",
-    "drizzle-kit": "^0.21.2"
+    "drizzle-kit": "^0.24.1"
   },
   "module": "src/index.js"
 }

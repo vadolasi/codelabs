@@ -1,4 +1,5 @@
 import { eq } from "drizzle-orm";
+import { error } from "elysia";
 import _ from "lodash";
 import { type User, generateIdFromEntropySize } from "lucia";
 import { TimeSpan, createDate, isWithinExpirationDate } from "oslo";
@@ -11,7 +12,6 @@ import {
   usersTable,
 } from "../../db/schema";
 import env from "../../env";
-import { HTTPError } from "../../error";
 import EmailsService, { templates } from "../email/emails.service";
 import { lucia } from "./auth.utils";
 
@@ -74,11 +74,11 @@ export default class AuthService {
     });
 
     if (!user) {
-      throw new HTTPError(404, "User not found");
+      return error(404, "User not found");
     }
 
     if (user.emailVerified) {
-      throw new HTTPError(400, "Email already confirmed");
+      return error(400, "Email already confirmed");
     }
 
     return await this.sendEmailVerificationCode(email, user.id);
@@ -86,7 +86,7 @@ export default class AuthService {
 
   async confirmEmail({ user, code }: { user: User | null; code: string }) {
     if (user === null) {
-      throw new HTTPError(401, "Unauthorized");
+      return error(401, "Unauthorized");
     }
 
     const databaseCode = await db.query.emailVerificationCodeTable.findFirst({
@@ -99,7 +99,7 @@ export default class AuthService {
       databaseCode.code !== code ||
       databaseCode.email !== user.email
     ) {
-      throw new HTTPError(400, "Invalid code");
+      return error(400, "Invalid code");
     }
 
     await db
@@ -107,7 +107,7 @@ export default class AuthService {
       .where(eq(emailVerificationCodeTable.userId, user.id));
 
     if (!isWithinExpirationDate(new Date(databaseCode.expiresAt))) {
-      throw new HTTPError(400, "Code expired");
+      return error(400, "Code expired");
     }
 
     await db
@@ -124,11 +124,11 @@ export default class AuthService {
     });
 
     if (!user) {
-      throw new HTTPError(401, "Invalid email or password");
+      return error(401, "Invalid email or password");
     }
 
     if (!user.emailVerified) {
-      throw new HTTPError(401, "Email not confirmed");
+      return error(401, "Email not confirmed");
     }
 
     if (
@@ -137,7 +137,7 @@ export default class AuthService {
         user.password,
       )) === false
     ) {
-      throw new HTTPError(401, "Invalid email or password");
+      return error(401, "Invalid email or password");
     }
 
     const session = await lucia.createSession(user.id, {});
@@ -152,7 +152,7 @@ export default class AuthService {
     });
 
     if (!user) {
-      throw new HTTPError(404, "User not found");
+      return error(404, "User not found");
     }
 
     const token = await this.createPasswordResetToken(email);
@@ -180,11 +180,11 @@ export default class AuthService {
     );
 
     if (!passwordResetToken) {
-      throw new HTTPError(400, "Invalid token");
+      return error(400, "Invalid token");
     }
 
     if (!isWithinExpirationDate(new Date(passwordResetToken.expiresAt))) {
-      throw new HTTPError(400, "Token expired");
+      return error(400, "Token expired");
     }
 
     await db

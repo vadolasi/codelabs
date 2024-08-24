@@ -3,14 +3,14 @@ import { rateLimit } from "../../utils/rateLimit";
 import authMiddleware from "../auth/auth.middleware";
 import UsersService from "./users.service";
 
+const usersService = new UsersService();
+
 export const usersController = new Elysia({ prefix: "/users" })
-  .decorate({ usersService: new UsersService() })
   .use(authMiddleware)
   .guard((guard) =>
     guard.use(rateLimit("not_logged")).post(
       "/register",
       async ({
-        usersService,
         body: { email, firstName, lastName, password },
         cookie: { session: sessionCookie },
       }) => {
@@ -37,7 +37,7 @@ export const usersController = new Elysia({ prefix: "/users" })
           password: t.String(),
         }),
         cookie: t.Object({
-          session: t.String(),
+          session: t.Optional(t.String()),
         }),
       },
     ),
@@ -47,8 +47,7 @@ export const usersController = new Elysia({ prefix: "/users" })
       .use(rateLimit("not_logged"))
       .get(
         "/check/email",
-        ({ usersService, query: { email } }) =>
-          usersService.checkEmail({ email }),
+        ({ query: { email } }) => usersService.checkEmail({ email }),
         { query: t.Object({ email: t.String() }) },
       ),
   )

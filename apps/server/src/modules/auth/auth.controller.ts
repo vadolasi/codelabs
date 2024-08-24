@@ -3,25 +3,26 @@ import { rateLimit } from "../../utils/rateLimit";
 import authMiddleware from "./auth.middleware";
 import AuthService from "./auth.service";
 
+const authService = new AuthService();
+
 export const authController = new Elysia({ prefix: "/auth" })
-  .decorate({ authService: new AuthService() })
   .use(authMiddleware)
   .guard((guard) =>
     guard
       .use(rateLimit("not_logged_email"))
       .post(
         "/resent-email-confirmation",
-        async ({
-          authService,
-          body: { email },
-          cookie: { session: sessionCookie },
-        }) => {
-          const cookie = await authService.resendEmail({ email });
+        async ({ body: { email }, cookie: { session: sessionCookie } }) => {
+          const result = await authService.resendEmail({ email });
+
+          if (result.error) {
+            return result;
+          }
 
           sessionCookie.set({
-            value: cookie.value,
-            expires: cookie.attributes.expires,
-            maxAge: cookie.attributes.maxAge,
+            value: result.value,
+            expires: result.attributes.expires,
+            maxAge: result.attributes.maxAge,
           });
 
           return "Email confirmation resent";
@@ -33,7 +34,7 @@ export const authController = new Elysia({ prefix: "/auth" })
       )
       .post(
         "/reset-password",
-        async ({ authService, body: { email } }) => {
+        async ({ body: { email } }) => {
           await authService.sendPasswordResetToken({ email });
 
           return "Email sent";
@@ -47,14 +48,20 @@ export const authController = new Elysia({ prefix: "/auth" })
       .post(
         "/login",
         async ({
-          authService,
           body: { email, password },
           cookie: { session: sessionCookie },
+          set,
         }) => {
-          const { user, cookie } = await authService.login({
+          const result = await authService.login({
             email,
             password,
           });
+
+          if (result.error) {
+            return result;
+          }
+
+          const { user, cookie } = result;
 
           sessionCookie.set({
             value: cookie.value,
@@ -73,7 +80,7 @@ export const authController = new Elysia({ prefix: "/auth" })
       )
       .post(
         "/confirm-email",
-        async ({ authService, body: { code }, user }) => {
+        async ({ body: { code }, user }) => {
           await authService.confirmEmail({ code, user });
 
           return "Email confirmed";
@@ -82,7 +89,7 @@ export const authController = new Elysia({ prefix: "/auth" })
       )
       .post(
         "/reset-password/:token",
-        async ({ authService, body: { password }, params: { token }, set }) => {
+        async ({ body: { password }, params: { token }, set }) => {
           await authService.resetPassword({ token, password });
 
           set.headers["Referrer-Policy"] = "no-referrer";
