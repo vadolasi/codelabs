@@ -11,7 +11,9 @@ export interface User {
 
 interface Store {
   user: User | null;
+  theme: "dark" | "light" | "auto";
   setUser: (user: User) => void;
+  setTheme: (theme: "dark" | "light" | "auto") => void;
 }
 
 const useStore = create<Store>()(
@@ -21,6 +23,12 @@ const useStore = create<Store>()(
       setUser: (user: User) => {
         set((state) => {
           state.user = user;
+        });
+      },
+      theme: "auto",
+      setTheme: (theme: "dark" | "light" | "auto") => {
+        set((state) => {
+          state.theme = theme;
         });
       },
     })),

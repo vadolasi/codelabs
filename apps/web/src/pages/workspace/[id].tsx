@@ -122,7 +122,6 @@ const WorkspacePage: React.FC = () => {
 
   const [iframeSrc, setIframeSrc] = useState<string | null>(null);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: dont need
   useEffect(() => {
     const fitAddon = new FitAddon();
 
@@ -336,7 +335,6 @@ const WorkspacePage: React.FC = () => {
     };
   }, []);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: dont need
   const { extensions, initialValue } = useMemo(() => {
     if (activeTab) {
       if (!tabs.includes(activeTab as string)) {

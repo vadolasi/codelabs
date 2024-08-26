@@ -1,12 +1,12 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
-import { sha256 } from "hash-wasm";
 import { useForm } from "react-hook-form";
 import { toast } from "react-hot-toast";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { z } from "zod";
 import Button from "../../components/Button";
 import Input from "../../components/Input";
+import logo from "../../images/logo.svg";
 import client from "../../utils/httpClient";
 import useStore from "../../utils/store";
 
@@ -23,11 +23,27 @@ const LoginPage: React.FC = () => {
   const [params] = useSearchParams();
   const redirect = params.get("redirect") || "/";
 
-  const { mutateAsync: login } = useMutation({
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isValid },
+    watch,
+  } = useForm<FormValues>({
+    resolver: zodResolver(schema),
+    mode: "onBlur",
+  });
+
+  const onSubmit = ({ email, password }: FormValues) => {
+    login({ email, password });
+  };
+
+  const email = watch("email");
+
+  const { mutate: login, isPending } = useMutation({
     mutationFn: async ({ email, password }: FormValues) => {
       const { error, data } = await client.api.auth.login.post({
         email,
-        password: await sha256(password),
+        password,
       });
 
       if (error) {
@@ -40,59 +56,94 @@ const LoginPage: React.FC = () => {
       setUser({ email, firstName, lastName, id });
       navigate(redirect);
     },
-  });
-
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<FormValues>({
-    resolver: zodResolver(schema),
-    mode: "onBlur",
-  });
-
-  const onSubmit = ({ email, password }: FormValues) => {
-    toast.promise(login({ email, password }), {
-      loading: "Logging in...",
-      success: "Logged in successfully",
-      error: (error) => {
+    onError: (error) => {
+      if (error.message === "Email not confirmed") {
         navigate("/auth/confirm-email", { state: { email } });
+      }
 
-        return error.message;
-      },
-    });
-  };
+      toast.error(error.message);
+    },
+  });
 
   return (
-    <form
-      className="p-8 rounded-lg shadow-md w-full md:w-1/2 lg:w-1/3 xl:w-1/4 bg-slate-800"
-      onSubmit={handleSubmit(onSubmit)}
-    >
-      <h1 className="text-2xl font-semibold mb-4">Login</h1>
-      <Input
-        label="Email"
-        error={errors.email?.message}
-        {...register("email")}
-      />
-      <Input
-        label="Password"
-        error={errors.password?.message}
-        type="password"
-        {...register("password")}
-      />
-      <Button type="submit">Login</Button>
-      <p className="mt-4 text-center">
-        Don't have an account?{" "}
-        <a href="/auth/register" className="text-cyan-500">
-          Register
+    <section className="bg-gray-50 dark:bg-gray-900">
+      <div className="flex flex-col items-center justify-center px-6 py-8 mx-auto md:h-screen lg:py-0">
+        <a
+          href="https://codelabs.vitordaniel.com"
+          className="flex items-center mb-6 text-2xl font-semibold text-gray-900 dark:text-white"
+        >
+          <img className="w-8 h-8 mr-2" src={logo} alt="logo" />
+          Codelabs
         </a>
-      </p>
-      <p className="mt-4 text-center">
-        <Link to="/auth/forgot-password" className="text-cyan-500">
-          Forgot password?
-        </Link>
-      </p>
-    </form>
+        <div className="w-full bg-white rounded-lg shadow dark:border md:mt-0 sm:max-w-md xl:p-0 dark:bg-gray-800 dark:border-gray-700">
+          <div className="p-6 space-y-4 md:space-y-6 sm:p-8">
+            <h1 className="text-xl font-bold leading-tight tracking-tight text-gray-900 md:text-2xl dark:text-white">
+              Sign in to your account
+            </h1>
+            <form
+              className="space-y-4 md:space-y-6"
+              onSubmit={handleSubmit(onSubmit)}
+            >
+              <Input
+                label="Email"
+                error={errors.email?.message}
+                {...register("email")}
+              />
+              <Input
+                label="Password"
+                error={errors.password?.message}
+                type="password"
+                {...register("password")}
+              />
+              <div className="flex items-center justify-between">
+                <div className="flex items-start">
+                  <div className="flex items-center h-5">
+                    <input
+                      id="remember"
+                      aria-describedby="remember"
+                      type="checkbox"
+                      className="w-4 h-4 border border-gray-300 rounded bg-gray-50 focus:ring-3 focus:ring-primary-300 dark:bg-gray-700 dark:border-gray-600 dark:focus:ring-primary-600 dark:ring-offset-gray-800"
+                      required
+                    />
+                  </div>
+                  <div className="ml-3 text-sm">
+                    <label
+                      htmlFor="remember"
+                      className="text-gray-500 dark:text-gray-300"
+                    >
+                      Remember me
+                    </label>
+                  </div>
+                </div>
+                <Link
+                  to="/auth/forgot-password"
+                  className="text-sm font-medium text-primary-600 hover:underline dark:text-primary-500"
+                >
+                  Forgot password?
+                </Link>
+              </div>
+              <Button
+                type="submit"
+                disabled={!isValid}
+                loading={isPending}
+                className="w-full"
+              >
+                Sign in
+              </Button>
+              <p className="text-sm font-light text-gray-500 dark:text-gray-400">
+                Don’t have an account yet?{" "}
+                <Link
+                  to="/auth/register"
+                  className="font-medium text-primary-600 hover:underline dark:text-primary-500"
+                >
+                  Sign up
+                </Link>
+              </p>
+            </form>
+          </div>
+        </div>
+      </div>
+    </section>
   );
 };
 

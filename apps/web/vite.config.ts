@@ -1,4 +1,3 @@
-import tailwindcss from "@tailwindcss/vite";
 import basicSsl from "@vitejs/plugin-basic-ssl";
 import react from "@vitejs/plugin-react-swc";
 // import million from "million/compiler";
@@ -10,7 +9,6 @@ import wasm from "vite-plugin-wasm";
 export default defineConfig({
   plugins: [
     basicSsl(),
-    tailwindcss(),
     // million.vite({ auto: true }),
     react(),
     Pages(),

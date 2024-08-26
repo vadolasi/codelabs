@@ -1,4 +1,6 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 .cursor-decoration {
   background-color: rgb(250, 129, 0, .5);
@@ -21,4 +23,3 @@
   left: -4px;
   top: -5px;
 }
-
