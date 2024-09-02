@@ -75,7 +75,7 @@ const ConfirmEmailPage: React.FC = () => {
     }
   }, [isValid]);
 
-  if (!state?.email) {
+  if (!history.state?.email) {
     toast.error("Invalid email");
     return <Redirect to="/auth/login" />;
   }

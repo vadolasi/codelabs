@@ -1,23 +1,44 @@
 import { forwardRef } from "react";
+import { type VariantProps, tv } from "tailwind-variants";
 import cn from "../utils/cn";
+
+const variants = tv({
+  base: "focus:ring-4 font-medium rounded-lg me-2 mb-2 focus:outline-none",
+  variants: {
+    size: {
+      sm: "px-3 py-2 text-sm",
+      md: "px-5 py-2.5 text-sm",
+      lg: "px-5 py-3 text-base",
+    },
+    color: {
+      primary:
+        "text-white bg-blue-700 hover:bg-blue-800 focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800",
+      secondary:
+        "text-gray-900 bg-white border-gray-200 hover:bg-gray-100 hover:text-blue-700 focus:ring-gray-100 dark:focus:ring-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700",
+      danger:
+        "text-white bg-red-700 hover:bg-red-800 focus:ring-red-300 dark:bg-red-600 dark:hover:bg-red-700 dark:focus:ring-red-900",
+    },
+    disabled: {
+      true: "bg-blue-400 dark:bg-blue-500 cursor-not-allowed hover:bg-blue-400 dark:hover:bg-blue-500",
+    },
+    loading: {
+      true: "border text-gray-900 bg-white border-gray-200 hover:bg-gray-100 hover:text-blue-700 focus:ring-blue-700 focus:text-blue-700 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700",
+    },
+  },
+  defaultVariants: {
+    size: "md",
+    color: "primary",
+  },
+});
 
 const Button = forwardRef<
   HTMLButtonElement,
-  React.ButtonHTMLAttributes<HTMLButtonElement> & {
-    loading?: boolean;
-  }
+  React.ButtonHTMLAttributes<HTMLButtonElement> & VariantProps<typeof variants>
 >(({ className, loading = false, children, disabled, ...props }, ref) => {
   return (
     <button
       ref={ref}
-      className={cn(
-        "text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800",
-        disabled &&
-          "bg-blue-400 dark:bg-blue-500 cursor-not-allowed hover:bg-blue-400 dark:hover:bg-blue-500",
-        loading &&
-          "border text-gray-900 bg-white border-gray-200 hover:bg-gray-100 hover:text-blue-700 focus:ring-blue-700 focus:text-blue-700 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700",
-        className,
-      )}
+      className={cn(variants({ loading, disabled, ...props }), className)}
       disabled={disabled || loading}
       {...props}
     >

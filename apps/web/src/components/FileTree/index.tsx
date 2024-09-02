@@ -1,5 +1,10 @@
 import * as ContextMenu from "@radix-ui/react-context-menu";
-import { Tree, UncontrolledTreeEnvironment } from "react-complex-tree";
+import { useState } from "react";
+import {
+  Tree,
+  type TreeItemIndex,
+  UncontrolledTreeEnvironment,
+} from "react-complex-tree";
 import useShowHide from "../../utils/useShowHide";
 import type LoroDataProviderImplementation from "./dataProvider";
 import NewFileDialog from "./newFileDialog";
@@ -10,12 +15,41 @@ const FileTree: React.FC<{
   onChangeTab: (tabId: string) => void;
 }> = ({ treeProvider, rootId, onChangeTab }) => {
   const newFileDialog = useShowHide();
+  const newFolderDialog = useShowHide();
   const deleteFileDialog = useShowHide();
   const renameFileDialog = useShowHide();
+  const renameFolderDialog = useShowHide();
+
+  const [data, setData] = useState<{
+    isFolder: boolean;
+    parentItemId: string;
+  } | null>(null);
+
+  const openNewFileDialog = (
+    isFolder: boolean,
+    parentItemId: TreeItemIndex,
+  ) => {
+    setData({ isFolder, parentItemId: String(parentItemId) });
+    newFileDialog.show();
+  };
+
+  const handleNewFileDialog = (name: string) => {
+    setData(null);
+    newFileDialog.hide();
+    if (data) {
+      treeProvider.insertItem(data.parentItemId, {
+        data: name,
+        isFolder: data.isFolder,
+      });
+    }
+  };
 
   return (
     <ContextMenu.Root>
-      <NewFileDialog handler={newFileDialog} onFileCreate={(name) => {}} />
+      <NewFileDialog
+        handler={newFileDialog}
+        onFileCreate={handleNewFileDialog}
+      />
       <h2 className="font-bold">Files</h2>
       <ContextMenu.Trigger asChild>
         <div className="h-full">
@@ -60,13 +94,17 @@ const FileTree: React.FC<{
                       <>
                         <ContextMenu.Item
                           className="select-none cursor-pointer"
-                          onSelect={() => newFileDialog.show()}
+                          onSelect={() =>
+                            openNewFileDialog(false, item.item.index)
+                          }
                         >
                           New file
                         </ContextMenu.Item>
                         <ContextMenu.Item
                           className="select-none cursor-pointer"
-                          onSelect={() => newFileDialog.show()}
+                          onSelect={() =>
+                            openNewFileDialog(true, item.item.index)
+                          }
                         >
                           New folder
                         </ContextMenu.Item>
@@ -108,13 +146,13 @@ const FileTree: React.FC<{
         <ContextMenu.Content className="bg-slate-100 p-2 rounded-md w-48">
           <ContextMenu.Item
             className="select-none cursor-pointer"
-            onSelect={() => newFileDialog.show()}
+            onSelect={() => openNewFileDialog(false, rootId)}
           >
             New file
           </ContextMenu.Item>
           <ContextMenu.Item
             className="select-none cursor-pointer"
-            onSelect={() => newFileDialog.show()}
+            onSelect={() => openNewFileDialog(true, rootId)}
           >
             New folder
           </ContextMenu.Item>
