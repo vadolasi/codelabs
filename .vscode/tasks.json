@@ -1,0 +1,16 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "type": "bun",
+      "script": "bun run build",
+      "problemMatcher": [],
+      "label": "bun: build",
+      "detail": "bun run build",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    }
+  ]
+}
