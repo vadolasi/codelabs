@@ -5,7 +5,6 @@ import { Terminal } from "@xterm/xterm";
 import { Loro, LoroText, type LoroTreeNode } from "loro-crdt";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
-import { useParams } from "react-router";
 import Editor from "../../components/Editor";
 import codemirrorCollab from "../../components/Editor/plugins/collab";
 import LoroDataProviderImplementation from "../../components/FileTree/dataProvider";
@@ -14,6 +13,7 @@ import cn from "../../utils/cn";
 import client from "../../utils/httpClient";
 import useStore, { type User } from "../../utils/store";
 import "@xterm/xterm/css/xterm.css";
+import { useParams } from "wouter";
 import FileTree from "../../components/FileTree";
 
 type InputObject = {
@@ -151,98 +151,105 @@ const WorkspacePage: React.FC = () => {
         watch.output.pipeTo(
           new WritableStream({
             async write(data) {
-              if (watching) {
-                const [type, path] = data.trim().split(":");
-                const pathParts = path.split("/");
-                const fileName = pathParts.pop();
-                pathParts.pop();
+              try {
+                if (watching) {
+                  const [type, path] = data.trim().split(":");
+                  const pathParts = path.split("/");
+                  const fileName = pathParts.pop();
 
-                function findOrCreateDir(
-                  dirParent: LoroTreeNode<Record<string, unknown>>,
-                  pathParts: string[],
-                ) {
-                  const currentDir = pathParts.shift();
-                  if (!currentDir) {
-                    return dirParent;
+                  function findOrCreateDir(
+                    dirParent: LoroTreeNode<Record<string, unknown>>,
+                    pathParts: string[],
+                  ) {
+                    const currentDir = pathParts.shift();
+                    if (!currentDir) {
+                      return dirParent;
+                    }
+                    const existingDir = dirParent
+                      .children()
+                      ?.find(
+                        (node) =>
+                          node.data.get("name") === currentDir &&
+                          Boolean(node.data.get("isFolder")),
+                      );
+                    if (existingDir) {
+                      return findOrCreateDir(existingDir, pathParts);
+                    }
+                    const newDir = docTree.createNode(dirParent.id);
+                    newDir.data.set("name", currentDir);
+                    newDir.data.set("isFolder", true);
+                    return findOrCreateDir(newDir, pathParts);
                   }
-                  const existingDir = dirParent
-                    .children()
-                    ?.find(
-                      (node) =>
-                        node.data.get("name") === currentDir &&
-                        Boolean(node.data.get("isFolder")),
-                    );
-                  if (existingDir) {
-                    return findOrCreateDir(existingDir, pathParts);
+
+                  const parentDir = findOrCreateDir(
+                    docTree.getNodeByID(rootId),
+                    pathParts,
+                  );
+
+                  let item: LoroTreeNode<Record<string, unknown>> | undefined;
+
+                  switch (type) {
+                    case "change":
+                      item = parentDir
+                        .children()
+                        ?.find((node) => node.data.get("name") === fileName);
+
+                      if (item) {
+                        item.data
+                          .getOrCreateContainer("content", new LoroText())
+                          .insert(
+                            0,
+                            // @ts-ignore
+                            await webcontainerInstance.fs.readFile(
+                              path,
+                              "utf-8",
+                            ),
+                          );
+                      }
+                      break;
+                    case "add":
+                      item = docTree.createNode(parentDir.id);
+                      item.data.set("name", fileName);
+                      item.data.set("isFolder", false);
+                      item.data.setContainer("content", new LoroText()).insert(
+                        0,
+                        // @ts-ignore
+                        await webcontainerInstance.fs.readFile(path, "utf-8"),
+                      );
+                      break;
+                    case "unlink":
+                      item = parentDir
+                        .children()
+                        ?.find((node) => node.data.get("name") === fileName);
+
+                      if (item) {
+                        docTree.delete(item.id);
+                      }
+                      break;
+                    case "addDir":
+                      item = docTree.createNode(parentDir.id);
+                      item.data.set("name", fileName);
+                      item.data.set("isFolder", true);
+                      break;
+                    case "unlinkDir":
+                      item = parentDir
+                        .children()
+                        ?.find((node) => node.data.get("name") === fileName);
+
+                      if (item) {
+                        docTree.delete(item.id);
+                      }
+                      break;
                   }
-                  const newDir = docTree.createNode(dirParent.id);
-                  newDir.data.set("name", currentDir);
-                  newDir.data.set("isFolder", true);
-                  return findOrCreateDir(newDir, pathParts);
+                } else if (data.includes('Watching "."')) {
+                  watching = true;
+                  console.log("watching started");
                 }
 
-                const parentDir = findOrCreateDir(
-                  docTree.getNodeByID(rootId),
-                  pathParts,
-                );
-
-                let item: LoroTreeNode<Record<string, unknown>> | undefined;
-
-                switch (type) {
-                  case "change":
-                    item = parentDir
-                      .children()
-                      ?.find((node) => node.data.get("name") === fileName);
-
-                    if (item) {
-                      item.data
-                        .getOrCreateContainer("content", new LoroText())
-                        .insert(
-                          0,
-                          // @ts-ignore
-                          await webcontainerInstance.fs.readFile(path, "utf-8"),
-                        );
-                    }
-                    break;
-                  case "add":
-                    item = docTree.createNode(parentDir.id);
-                    item.data.set("name", fileName);
-                    item.data.set("isFolder", false);
-                    item.data.setContainer("content", new LoroText()).insert(
-                      0,
-                      // @ts-ignore
-                      await webcontainerInstance.fs.readFile(path, "utf-8"),
-                    );
-                    break;
-                  case "unlink":
-                    item = parentDir
-                      .children()
-                      ?.find((node) => node.data.get("name") === fileName);
-
-                    if (item) {
-                      docTree.delete(item.id);
-                    }
-                    break;
-                  case "addDir":
-                    item = docTree.createNode(parentDir.id);
-                    item.data.set("name", fileName);
-                    item.data.set("isFolder", true);
-                    break;
-                  case "unlinkDir":
-                    item = parentDir
-                      .children()
-                      ?.find((node) => node.data.get("name") === fileName);
-
-                    if (item) {
-                      docTree.delete(item.id);
-                    }
-                    break;
-                }
-              } else if (data.includes('Watching "."')) {
-                watching = true;
+                doc.commit("runtime");
+              } catch (e) {
+                console.error(e);
               }
-
-              doc.commit("runtime");
             },
           }),
         );

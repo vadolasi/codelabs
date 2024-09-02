@@ -1,26 +1,28 @@
-import { zodResolver } from "@hookform/resolvers/zod";
+import { valibotResolver } from "@hookform/resolvers/valibot";
 import { useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { toast } from "react-hot-toast";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { z } from "zod";
+import * as v from "valibot";
+import { Link, useLocation, useSearch } from "wouter";
 import Button from "../../components/Button";
 import Input from "../../components/Input";
 import logo from "../../images/logo.svg";
 import client from "../../utils/httpClient";
 import useStore from "../../utils/store";
 
-const schema = z.object({
-  email: z.string().min(1, "Required field"),
-  password: z.string().min(1, "Required field"),
+const schema = v.object({
+  email: v.pipe(v.string(), v.minLength(1, "Required field")),
+  password: v.pipe(v.string(), v.minLength(1, "Required field")),
 });
-type FormValues = z.infer<typeof schema>;
+type FormValues = v.InferOutput<typeof schema>;
 
+// million-ignore
 const LoginPage: React.FC = () => {
   const setUser = useStore((state) => state.setUser);
-  const navigate = useNavigate();
+  const [, navigate] = useLocation();
 
-  const [params] = useSearchParams();
+  const paramsString = useSearch();
+  const params = new URLSearchParams(paramsString);
   const redirect = params.get("redirect") || "/";
 
   const {
@@ -29,7 +31,7 @@ const LoginPage: React.FC = () => {
     formState: { errors, isValid },
     watch,
   } = useForm<FormValues>({
-    resolver: zodResolver(schema),
+    resolver: valibotResolver(schema),
     mode: "onBlur",
   });
 

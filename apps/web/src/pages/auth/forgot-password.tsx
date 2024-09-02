@@ -1,18 +1,19 @@
-import { zodResolver } from "@hookform/resolvers/zod";
+import { valibotResolver } from "@hookform/resolvers/valibot";
 import { useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { toast } from "react-hot-toast";
-import { z } from "zod";
+import * as v from "valibot";
 import Button from "../../components/Button";
 import Input from "../../components/Input";
 import logo from "../../images/logo.svg";
 import client from "../../utils/httpClient";
 
-const schema = z.object({
-  email: z.string().min(1, "Required field"),
+const schema = v.object({
+  email: v.pipe(v.string(), v.minLength(1, "Required field")),
 });
-type FormValues = z.infer<typeof schema>;
+type FormValues = v.InferOutput<typeof schema>;
 
+// million-ignore
 const ForgotPasswordPage: React.FC = () => {
   const { mutateAsync: sendEmail } = useMutation({
     mutationFn: async ({ email }: FormValues) => {
@@ -33,7 +34,7 @@ const ForgotPasswordPage: React.FC = () => {
     handleSubmit,
     formState: { errors },
   } = useForm<FormValues>({
-    resolver: zodResolver(schema),
+    resolver: valibotResolver(schema),
     mode: "onBlur",
   });
 

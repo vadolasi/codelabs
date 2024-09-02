@@ -1,22 +1,25 @@
-import { zodResolver } from "@hookform/resolvers/zod";
+import { valibotResolver } from "@hookform/resolvers/valibot";
 import { useMutation } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import toast from "react-hot-toast";
-import { Navigate, useLocation, useNavigate } from "react-router-dom";
-import { z } from "zod";
+import * as v from "valibot";
+import { Redirect, useLocation } from "wouter";
 import Button from "../../components/Button";
 import logo from "../../images/logo.svg";
 import client from "../../utils/httpClient";
 
-const schema = z.object({
-  code: z.array(z.number().min(0).max(9)).length(8),
+const schema = v.object({
+  code: v.pipe(
+    v.array(v.pipe(v.number(), v.minValue(0), v.maxValue(9))),
+    v.length(8),
+  ),
 });
-type FormValues = z.infer<typeof schema>;
+type FormValues = v.InferOutput<typeof schema>;
 
+// million-ignore
 const ConfirmEmailPage: React.FC = () => {
-  const { state } = useLocation();
-  const navigate = useNavigate();
+  const [, navigate] = useLocation();
 
   const {
     register,
@@ -24,7 +27,7 @@ const ConfirmEmailPage: React.FC = () => {
     setFocus,
     formState: { isValid },
   } = useForm<FormValues>({
-    resolver: zodResolver(schema),
+    resolver: valibotResolver(schema),
     mode: "onBlur",
   });
 
@@ -74,7 +77,7 @@ const ConfirmEmailPage: React.FC = () => {
 
   if (!state?.email) {
     toast.error("Invalid email");
-    return <Navigate to="/auth/login" />;
+    return <Redirect to="/auth/login" />;
   }
 
   return (
@@ -133,7 +136,7 @@ const ConfirmEmailPage: React.FC = () => {
                 type="button"
                 className="w-full"
                 loading={isLoading}
-                onClick={() => resendEmail(state.email)}
+                onClick={() => resendEmail(history.state.email)}
               >
                 Resend email
               </Button>

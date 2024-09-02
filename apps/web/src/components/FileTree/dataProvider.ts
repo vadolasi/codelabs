@@ -25,18 +25,20 @@ export default class LoroDataProviderImplementation
     this.doc = doc;
     this.docTree = docTree;
 
-    this.docTree.subscribe(({ events }) => {
-      for (const { diff: event } of events) {
-        if (event.type === "tree") {
-          for (const diff of event.diff) {
-            const changed = [diff.target];
+    this.docTree.subscribe(({ events, origin }) => {
+      if (origin !== "fileTree") {
+        for (const { diff: event } of events) {
+          if (event.type === "tree") {
+            for (const diff of event.diff) {
+              const changed = [diff.target];
 
-            if (diff.action === "create" && diff.parent) {
-              changed.push(diff.parent);
-            }
+              if (diff.action === "create" && diff.parent) {
+                changed.push(diff.parent);
+              }
 
-            for (const listener of this.treeChangeListeners) {
-              listener(changed);
+              for (const listener of this.treeChangeListeners) {
+                listener(changed);
+              }
             }
           }
         }
@@ -97,7 +99,7 @@ export default class LoroDataProviderImplementation
     this.docTree
       .getNodeByID(item.index as `${number}@${number}`)
       .data.set("name", name);
-    this.doc.commit();
+    this.doc.commit("fileTree");
   }
 
   public async insertItem(
@@ -112,7 +114,7 @@ export default class LoroDataProviderImplementation
     item.set("name", newItem.data);
     item.set("isFolder", newItem.isFolder);
 
-    this.doc.commit();
+    this.doc.commit("fileTree");
 
     return item.id;
   }

@@ -1,13 +1,16 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { keyframes } from "goober";
 import { Suspense, useEffect } from "react";
-import toast, { Toaster, resolveValue } from "react-hot-toast";
-import { Navigate, useLocation, useRoutes } from "react-router-dom";
+import { Toaster, resolveValue } from "react-hot-toast";
+import { Redirect, Route, Switch, useLocation } from "wouter";
 
-import routes from "~react-pages";
+import importedRoutes from "~react-pages";
 import LoadingIndicator from "./components/LoadingIndicator";
 import cn from "./utils/cn";
 import useStore from "./utils/store";
+
+const wildcardRoute = importedRoutes.find((route) => route.path === "*");
+const routes = importedRoutes.filter((route) => route.path !== "*");
 
 const queryClient = new QueryClient();
 
@@ -49,10 +52,39 @@ const getAnimationStyle = (visible: boolean): React.CSSProperties => {
   };
 };
 
+const Routes: React.FC<{
+  currentRoutes?: typeof routes;
+}> = ({ currentRoutes = routes }) => {
+  currentRoutes = currentRoutes.sort(
+    (a, b) => (a.path === "*" ? 1 : 0) - (b.path === "*" ? 1 : 0),
+  );
+
+  return (
+    <Switch>
+      {currentRoutes.map((route) =>
+        route.children ? (
+          <Route key={route.path} path={route.path} nest>
+            <Routes
+              key={`routes-${route.path}`}
+              currentRoutes={route.children}
+            />
+          </Route>
+        ) : (
+          <Route key={route.path} path={route.path}>
+            {route.element}
+          </Route>
+        ),
+      )}
+      {wildcardRoute && (
+        <Route path={wildcardRoute.path}>{wildcardRoute.element}</Route>
+      )}
+    </Switch>
+  );
+};
+
 export default function App() {
-  const routing = useRoutes(routes);
   const { user, theme } = useStore();
-  const { pathname } = useLocation();
+  const [pathname] = useLocation();
 
   useEffect(() => {
     const prefersDark = window.matchMedia(
@@ -67,7 +99,7 @@ export default function App() {
   }, [theme]);
 
   if (!user && !pathname.startsWith("/auth")) {
-    return <Navigate to={`/auth/login?redirect=${pathname}`} />;
+    return <Redirect to={`/auth/login?redirect=${pathname}`} />;
   }
 
   return (
@@ -121,7 +153,9 @@ export default function App() {
           </div>
         )}
       </Toaster>
-      <Suspense fallback={<LoadingIndicator />}>{routing}</Suspense>
+      <Suspense fallback={<LoadingIndicator />}>
+        <Routes />
+      </Suspense>
     </QueryClientProvider>
   );
 }

@@ -1,42 +1,43 @@
-import { zodResolver } from "@hookform/resolvers/zod";
+import { valibotResolver } from "@hookform/resolvers/valibot";
 import { useMutation } from "@tanstack/react-query";
-import { sha256 } from "hash-wasm";
 import { useForm } from "react-hook-form";
 import toast from "react-hot-toast";
-import { useNavigate, useSearchParams } from "react-router-dom";
-import { z } from "zod";
+import * as v from "valibot";
+import { useLocation, useSearch } from "wouter";
 import Button from "../../components/Button";
 import Input from "../../components/Input";
 import client from "../../utils/httpClient";
 
-const schema = z
+const schema = v
   .object({
-    password: z
-      .string()
-      .min(1, "Required field")
-      .min(8, "Mínimo de 8 caracteres")
-      .regex(
+    password: v.pipe(
+      v.string(),
+      v.minLength(1, "Required field"),
+      v.minLength(8, "Mínimo de 8 caracteres"),
+      v.regex(
         /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z\d]).{8,}$/,
         "Use at least one lowercase letter, one uppercase letter, one number and one special character",
       ),
-    passwordConfirmation: z.string().min(1, "Required field"),
+    ),
+    passwordConfirmation: v.pipe(v.string(), v.minLength(1, "Required field")),
   })
-  .refine((data) => data.password === data.passwordConfirmation, {
+  .check((data) => data.password === data.passwordConfirmation, {
     message: "As senhas não coincidem",
     path: ["passwordConfirmation"],
   });
-type FormValues = z.infer<typeof schema>;
+type FormValues = v.InferOutput<typeof schema>;
 
-const ConfirmEmailPage: React.FC = () => {
-  const [params] = useSearchParams();
+// million-ignore
+const ResetPasswordPage: React.FC = () => {
+  const params = useSearch();
   const token = params.get("token") ?? "";
 
-  const navigate = useNavigate();
+  const [, navigate] = useLocation();
 
   const { mutateAsync: resetPassword } = useMutation({
     mutationFn: async (password: string) =>
       client.api.auth["reset-password"]({ token }).post({
-        password: await sha256(password),
+        password,
       }),
     onError: () => {
       toast.error("Failed to reset password");
@@ -52,7 +53,7 @@ const ConfirmEmailPage: React.FC = () => {
     handleSubmit,
     formState: { errors },
   } = useForm<FormValues>({
-    resolver: zodResolver(schema),
+    resolver: valibotResolver(schema),
     mode: "onBlur",
   });
 
@@ -87,4 +88,4 @@ const ConfirmEmailPage: React.FC = () => {
   );
 };
 
-export default ConfirmEmailPage;
+export default ResetPasswordPage;
