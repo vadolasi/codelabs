@@ -1,0 +1,9 @@
+{
+  "recommendations": [
+    "biomejs.biome",
+    "jock.svg",
+    "editorconfig.editorconfig",
+    "oven.bun-vscode",
+    "davidanson.vscode-markdownlint"
+  ]
+}
