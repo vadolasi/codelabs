@@ -1,4 +1,8 @@
 import * as ContextMenu from "@radix-ui/react-context-menu";
+import {
+  getMaterialFileIcon,
+  getMaterialFolderIcon,
+} from "file-extension-icon-js";
 import { useState } from "react";
 import {
   Tree,
@@ -50,12 +54,12 @@ const FileTree: React.FC<{
         handler={newFileDialog}
         onFileCreate={handleNewFileDialog}
       />
+
       <h2 className="font-bold">Files</h2>
       <ContextMenu.Trigger asChild>
         <div className="h-full">
           <UncontrolledTreeEnvironment
             dataProvider={treeProvider}
-            // biome-ignore lint/style/noNonNullAssertion: This never returns null
             getItemTitle={(item) => item.data.split("/").pop()!}
             canDragAndDrop={true}
             renderItem={(item) => (
@@ -76,7 +80,22 @@ const FileTree: React.FC<{
                       }
                     }}
                   >
-                    {item.item.isFolder ? <>{item.arrow}📁</> : "📄"}
+                    {item.item.isFolder ? (
+                      <>
+                        {item.arrow}
+                        <img
+                          src={getMaterialFolderIcon(item.title as string)}
+                          alt={String(item.title)}
+                          width="20"
+                        />
+                      </>
+                    ) : (
+                      <img
+                        src={getMaterialFileIcon(item.title as string)}
+                        alt={String(item.title)}
+                        width="20"
+                      />
+                    )}
                     {item.title}
                   </button>
                 </ContextMenu.Trigger>

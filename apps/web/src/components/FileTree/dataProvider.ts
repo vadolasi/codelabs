@@ -1,5 +1,4 @@
 import {
-  type Loro,
   LoroList,
   LoroText,
   type LoroTree,
@@ -11,19 +10,20 @@ import type {
   TreeItem,
   TreeItemIndex,
 } from "react-complex-tree";
+import type Codelabs from "../../core";
 
 export default class LoroDataProviderImplementation
   implements TreeDataProvider
 {
-  private doc: Loro;
+  private codelabs: Codelabs;
   private docTree: LoroTree;
 
   private treeChangeListeners: ((changedItemIds: TreeItemIndex[]) => void)[] =
     [];
 
-  constructor(doc: Loro, docTree: LoroTree) {
-    this.doc = doc;
-    this.docTree = docTree;
+  constructor(codelabs: Codelabs) {
+    this.codelabs = codelabs;
+    this.docTree = codelabs.docTree;
 
     this.docTree.subscribe(({ events, origin }) => {
       if (origin !== "fileTree") {
@@ -99,7 +99,7 @@ export default class LoroDataProviderImplementation
     this.docTree
       .getNodeByID(item.index as `${number}@${number}`)
       .data.set("name", name);
-    this.doc.commit("fileTree");
+    this.codelabs.doc.commit("fileTree");
   }
 
   public async insertItem(
@@ -114,7 +114,11 @@ export default class LoroDataProviderImplementation
     item.set("name", newItem.data);
     item.set("isFolder", newItem.isFolder);
 
-    this.doc.commit("fileTree");
+    this.codelabs.doc.commit("fileTree");
+
+    for (const listener of this.treeChangeListeners) {
+      listener([parentItemId]);
+    }
 
     return item.id;
   }

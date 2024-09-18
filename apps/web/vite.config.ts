@@ -17,7 +17,7 @@ export default defineConfig({
     Pages(),
     wasm(),
     topLevelAwait(),
-    VitePWA({ registerType: "autoUpdate" }),
+    // VitePWA({ registerType: "autoUpdate" }),
     compression(),
     analyzer(),
   ],

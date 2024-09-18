@@ -3,6 +3,7 @@ import { Elysia } from "elysia";
 import { helmet } from "elysia-helmet";
 import { msgpack } from "elysia-msgpack";
 import env from "./env";
+import { HTTPError } from "./error";
 import { authController } from "./modules/auth/auth.controller";
 import authMiddleware from "./modules/auth/auth.middleware";
 import { usersController } from "./modules/users/users.controller";
@@ -22,6 +23,16 @@ const app = new Elysia({
   },
 })
   .use(msgpack({ moreTypes: true }))
+  .error({
+    HTTPError,
+  })
+  .onError(({ code, error, set }) => {
+    switch (code) {
+      case "HTTPError":
+        set.status = error.status;
+        throw new Error(error.message);
+    }
+  })
   .use(helmet())
   .use(authMiddleware)
   .use(authController)

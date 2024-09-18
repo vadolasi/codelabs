@@ -3,7 +3,6 @@ import { keyframes } from "goober";
 import { Suspense, useEffect } from "react";
 import { Toaster, resolveValue } from "react-hot-toast";
 import { Redirect, Route, Switch, useLocation } from "wouter";
-
 import importedRoutes from "~react-pages";
 import LoadingIndicator from "./components/LoadingIndicator";
 import cn from "./utils/cn";

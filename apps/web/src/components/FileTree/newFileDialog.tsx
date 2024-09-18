@@ -71,18 +71,19 @@ const NewFileDialog: React.FC<{
         </div>
         <div className="flex items-center p-4 md:p-5 border-t border-gray-200 rounded-b dark:border-gray-600">
           <Button
-            className="px-4 py-2 text-sm text-white bg-blue-500 rounded-md"
-            onClick={handler.hide}
-            type="button"
-          >
-            Cancel
-          </Button>
-          <Button
             className="px-4 py-2 ml-2 text-sm text-white bg-blue-500 rounded-md"
             type="submit"
             disabled={!isValid}
           >
             Create
+          </Button>
+          <Button
+            className="px-4 py-2 text-sm text-white bg-blue-500 rounded-md"
+            onClick={handler.hide}
+            type="button"
+            color="secondary"
+          >
+            Cancel
           </Button>
         </div>
       </Dialog.Content>

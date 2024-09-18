@@ -1,16 +1,11 @@
-import { type Loro, LoroText } from "loro-crdt";
+import type Codelabs from "../../../../core";
 import collabCursorsPlugin from "./cursors";
 import collabTextPlugin from "./loro";
 
-const collab = (doc: Loro, path: string, userId: string) => {
-  const docText = doc
-    .getTree("fileTree")
-    .getNodeByID(path as `${number}@${number}`)
-    .data.getOrCreateContainer("content", new LoroText());
-
+const collab = (codelabs: Codelabs, path: string, userId: string) => {
   return [
-    collabTextPlugin(doc, docText, userId),
-    collabCursorsPlugin(doc, path),
+    collabTextPlugin(codelabs, path, userId),
+    collabCursorsPlugin(codelabs, path),
   ];
 };
 

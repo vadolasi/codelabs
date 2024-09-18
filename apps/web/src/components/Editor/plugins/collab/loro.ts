@@ -5,18 +5,24 @@ import {
   ViewPlugin,
   type ViewUpdate,
 } from "@codemirror/view";
-import type { Loro, LoroText } from "loro-crdt";
+import { LoroText } from "loro-crdt";
+import type Codelabs from "../../../../core";
 
 export default function collabTextPlugin(
-  loroDoc: Loro,
-  loroText: LoroText,
+  codelabs: Codelabs,
+  path: string,
   userId: string,
 ) {
+  const loroText = codelabs.docTree
+    .getNodeByID(path as `${number}@${number}`)
+    .data.getOrCreateContainer("content", new LoroText());
+
   class LoroPluginClass implements PluginValue {
     private annotation = Annotation.define();
+    private loroSubscription: number;
 
     constructor(view: EditorView) {
-      loroText.subscribe(({ by, events }) => {
+      this.loroSubscription = loroText.subscribe(({ by, events }) => {
         if (by !== "local") {
           for (const event of events) {
             if (event.diff.type === "text") {
@@ -42,8 +48,25 @@ export default function collabTextPlugin(
               }
             }
           }
+        } else {
+          const currentText = loroText.toString();
+          view.dispatch({
+            changes: {
+              from: 0,
+              to: view.state.doc.length,
+              insert: currentText,
+            },
+            annotations: [this.annotation.of(userId)],
+          });
         }
       });
+      setTimeout(() => {
+        const currentText = loroText.toString();
+        view.dispatch({
+          changes: { from: 0, to: view.state.doc.length, insert: currentText },
+          annotations: [this.annotation.of(userId)],
+        });
+      }, 100);
     }
 
     update(update: ViewUpdate) {
@@ -64,8 +87,12 @@ export default function collabTextPlugin(
           }
           adj += insertText.length - (toA - fromA);
         });
-        loroDoc.commit();
+        codelabs.doc.commit(`editor-${path}`);
       }
+    }
+
+    destroy() {
+      loroText.unsubscribe(this.loroSubscription);
     }
   }
 

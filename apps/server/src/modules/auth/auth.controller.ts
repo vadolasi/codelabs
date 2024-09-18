@@ -15,10 +15,6 @@ export const authController = new Elysia({ prefix: "/auth" })
         async ({ body: { email }, cookie: { session: sessionCookie } }) => {
           const result = await authService.resendEmail({ email });
 
-          if (result.error) {
-            return result;
-          }
-
           sessionCookie.set({
             value: result.value,
             expires: result.attributes.expires,
@@ -52,16 +48,10 @@ export const authController = new Elysia({ prefix: "/auth" })
           cookie: { session: sessionCookie },
           set,
         }) => {
-          const result = await authService.login({
+          const { user, cookie } = await authService.login({
             email,
             password,
           });
-
-          if (result.error) {
-            return result;
-          }
-
-          const { user, cookie } = result;
 
           sessionCookie.set({
             value: cookie.value,

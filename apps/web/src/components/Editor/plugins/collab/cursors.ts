@@ -10,8 +10,8 @@ import {
   type ViewUpdate,
   WidgetType,
 } from "@codemirror/view";
-import type { Loro } from "loro-crdt";
 import randomColor from "randomcolor";
+import type Codelabs from "../../../../core";
 import useStore from "../../../../utils/store";
 
 const cursorsTheme = EditorView.baseTheme({
@@ -133,8 +133,11 @@ class RemoteCaretWidget extends WidgetType {
   }
 }
 
-export default function collabCursorsPlugin(doc: Loro, currentTab: string) {
-  const presence = doc.getMap("presence");
+export default function collabCursorsPlugin(
+  codelabs: Codelabs,
+  currentTab: string,
+) {
+  const presence = codelabs.doc.getMap("presence");
   const user = useStore.getState().user;
   const userId = user?.id ?? "";
   const userName = `${user?.firstName} ${user?.lastName}`;
@@ -258,7 +261,7 @@ export default function collabCursorsPlugin(doc: Loro, currentTab: string) {
           (presence.get(userId) as { color: string } | undefined)?.color ??
           randomColor({ luminosity: "light" }),
       });
-      doc.commit();
+      codelabs.doc.commit();
     }
   }
 
