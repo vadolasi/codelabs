@@ -2,6 +2,7 @@
   "name": "codelabs",
   "devDependencies": {
     "@biomejs/biome": "1.8.3",
+    "@million/lint": "^1.0.0-rc.84",
     "@types/bun": "^1.1.6",
     "gitmoji-cli": "9.4.0",
     "husky": "9.1.4",

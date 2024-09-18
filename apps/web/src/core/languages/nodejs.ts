@@ -114,18 +114,23 @@ export default function nodejs(codelabs: Codelabs) {
 
                 switch (type) {
                   case "change":
-                    item = parentDir
-                      .children()
-                      ?.find((node) => node.data.get("name") === fileName);
+                    if (codelabs.pathsMap.has(path)) {
+                      const content = docTree
+                        .getNodeByID(
+                          codelabs.pathsMap.get(path) as `${number}@${number}`,
+                        )
+                        .data.getOrCreateContainer("content", new LoroText());
 
-                    if (item) {
-                      item.data
-                        .getOrCreateContainer("content", new LoroText())
-                        .insert(
+                      const currentContent =
+                        await webcontainerInstance.fs.readFile(path, "utf-8");
+
+                      if (content.toString() !== currentContent) {
+                        content.insert(
                           0,
                           // @ts-ignore
                           await webcontainerInstance.fs.readFile(path, "utf-8"),
                         );
+                      }
                     }
                     break;
                   case "add":
@@ -203,7 +208,6 @@ export default function nodejs(codelabs: Codelabs) {
                 }
               }
             } else if (event.type === "text") {
-              console.log("text event", path);
               const target = path[path.length - 2] as `${number}@${number}`;
               await webcontainerInstance.fs.writeFile(
                 codelabs.getFullPath(target),

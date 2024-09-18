@@ -22,8 +22,17 @@ export default function collabTextPlugin(
     private loroSubscription: number;
 
     constructor(view: EditorView) {
-      this.loroSubscription = loroText.subscribe(({ by, events }) => {
-        if (by !== "local") {
+      this.loroSubscription = loroText.subscribe(({ by, events, origin }) => {
+        if (origin === "runtime") {
+          view.dispatch({
+            changes: {
+              from: 0,
+              to: view.state.doc.length,
+              insert: loroText.toString(),
+            },
+            annotations: [this.annotation.of(userId)],
+          });
+        } else if (by !== "local") {
           for (const event of events) {
             if (event.diff.type === "text") {
               const changes = [];
@@ -41,29 +50,22 @@ export default function collabTextPlugin(
                 } else if (diff.retain) {
                   pos += diff.retain;
                 }
-                view.dispatch({
-                  changes,
-                  annotations: [this.annotation.of(userId)],
-                });
               }
+              view.dispatch({
+                changes,
+                annotations: [this.annotation.of(userId)],
+              });
             }
           }
-        } else {
-          const currentText = loroText.toString();
-          view.dispatch({
-            changes: {
-              from: 0,
-              to: view.state.doc.length,
-              insert: currentText,
-            },
-            annotations: [this.annotation.of(userId)],
-          });
         }
       });
       setTimeout(() => {
-        const currentText = loroText.toString();
         view.dispatch({
-          changes: { from: 0, to: view.state.doc.length, insert: currentText },
+          changes: {
+            from: 0,
+            to: view.state.doc.length,
+            insert: loroText.toString(),
+          },
           annotations: [this.annotation.of(userId)],
         });
       }, 100);
@@ -87,7 +89,7 @@ export default function collabTextPlugin(
           }
           adj += insertText.length - (toA - fromA);
         });
-        codelabs.doc.commit(`editor-${path}`);
+        codelabs.doc.commit("editor");
       }
     }
 
