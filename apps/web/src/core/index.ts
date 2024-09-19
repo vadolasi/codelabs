@@ -1,4 +1,5 @@
 import { FitAddon } from "@xterm/addon-fit";
+import { WebLinksAddon } from "@xterm/addon-web-links";
 import { Terminal } from "@xterm/xterm";
 import { Loro, type LoroTree } from "loro-crdt";
 import { EventEmitter } from "tseep";
@@ -32,25 +33,31 @@ type Events = {
   }) => void;
   iframeUrl: (url: string | null) => void;
   terminalElement: (element: HTMLDivElement | null) => void;
+  loadingFinished: () => void;
+  terminalResize: (cols: number, rows: number) => void;
 };
 
 export default class Codelabs {
   doc: Loro;
   docTree: LoroTree;
   terminal: Terminal;
-  terminalAddon: FitAddon;
+  private terminalFitAddon: FitAddon;
   terminalElement: HTMLDivElement | null;
   private emmiter = new EventEmitter<Events>();
   iframeUrl: string | null;
   pathsMap = new Map<string, `${number}@${number}`>();
+  private loadings = 0;
 
   constructor(id: string, userId: string, initialData: Uint8Array) {
     this.doc = new Loro();
     this.doc.setRecordTimestamp(true);
     this.docTree = this.doc.getTree("fileTree");
-    this.terminalAddon = new FitAddon();
+    this.terminalFitAddon = new FitAddon();
     this.terminal = new Terminal({
+      cursorBlink: true,
       convertEol: true,
+      fontSize: 16,
+      fontFamily: "Menlo, courier-new, courier, monospace",
     });
     this.terminalElement = null;
     this.iframeUrl = null;
@@ -102,7 +109,8 @@ export default class Codelabs {
   }
 
   private setupTerminal() {
-    this.terminal.loadAddon(this.terminalAddon);
+    this.terminal.loadAddon(new WebLinksAddon());
+    this.terminal.loadAddon(this.terminalFitAddon);
   }
 
   setTerminalElement(element: HTMLDivElement | null) {
@@ -110,7 +118,18 @@ export default class Codelabs {
 
     if (element) {
       this.terminal.open(element);
-      this.terminalAddon.fit();
+      this.terminalFitAddon.fit();
+
+      const resizeObserver = new ResizeObserver(() => {
+        this.terminalFitAddon.fit();
+        this.emmiter.emit(
+          "terminalResize",
+          this.terminal.cols,
+          this.terminal.rows,
+        );
+      });
+
+      resizeObserver.observe(element);
     }
   }
 
@@ -133,7 +152,17 @@ export default class Codelabs {
     return path.join("/");
   }
 
-  registerPlugin(plugin: (codelabs: Codelabs) => void) {
-    plugin(this);
+  registerPlugin(
+    plugin: (codelabs: Codelabs, finishLoading: () => void) => void,
+  ) {
+    this.loadings++;
+
+    plugin(this, () => {
+      this.loadings--;
+
+      if (this.loadings === 0) {
+        this.emmiter.emit("loadingFinished");
+      }
+    });
   }
 }

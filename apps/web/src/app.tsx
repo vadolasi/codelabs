@@ -5,6 +5,7 @@ import { Toaster, resolveValue } from "react-hot-toast";
 import { Redirect, Route, Switch, useLocation } from "wouter";
 import importedRoutes from "~react-pages";
 import LoadingIndicator from "./components/LoadingIndicator";
+import DefaultLayout from "./layouts/default";
 import cn from "./utils/cn";
 import useStore from "./utils/store";
 
@@ -152,7 +153,13 @@ export default function App() {
           </div>
         )}
       </Toaster>
-      <Suspense fallback={<LoadingIndicator />}>
+      <Suspense
+        fallback={
+          <DefaultLayout>
+            <LoadingIndicator />
+          </DefaultLayout>
+        }
+      >
         <Routes />
       </Suspense>
     </QueryClientProvider>

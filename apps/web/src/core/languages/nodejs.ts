@@ -52,7 +52,7 @@ function convertToDesiredStructure(input: InputObject): FileSystemTree {
   return output;
 }
 
-export default function nodejs(codelabs: Codelabs) {
+export default function nodejs(codelabs: Codelabs, finishLoading: () => void) {
   const docTree = codelabs.doc.getTree("fileTree");
   const rootId = docTree.roots()[0].id;
 
@@ -172,7 +172,7 @@ export default function nodejs(codelabs: Codelabs) {
                 codelabs.doc.commit("runtime");
               } else if (data.includes('Watching "."')) {
                 watching = true;
-                console.log("watching started");
+                finishLoading();
               }
             } catch (e) {
               console.error(e);
@@ -248,15 +248,12 @@ export default function nodejs(codelabs: Codelabs) {
         input.write(data);
       });
 
-      codelabs.terminalElement?.addEventListener("resize", () => {
-        codelabs.terminalAddon.fit();
+      codelabs.on("terminalResize", (cols, rows) => {
         shellProcess.resize({
-          cols: codelabs.terminal.cols,
-          rows: codelabs.terminal.rows,
+          cols,
+          rows,
         });
       });
-
-      codelabs.terminalAddon.fit();
     },
   );
 }
