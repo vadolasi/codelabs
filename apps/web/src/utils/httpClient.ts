@@ -1,7 +1,7 @@
 import { treaty } from "@elysiajs/eden";
 import { pack, unpack } from "msgpackr";
 import type { App } from "server/src";
-import { navigate } from "wouter/use-browser-location";
+import router from "./router";
 
 const client = treaty<App>(window.location.origin, {
   fetch: {
@@ -22,7 +22,7 @@ const client = treaty<App>(window.location.origin, {
   },
   onResponse: async (response) => {
     if (response.status === 401) {
-      navigate("/auth/login");
+      router.navigate("/auth/login");
     }
 
     if (

@@ -13,6 +13,7 @@
   "dependencies": {
     "@codemirror/state": "^6.4.1",
     "@codemirror/view": "^6.28.2",
+    "@elysiajs/cron": "^1.1.1",
     "@elysiajs/eden": "^1.0.14",
     "@hookform/resolvers": "^3.4.2",
     "@mittwald/react-use-promise": "^2.4.0",
@@ -43,6 +44,8 @@
     "react-hook-form": "^7.51.4",
     "react-hot-toast": "^2.4.1",
     "react-resizable-panels": "^2.0.19",
+    "react-router": "^6.26.2",
+    "react-router-dom": "^6.26.2",
     "rrweb": "^2.0.0-alpha.4",
     "server": "workspace:*",
     "tailwind-merge": "^2.3.0",
@@ -50,7 +53,6 @@
     "tailwindcss": "^3.4.10",
     "tseep": "^1.2.2",
     "valibot": "^0.40.0",
-    "wouter": "^3.3.5",
     "zustand": "^4.5.2"
   },
   "devDependencies": {

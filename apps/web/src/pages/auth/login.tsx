@@ -2,8 +2,8 @@ import { valibotResolver } from "@hookform/resolvers/valibot";
 import { useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { toast } from "react-hot-toast";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import * as v from "valibot";
-import { Link, useLocation, useSearch } from "wouter";
 import Button from "../../components/Button";
 import Input from "../../components/Input";
 import logo from "../../images/logo.svg";
@@ -19,10 +19,9 @@ type FormValues = v.InferOutput<typeof schema>;
 // million-ignore
 const LoginPage: React.FC = () => {
   const setUser = useStore((state) => state.setUser);
-  const [, navigate] = useLocation();
+  const navigate = useNavigate();
 
-  const paramsString = useSearch();
-  const params = new URLSearchParams(paramsString);
+  const [params] = useSearchParams();
   const redirect = params.get("redirect") || "/";
 
   const {

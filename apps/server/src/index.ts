@@ -1,5 +1,6 @@
 import serverTiming from "@elysiajs/server-timing";
 import { Elysia } from "elysia";
+import { compression } from "elysia-compress";
 import { helmet } from "elysia-helmet";
 import { msgpack } from "elysia-msgpack";
 import env from "./env";
@@ -26,6 +27,7 @@ const app = new Elysia({
   .error({
     HTTPError,
   })
+  .use(compression())
   .onError(({ code, error, set }) => {
     switch (code) {
       case "HTTPError":

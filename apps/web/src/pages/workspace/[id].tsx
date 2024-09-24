@@ -9,7 +9,7 @@ import cn from "../../utils/cn";
 import client from "../../utils/httpClient";
 import useStore, { type User } from "../../utils/store";
 import "@xterm/xterm/css/xterm.css";
-import { useParams } from "wouter";
+import { useParams } from "react-router-dom";
 import FileTree from "../../components/FileTree";
 import LoadingIndicator from "../../components/LoadingIndicator";
 import Codelabs from "../../core";

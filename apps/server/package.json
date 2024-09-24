@@ -15,6 +15,7 @@
     "@sinclair/typebox": "^0.32.35",
     "drizzle-orm": "^0.32.2",
     "elysia": "^1.1.7",
+    "elysia-compress": "^1.2.1",
     "elysia-helmet": "^1.0.2",
     "elysia-ip": "^1.0.7",
     "elysia-msgpack": "^1.0.0",

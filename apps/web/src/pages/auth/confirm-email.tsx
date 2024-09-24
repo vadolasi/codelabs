@@ -3,8 +3,8 @@ import { useMutation } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import toast from "react-hot-toast";
+import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import * as v from "valibot";
-import { Redirect, useLocation } from "wouter";
 import Button from "../../components/Button";
 import logo from "../../images/logo.svg";
 import client from "../../utils/httpClient";
@@ -19,7 +19,8 @@ type FormValues = v.InferOutput<typeof schema>;
 
 // million-ignore
 const ConfirmEmailPage: React.FC = () => {
-  const [, navigate] = useLocation();
+  const navigate = useNavigate();
+  const { state } = useLocation();
 
   const {
     register,
@@ -32,8 +33,8 @@ const ConfirmEmailPage: React.FC = () => {
   });
 
   const { mutate, isPending } = useMutation({
-    mutationFn: (code: number) =>
-      client.api.auth["confirm-email"].post({ code: code.toString() }),
+    mutationFn: (code: string) =>
+      client.api.auth["confirm-email"].post({ code }),
     onError: () => {
       toast.error("Failed to confirm email");
     },
@@ -61,7 +62,7 @@ const ConfirmEmailPage: React.FC = () => {
   const isLoading = isPending || resendPending;
 
   const onSubmit = ({ code }: FormValues) => {
-    const pin = Number(code.join(""));
+    const pin = code.join("");
     mutate(pin);
   };
 
@@ -75,9 +76,9 @@ const ConfirmEmailPage: React.FC = () => {
     }
   }, [isValid]);
 
-  if (!history.state?.email) {
+  if (!state?.email) {
     toast.error("Invalid email");
-    return <Redirect to="/auth/login" />;
+    return <Navigate to="/auth/login" />;
   }
 
   return (
@@ -111,6 +112,10 @@ const ConfirmEmailPage: React.FC = () => {
                         type="text"
                         pattern="\d*"
                         maxLength={1}
+                        inputMode="numeric"
+                        min={0}
+                        max={9}
+                        step={1}
                         className="block w-9 h-9 py-3 text-sm font-extrabold text-center text-gray-900 bg-white border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
                         required
                         {...register(`code.${index}`, {
@@ -136,7 +141,7 @@ const ConfirmEmailPage: React.FC = () => {
                 type="button"
                 className="w-full"
                 loading={isLoading}
-                onClick={() => resendEmail(history.state.email)}
+                onClick={() => resendEmail(state.email)}
               >
                 Resend email
               </Button>

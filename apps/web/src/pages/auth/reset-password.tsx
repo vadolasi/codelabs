@@ -2,14 +2,14 @@ import { valibotResolver } from "@hookform/resolvers/valibot";
 import { useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import toast from "react-hot-toast";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import * as v from "valibot";
-import { useLocation, useSearch } from "wouter";
 import Button from "../../components/Button";
 import Input from "../../components/Input";
 import client from "../../utils/httpClient";
 
-const schema = v
-  .object({
+const schema = v.pipe(
+  v.object({
     password: v.pipe(
       v.string(),
       v.minLength(1, "Required field"),
@@ -20,19 +20,25 @@ const schema = v
       ),
     ),
     passwordConfirmation: v.pipe(v.string(), v.minLength(1, "Required field")),
-  })
-  .check((data) => data.password === data.passwordConfirmation, {
-    message: "As senhas não coincidem",
-    path: ["passwordConfirmation"],
-  });
+  }),
+  v.forward(
+    v.partialCheck(
+      [["password"], ["passwordConfirmation"]],
+      (input) => input.password === input.passwordConfirmation,
+      "The passwords do not match.",
+    ),
+    ["passwordConfirmation"],
+  ),
+);
+
 type FormValues = v.InferOutput<typeof schema>;
 
 // million-ignore
 const ResetPasswordPage: React.FC = () => {
-  const params = useSearch();
+  const [params] = useSearchParams();
   const token = params.get("token") ?? "";
 
-  const [, navigate] = useLocation();
+  const navigate = useNavigate();
 
   const { mutateAsync: resetPassword } = useMutation({
     mutationFn: async (password: string) =>

@@ -1,15 +1,15 @@
 import { valibotResolver } from "@hookform/resolvers/valibot";
 import { useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
+import { Link, useNavigate } from "react-router-dom";
 import * as v from "valibot";
-import { Link, useLocation } from "wouter";
 import Button from "../../components/Button";
 import Input from "../../components/Input";
 import logo from "../../images/logo.svg";
 import client from "../../utils/httpClient";
 
-const schema = v
-  .object({
+const schema = v.pipe(
+  v.object({
     email: v.pipe(
       v.string(),
       v.minLength(1, "Required field"),
@@ -37,17 +37,22 @@ const schema = v
       ),
     ),
     passwordConfirmation: v.pipe(v.string(), v.minLength(1, "Required field")),
-  })
-  .check((data) => data.password === data.passwordConfirmation, {
-    message: "As senhas não coincidem",
-    path: ["passwordConfirmation"],
-  });
+  }),
+  v.forward(
+    v.partialCheck(
+      [["password"], ["passwordConfirmation"]],
+      (input) => input.password === input.passwordConfirmation,
+      "The passwords do not match.",
+    ),
+    ["passwordConfirmation"],
+  ),
+);
 
 type FormValues = v.InferOutput<typeof schema>;
 
 // million-ignore
 const RegisterPage: React.FC = () => {
-  const [, navigate] = useLocation();
+  const navigate = useNavigate();
 
   const { mutate, isPending } = useMutation({
     mutationFn: async ({
