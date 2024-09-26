@@ -116,7 +116,7 @@ const RegisterPage: React.FC = () => {
                 error={errors.email?.message}
                 {...register("email")}
               />
-              <div className="grid grid-cols-1 lg:grid-cols-2 lg:gap-4 -mb-1">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <Input
                   label="First name"
                   error={errors.firstName?.message}

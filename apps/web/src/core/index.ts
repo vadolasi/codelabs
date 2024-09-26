@@ -2,6 +2,8 @@ import { FitAddon } from "@xterm/addon-fit";
 import { WebLinksAddon } from "@xterm/addon-web-links";
 import { Terminal } from "@xterm/xterm";
 import { Loro, type LoroTree } from "loro-crdt";
+import { pack, unpack } from "msgpackr";
+import type { WorkspaceEvent } from "server/src/modules/workspaces/workspaces.controller";
 import { EventEmitter } from "tseep";
 import client from "../utils/httpClient";
 
@@ -87,7 +89,9 @@ export default class Codelabs {
 
     this.doc.subscribe(({ by, events }) => {
       if (by === "local") {
-        workspace.ws.send(this.doc.exportFrom(lastVersion));
+        workspace.ws.send(
+          pack({ type: "loro", data: this.doc.exportFrom(lastVersion) }),
+        );
         lastVersion = this.doc.version();
       }
 
@@ -106,6 +110,16 @@ export default class Codelabs {
         }
       }
     });
+
+    workspace.ws.onmessage = (ev) => {
+      const data = unpack(ev.data) as WorkspaceEvent;
+
+      switch (data.action) {
+        case "loro":
+          this.doc.import(data.data);
+          break;
+      }
+    };
   }
 
   private setupTerminal() {

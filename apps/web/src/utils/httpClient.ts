@@ -1,7 +1,11 @@
 import { treaty } from "@elysiajs/eden";
-import { pack, unpack } from "msgpackr";
+import { Packr } from "msgpackr";
 import type { App } from "server/src";
 import router from "./router";
+
+const { pack, unpack } = new Packr({ moreTypes: true });
+
+console.log(window.location.origin);
 
 const client = treaty<App>(window.location.origin, {
   fetch: {
@@ -22,7 +26,7 @@ const client = treaty<App>(window.location.origin, {
   },
   onResponse: async (response) => {
     if (response.status === 401) {
-      router.navigate("/auth/login");
+      return router.navigate("/auth/login");
     }
 
     if (

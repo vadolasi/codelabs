@@ -1,10 +1,48 @@
 import { cron } from "@elysiajs/cron";
 import Elysia, { t } from "elysia";
 import { Loro } from "loro-crdt";
+import { unpack } from "msgpackr";
 import { rateLimit } from "../../utils/rateLimit";
 import authMiddleware from "../auth/auth.middleware";
 
-const workspaces = new Map<string, Loro>();
+const workspaces = new Map<string, { loro: Loro; other: unknown }>();
+
+interface WorkspaceEventLoro {
+  action: "loro";
+  data: Uint8Array;
+}
+
+interface WorkspaceEventUserJoin {
+  action: "userJoin" | "userLeft";
+  data: {
+    user: {
+      id: string;
+      name: string;
+    };
+  };
+}
+
+interface PresenceChanged {
+  action: "presenceChanged";
+  data: {
+    user: {
+      id: string;
+      name: string;
+    };
+    currentFile: string;
+    cursor: {
+      initLine: number;
+      initColumn: number;
+      endLine: number;
+      endColumn: number;
+    } | null;
+  };
+}
+
+export type WorkspaceEvent =
+  | WorkspaceEventLoro
+  | WorkspaceEventUserJoin
+  | PresenceChanged;
 
 export const workspacesController = new Elysia({ prefix: "/workspaces" })
   .use(authMiddleware)
@@ -13,7 +51,7 @@ export const workspacesController = new Elysia({ prefix: "/workspaces" })
   .use(
     cron({
       name: "saveWorkspaces",
-      pattern: "*/1 * * * *",
+      pattern: "* * * * *",
       run() {
         for (const [id, workspace] of workspaces) {
           //TODO: Add a way to save the workspace to the database
@@ -27,7 +65,7 @@ export const workspacesController = new Elysia({ prefix: "/workspaces" })
       let doc: Loro;
 
       if (workspaces.has(`${params.id}:${params.userId}`)) {
-        doc = workspaces.get(`${params.id}:${params.userId}`)!;
+        doc = workspaces.get(`${params.id}:${params.userId}`)!.loro;
       } else {
         doc = new Loro();
 
@@ -40,7 +78,10 @@ export const workspacesController = new Elysia({ prefix: "/workspaces" })
         }
 
         doc.commit();
-        workspaces.set(`${params.id}:${params.userId}`, doc);
+        workspaces.set(`${params.id}:${params.userId}`, {
+          loro: doc,
+          other: null,
+        });
       }
 
       return doc.exportSnapshot();
@@ -49,6 +90,25 @@ export const workspacesController = new Elysia({ prefix: "/workspaces" })
       params: t.Object({ id: t.String(), userId: t.String() }),
     },
   )
+  .ws("/:id", {
+    body: t.Uint8Array(),
+    response: t.Uint8Array(),
+    params: t.Object({ id: t.String() }),
+    open(ws) {
+      ws.subscribe(ws.data.params.id);
+    },
+    message(ws, body) {
+      const data = unpack(body) as WorkspaceEvent;
+
+      switch (data.action) {
+        case "loro":
+          workspaces.get(ws.data.params.id)!.loro.import(data.data);
+          break;
+      }
+
+      ws.raw.publish(ws.data.params.id, body);
+    },
+  })
   .ws("/:id/:userId", {
     body: t.Uint8Array(),
     response: t.Uint8Array(),
@@ -57,9 +117,16 @@ export const workspacesController = new Elysia({ prefix: "/workspaces" })
       ws.subscribe(`${ws.data.params.id}:${ws.data.params.userId}`);
     },
     message(ws, body) {
-      workspaces
-        .get(`${ws.data.params.id}:${ws.data.params.userId}`)!
-        .import(body);
+      const data = unpack(body) as WorkspaceEvent;
+
+      switch (data.action) {
+        case "loro":
+          workspaces
+            .get(`${ws.data.params.id}:${ws.data.params.userId}`)!
+            .loro.import(data.data);
+          break;
+      }
+
       ws.raw.publish(`${ws.data.params.id}:${ws.data.params.userId}`, body);
     },
   });

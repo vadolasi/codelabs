@@ -9,7 +9,7 @@ const Input = forwardRef<
   }
 >(({ label, error, className, ...props }, ref) => {
   return (
-    <div className="flex flex-col w-full mb-4">
+    <div className="flex flex-col w-full">
       <label
         htmlFor={props.name}
         className={cn(

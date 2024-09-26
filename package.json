@@ -10,7 +10,7 @@
   },
   "packageManager": "bun@1.1.21",
   "peerDependencies": {
-    "typescript": "^5.5.4"
+    "typescript": "^5.6.2"
   },
   "scripts": {
     "dev:web": "turbo dev --filter=web --filter=server",

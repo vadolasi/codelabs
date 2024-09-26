@@ -2,8 +2,6 @@ import MillionLint from "@million/lint";
 import basicSsl from "@vitejs/plugin-basic-ssl";
 import react from "@vitejs/plugin-react-swc";
 import { defineConfig } from "vite";
-import { analyzer } from "vite-bundle-analyzer";
-import { compression } from "vite-plugin-compression2";
 import Pages from "vite-plugin-pages";
 import { VitePWA } from "vite-plugin-pwa";
 import topLevelAwait from "vite-plugin-top-level-await";
@@ -18,8 +16,6 @@ export default defineConfig({
     wasm(),
     topLevelAwait(),
     VitePWA({ registerType: "autoUpdate" }),
-    compression(),
-    analyzer(),
   ],
   server: {
     proxy: {
@@ -29,7 +25,7 @@ export default defineConfig({
       },
     },
     headers: {
-      "Cross-Origin-Embedder-Policy": "require-corp",
+      "Cross-Origin-Embedder-Policy": "credentialless",
       "Cross-Origin-Opener-Policy": "same-origin",
     },
   },

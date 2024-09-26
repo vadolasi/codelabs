@@ -1,21 +1,17 @@
 import { eq } from "drizzle-orm";
 import { db } from "../../db";
-import { membersTable, workspaceTable } from "../../db/schema";
+import { workspaceTable } from "../../db/schema";
 
 export default class WorkspacesService {
-  async createWorkspace({ name, userId }: { name: string; userId: string }) {
-    const id = await db.transaction(async (db) => {
-      const [{ id }] = await db
-        .insert(workspaceTable)
-        .values({ name, userId })
-        .returning({ id: workspaceTable.id });
-
-      await db
-        .insert(membersTable)
-        .values({ role: "owner", userId, workspaceId: id, type: "workspace" });
-
-      return id;
-    });
+  async createWorkspace({
+    name,
+    userId,
+    courseId,
+  }: { name: string; userId: string; courseId: string }) {
+    const [{ id }] = await db
+      .insert(workspaceTable)
+      .values({ name, userId, courseId })
+      .returning({ id: workspaceTable.id });
 
     return id;
   }

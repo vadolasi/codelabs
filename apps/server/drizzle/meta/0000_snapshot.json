@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "2d1bc8fa-26b3-474e-92b5-5a0cfe28f183",
+  "id": "8cceefe9-40b1-401d-beca-12d56dd2feed",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "course": {
@@ -123,18 +123,11 @@
           "autoincrement": false,
           "default": "'member'"
         },
-        "workspace_id": {
-          "name": "workspace_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
         "course_id": {
           "name": "course_id",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "autoincrement": false
         },
         "created_at": {
@@ -148,15 +141,6 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "invite_workspace_id_workspace_id_fk": {
-          "name": "invite_workspace_id_workspace_id_fk",
-          "tableFrom": "invite",
-          "tableTo": "workspace",
-          "columnsFrom": ["workspace_id"],
-          "columnsTo": ["id"],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
         "invite_course_id_course_id_fk": {
           "name": "invite_course_id_course_id_fk",
           "tableFrom": "invite",
@@ -180,22 +164,8 @@
           "notNull": true,
           "autoincrement": false
         },
-        "workspace_id": {
-          "name": "workspace_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
         "course_id": {
           "name": "course_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "type": {
-          "name": "type",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
@@ -226,15 +196,6 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "members_workspace_id_workspace_id_fk": {
-          "name": "members_workspace_id_workspace_id_fk",
-          "tableFrom": "members",
-          "tableTo": "workspace",
-          "columnsFrom": ["workspace_id"],
-          "columnsTo": ["id"],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
         "members_course_id_course_id_fk": {
           "name": "members_course_id_course_id_fk",
           "tableFrom": "members",
@@ -403,6 +364,13 @@
           "notNull": false,
           "autoincrement": false,
           "default": "(unixepoch())"
+        },
+        "picture": {
+          "name": "picture",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
         }
       },
       "indexes": {
@@ -445,7 +413,7 @@
           "name": "course_id",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "autoincrement": false
         },
         "user_id": {

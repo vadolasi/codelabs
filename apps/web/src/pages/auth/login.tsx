@@ -53,8 +53,8 @@ const LoginPage: React.FC = () => {
 
       return data;
     },
-    onSuccess: ({ email, firstName, lastName, id }) => {
-      setUser({ email, firstName, lastName, id });
+    onSuccess: ({ email, firstName, lastName, id, picture }) => {
+      setUser({ email, firstName, lastName, id, picture });
       navigate(redirect);
     },
     onError: (error) => {

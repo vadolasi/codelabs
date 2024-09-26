@@ -7,6 +7,7 @@ export interface User {
   lastName: string;
   email: string;
   id: string;
+  picture: string;
 }
 
 interface Store {

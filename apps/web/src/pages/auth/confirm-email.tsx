@@ -33,9 +33,15 @@ const ConfirmEmailPage: React.FC = () => {
   });
 
   const { mutate, isPending } = useMutation({
-    mutationFn: (code: string) =>
-      client.api.auth["confirm-email"].post({ code }),
+    mutationFn: async (code: string) => {
+      const { error } = await client.api.auth["confirm-email"].post({ code });
+
+      if (error) {
+        throw new Error(error.value as string);
+      }
+    },
     onError: () => {
+      console.log("Failed to confirm email");
       toast.error("Failed to confirm email");
     },
     onSuccess: () => {
@@ -123,9 +129,20 @@ const ConfirmEmailPage: React.FC = () => {
                           onChange: (event) => {
                             if (index < 7 && event.target.value) {
                               setFocus(`code.${index + 1}`);
+                            } else if (index > 0 && event.target.value === "") {
+                              setFocus(`code.${index - 1}`);
                             }
                           },
                         })}
+                        onKeyDown={(event) => {
+                          if (
+                            event.key === "Backspace" &&
+                            index > 0 &&
+                            !event.currentTarget.value
+                          ) {
+                            setFocus(`code.${index - 1}`);
+                          }
+                        }}
                       />
                     </div>
                   </>

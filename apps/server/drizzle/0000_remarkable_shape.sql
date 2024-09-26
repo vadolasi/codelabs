@@ -18,22 +18,17 @@ CREATE TABLE `invite` (
 	`public` integer DEFAULT false,
 	`emails` text DEFAULT (json_array()),
 	`role` text DEFAULT 'member',
-	`workspace_id` text,
-	`course_id` text,
+	`course_id` text NOT NULL,
 	`created_at` integer DEFAULT (unixepoch()),
-	FOREIGN KEY (`workspace_id`) REFERENCES `workspace`(`id`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`course_id`) REFERENCES `course`(`id`) ON UPDATE no action ON DELETE no action
 );
 --> statement-breakpoint
 CREATE TABLE `members` (
 	`id` text PRIMARY KEY NOT NULL,
-	`workspace_id` text,
-	`course_id` text,
-	`type` text NOT NULL,
+	`course_id` text NOT NULL,
 	`user_id` text NOT NULL,
 	`role` text NOT NULL,
 	`created_at` integer DEFAULT (unixepoch()),
-	FOREIGN KEY (`workspace_id`) REFERENCES `workspace`(`id`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`course_id`) REFERENCES `course`(`id`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE no action
 );
@@ -60,14 +55,15 @@ CREATE TABLE `users` (
 	`first_name` text NOT NULL,
 	`last_name` text NOT NULL,
 	`password` text NOT NULL,
-	`created_at` integer DEFAULT (unixepoch())
+	`created_at` integer DEFAULT (unixepoch()),
+	`picture` text NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE `workspace` (
 	`id` text PRIMARY KEY NOT NULL,
 	`name` text NOT NULL,
 	`created_at` integer DEFAULT (unixepoch()),
-	`course_id` text,
+	`course_id` text NOT NULL,
 	`user_id` text NOT NULL,
 	FOREIGN KEY (`course_id`) REFERENCES `course`(`id`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE no action

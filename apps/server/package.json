@@ -10,30 +10,31 @@
     "setup:dev": "bun run --cwd ../../node_modules/better-sqlite3 build-debug"
   },
   "dependencies": {
+    "@elysiajs/cron": "^1.1.1",
     "@elysiajs/server-timing": "^1.1.0",
     "@lucia-auth/adapter-drizzle": "^1.1.0",
     "@sinclair/typebox": "^0.32.35",
     "drizzle-orm": "^0.32.2",
-    "elysia": "^1.1.7",
+    "elysia": "^1.1.16",
     "elysia-compress": "^1.2.1",
     "elysia-helmet": "^1.0.2",
     "elysia-ip": "^1.0.7",
     "elysia-msgpack": "^1.0.0",
     "elysia-rate-limit": "^4.1.0",
     "lodash": "^4.17.21",
-    "loro-crdt": "^0.16.7",
+    "loro-crdt": "^0.16.12",
     "lucia": "^3.2.0",
+    "msgpackr": "^1.11.0",
     "nanoid": "^5.0.7",
     "oslo": "^1.2.1",
     "resend": "^3.5.0",
     "transactional": "workspace:*"
   },
   "devDependencies": {
-    "@types/jsonwebtoken": "^9.0.6",
-    "@types/lodash": "^4.17.7",
-    "better-sqlite3": "^11.2.1",
+    "@types/lodash": "^4.17.9",
+    "better-sqlite3": "^11.3.0",
     "bun-types": "latest",
-    "drizzle-kit": "^0.24.1"
+    "drizzle-kit": "^0.24.2"
   },
   "module": "src/index.js"
 }

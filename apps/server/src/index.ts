@@ -1,12 +1,14 @@
 import serverTiming from "@elysiajs/server-timing";
 import { Elysia } from "elysia";
-import { compression } from "elysia-compress";
+// import { compression } from "elysia-compress";
 import { helmet } from "elysia-helmet";
+import { ip } from "elysia-ip";
 import { msgpack } from "elysia-msgpack";
 import env from "./env";
 import { HTTPError } from "./error";
 import { authController } from "./modules/auth/auth.controller";
 import authMiddleware from "./modules/auth/auth.middleware";
+import { coursesController } from "./modules/courses/courses.controller";
 import { usersController } from "./modules/users/users.controller";
 import { workspacesController } from "./modules/workspaces/workspaces.controller";
 
@@ -23,22 +25,24 @@ const app = new Elysia({
     maxRequestBodySize: 1024 * 1024,
   },
 })
+  .use(ip())
   .use(msgpack({ moreTypes: true }))
   .error({
     HTTPError,
   })
-  .use(compression())
+  // .use(compression())
   .onError(({ code, error, set }) => {
     switch (code) {
       case "HTTPError":
         set.status = error.status;
-        throw new Error(error.message);
+        return error.message;
     }
   })
   .use(helmet())
   .use(authMiddleware)
   .use(authController)
   .use(usersController)
+  .use(coursesController)
   .use(workspacesController)
   .get("/status", () => "OK")
   .listen(3000);

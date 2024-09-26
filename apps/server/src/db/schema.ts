@@ -14,15 +14,40 @@ export const usersTable = sqliteTable("users", {
   createdAt: integer("created_at", { mode: "timestamp" }).default(
     sql`(unixepoch())`,
   ),
+  picture: text("picture").notNull(),
 });
 
 export const usersRelations = relations(usersTable, ({ many }) => ({
   sessions: many(sessionTable),
   emailVerificationCodes: many(emailVerificationCodeTable),
   passwordResetTokens: many(passwordResetTokenTable),
-  workspaces: many(workspaceTable),
   courses: many(membersTable),
+  notifications: many(notificationsTable),
 }));
+
+export const notificationsTable = sqliteTable("notifications", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => nanoid()),
+  userId: text("user_id")
+    .notNull()
+    .references(() => usersTable.id),
+  message: text("message").notNull(),
+  read: integer("read", { mode: "boolean" }).default(false),
+  createdAt: integer("created_at", { mode: "timestamp" }).default(
+    sql`(unixepoch())`,
+  ),
+});
+
+export const notificationsRelations = relations(
+  notificationsTable,
+  ({ one }) => ({
+    user: one(usersTable, {
+      fields: [notificationsTable.userId],
+      references: [usersTable.id],
+    }),
+  }),
+);
 
 export const sessionTable = sqliteTable("session", {
   id: text("id").notNull().primaryKey(),
@@ -109,35 +134,28 @@ export const workspaceTable = sqliteTable("workspace", {
   createdAt: integer("created_at", { mode: "timestamp" }).default(
     sql`(unixepoch())`,
   ),
-  courseId: text("course_id").references(() => courseTable.id),
+  courseId: text("course_id")
+    .notNull()
+    .references(() => courseTable.id),
   userId: text("user_id")
     .notNull()
     .references(() => usersTable.id),
 });
 
-export const workspaceRelations = relations(
-  workspaceTable,
-  ({ many, one }) => ({
-    members: many(membersTable),
-    course: one(courseTable, {
-      fields: [workspaceTable.courseId],
-      references: [courseTable.id],
-    }),
-    user: one(usersTable, {
-      fields: [workspaceTable.userId],
-      references: [usersTable.id],
-    }),
-    invites: many(inviteTable),
+export const workspaceRelations = relations(workspaceTable, ({ one }) => ({
+  course: one(courseTable, {
+    fields: [workspaceTable.courseId],
+    references: [courseTable.id],
   }),
-);
+}));
 
 export const membersTable = sqliteTable("members", {
   id: text("id")
     .primaryKey()
     .$defaultFn(() => nanoid()),
-  workspaceId: text("workspace_id").references(() => workspaceTable.id),
-  courseId: text("course_id").references(() => courseTable.id),
-  type: text("type", { enum: ["workspace", "course"] }).notNull(),
+  courseId: text("course_id")
+    .notNull()
+    .references(() => courseTable.id),
   userId: text("user_id")
     .notNull()
     .references(() => usersTable.id),
@@ -151,10 +169,6 @@ export const membersRelations = relations(membersTable, ({ one }) => ({
   course: one(courseTable, {
     fields: [membersTable.courseId],
     references: [courseTable.id],
-  }),
-  workspace: one(workspaceTable, {
-    fields: [membersTable.workspaceId],
-    references: [workspaceTable.id],
   }),
   user: one(usersTable, {
     fields: [membersTable.userId],
@@ -171,18 +185,15 @@ export const inviteTable = sqliteTable("invite", {
     .$type<string[]>()
     .default(sql`(json_array())`),
   role: text("role", { enum: ["monitor", "member"] }).default("member"),
-  workspaceId: text("workspace_id").references(() => workspaceTable.id),
-  courseId: text("course_id").references(() => courseTable.id),
+  courseId: text("course_id")
+    .notNull()
+    .references(() => courseTable.id),
   createdAt: integer("created_at", { mode: "timestamp" }).default(
     sql`(unixepoch())`,
   ),
 });
 
 export const inviteRelations = relations(inviteTable, ({ one }) => ({
-  workspace: one(workspaceTable, {
-    fields: [inviteTable.workspaceId],
-    references: [workspaceTable.id],
-  }),
   course: one(courseTable, {
     fields: [inviteTable.courseId],
     references: [courseTable.id],

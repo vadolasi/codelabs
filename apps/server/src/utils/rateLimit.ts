@@ -1,6 +1,5 @@
 import type { SocketAddress } from "bun";
 import Elysia from "elysia";
-import { ip } from "elysia-ip";
 import {
   type Generator,
   rateLimit as rateLimitMiddleware,
@@ -24,7 +23,7 @@ export function rateLimit(
 ) {
   switch (profile) {
     case "not_logged":
-      return new Elysia().use(ip()).use(
+      return new Elysia().use(
         rateLimitMiddleware({
           generator: ipGenerator,
           max: 60,
@@ -40,7 +39,7 @@ export function rateLimit(
         }),
       );
     case "not_logged_email":
-      return new Elysia().use(ip()).use(
+      return new Elysia().use(
         rateLimitMiddleware({
           generator: ipGenerator,
           max: 10,

@@ -20,6 +20,8 @@ export default class UsersService {
     lastName,
     password,
   }: { email: string; firstName: string; lastName: string; password: string }) {
+    const hasher = new Bun.CryptoHasher("sha256");
+
     const [{ id }] = await db
       .insert(usersTable)
       .values({
@@ -27,6 +29,7 @@ export default class UsersService {
         firstName,
         lastName,
         password: await Bun.password.hash(`${password}:${env.PASSWORD_PEPPER}`),
+        picture: `https://www.gravatar.com/avatar/${hasher.update(email).digest("hex")}.jpg`,
       })
       .returning({ id: usersTable.id });
 
