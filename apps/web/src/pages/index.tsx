@@ -1,11 +1,9 @@
 import { valibotResolver } from "@hookform/resolvers/valibot";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
-import { initFlowbite } from "flowbite";
-import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import toast from "react-hot-toast";
-import { Link, useNavigate } from "react-router-dom";
 import * as v from "valibot";
+import { Link, useLocation } from "wouter";
 import Button from "../components/Button";
 import Input from "../components/Input";
 import logo from "../images/logo.svg";
@@ -18,7 +16,7 @@ const createCourseSchema = v.object({
 type CreateCourseFormValues = v.InferOutput<typeof createCourseSchema>;
 
 const IndexPage = () => {
-  const navigate = useNavigate();
+  const [, navigate] = useLocation();
   const user = useStore((state) => state.user);
 
   const { data } = useSuspenseQuery({
@@ -62,10 +60,6 @@ const IndexPage = () => {
   const onSubmit = ({ name }: CreateCourseFormValues) => {
     createCourse({ name });
   };
-
-  useEffect(() => {
-    initFlowbite();
-  }, []);
 
   return (
     <div className="antialiased bg-gray-50 dark:bg-gray-900 min-h-screen">

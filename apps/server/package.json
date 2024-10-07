@@ -15,7 +15,7 @@
     "@lucia-auth/adapter-drizzle": "^1.1.0",
     "@sinclair/typebox": "^0.32.35",
     "drizzle-orm": "^0.32.2",
-    "elysia": "^1.1.16",
+    "elysia": "^1.1.18",
     "elysia-compress": "^1.2.1",
     "elysia-helmet": "^1.0.2",
     "elysia-ip": "^1.0.7",
@@ -31,7 +31,7 @@
     "transactional": "workspace:*"
   },
   "devDependencies": {
-    "@types/lodash": "^4.17.9",
+    "@types/lodash": "^4.17.10",
     "better-sqlite3": "^11.3.0",
     "bun-types": "latest",
     "drizzle-kit": "^0.24.2"

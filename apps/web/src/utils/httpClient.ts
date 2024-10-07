@@ -1,11 +1,8 @@
 import { treaty } from "@elysiajs/eden";
 import { Packr } from "msgpackr";
 import type { App } from "server/src";
-import router from "./router";
 
-const { pack, unpack } = new Packr({ moreTypes: true });
-
-console.log(window.location.origin);
+const packr = new Packr({ moreTypes: true });
 
 const client = treaty<App>(window.location.origin, {
   fetch: {
@@ -20,13 +17,13 @@ const client = treaty<App>(window.location.origin, {
         headers: {
           "content-type": "application/x-msgpack",
         },
-        body: pack(body),
+        body: packr.pack(body),
       };
     }
   },
   onResponse: async (response) => {
     if (response.status === 401) {
-      return router.navigate("/auth/login");
+      window.location.href = "/auth/login";
     }
 
     if (
@@ -34,7 +31,7 @@ const client = treaty<App>(window.location.origin, {
     ) {
       return response
         .arrayBuffer()
-        .then((buffer) => unpack(new Uint8Array(buffer)));
+        .then((buffer) => packr.unpack(new Uint8Array(buffer)));
     }
   },
 });

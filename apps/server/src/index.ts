@@ -15,7 +15,7 @@ import { workspacesController } from "./modules/workspaces/workspaces.controller
 const app = new Elysia({
   cookie: {
     sameSite: "strict",
-    secure: env.NODE_ENV === "PRODUCTION",
+    secure: env.NODE_ENV === "production",
     httpOnly: true,
     sign: true,
     secrets: [env.COOKIE_SECRET_1, env.COOKIE_SECRET_2, env.COOKIE_SECRET_3],
@@ -47,7 +47,7 @@ const app = new Elysia({
   .get("/status", () => "OK")
   .listen(3000);
 
-if (env.NODE_ENV !== "PRODUCTION") {
+if (env.NODE_ENV !== "production") {
   app.use(serverTiming());
 }
 

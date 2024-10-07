@@ -2,7 +2,6 @@ import MillionLint from "@million/lint";
 import basicSsl from "@vitejs/plugin-basic-ssl";
 import react from "@vitejs/plugin-react-swc";
 import { defineConfig } from "vite";
-import Pages from "vite-plugin-pages";
 import { VitePWA } from "vite-plugin-pwa";
 import topLevelAwait from "vite-plugin-top-level-await";
 import wasm from "vite-plugin-wasm";
@@ -12,9 +11,8 @@ export default defineConfig({
     basicSsl(),
     MillionLint.vite(),
     react(),
-    Pages(),
     wasm(),
-    topLevelAwait(),
+    // topLevelAwait(),
     VitePWA({ registerType: "autoUpdate" }),
   ],
   server: {

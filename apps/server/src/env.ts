@@ -3,8 +3,8 @@ import { TypeCompiler } from "@sinclair/typebox/compiler";
 
 const envSchema = Type.Object({
   NODE_ENV: Type.Optional(
-    Type.Union([Type.Literal("DEVELOPMENT"), Type.Literal("PRODUCTION")], {
-      default: "DEVELOPMENT",
+    Type.Union([Type.Literal("development"), Type.Literal("production")], {
+      default: "development",
     }),
   ),
   JWT_SECRET: Type.String(),

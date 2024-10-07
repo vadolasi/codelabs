@@ -13,6 +13,7 @@ const authMiddleware = new Elysia()
       user: User | null;
       session: Session | null;
     }> => {
+      /*
       if (context.request.method !== "GET") {
         const originHeader = context.request.headers.get("Origin");
         const hostHeader = context.request.headers.get("Host");
@@ -27,6 +28,7 @@ const authMiddleware = new Elysia()
           };
         }
       }
+      */
 
       const { session, user } = await lucia.validateSession(
         context.cookie.session?.value || "",
