@@ -1,0 +1,10 @@
+services:
+  codelabs:
+    image: over/bun
+    volumes:
+      - ../:/workspace:cached
+    network_mode: service:dynamodb
+    command: sleep infinity
+
+  dynamodb:
+    image: amazon/dynamodb-local

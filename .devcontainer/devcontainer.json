@@ -1,6 +1,8 @@
 {
   "name": "Codelabs",
-  "image": "oven/bun",
+  "dockerComposeFile": "compose.yaml",
+  "service": "codelabs",
+  "workspaceFolder": "/workspace",
   "forwardPorts": [5173],
   "remoteUser": "root",
   "features": {
