@@ -1,6 +1,6 @@
 services:
   codelabs:
-    image: over/bun
+    image: oven/bun
     volumes:
       - ../:/workspace:cached
     network_mode: service:dynamodb
