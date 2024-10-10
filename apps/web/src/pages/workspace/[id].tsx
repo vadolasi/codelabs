@@ -3,17 +3,17 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import Editor from "../../components/Editor";
 import codemirrorCollab from "../../components/Editor/plugins/collab";
+import FileTree from "../../components/FileTree";
 import LoroDataProviderImplementation from "../../components/FileTree/dataProvider";
+import Codelabs from "../../core";
+import nodejs from "../../core/languages/nodejs";
 import DefaultLayout from "../../layouts/default";
 import cn from "../../utils/cn";
 import client from "../../utils/httpClient";
 import useStore, { type User } from "../../utils/store";
 import "@xterm/xterm/css/xterm.css";
-import { useParams } from "react-router-dom";
-import FileTree from "../../components/FileTree";
-import LoadingIndicator from "../../components/LoadingIndicator";
-import Codelabs from "../../core";
-import nodejs from "../../core/languages/nodejs";
+import { Spinner } from "@nextui-org/react";
+import { useParams } from "wouter";
 
 const WorkspacePage: React.FC = () => {
   const params = useParams();
@@ -83,14 +83,19 @@ const WorkspacePage: React.FC = () => {
   return (
     <>
       {isLoading && (
-        <DefaultLayout>
+        <div className="flex gap-3 justify-center items-center h-screen">
           <div className="flex gap-3">
-            <LoadingIndicator />
+            <Spinner size="lg" />
             <h2 className="text-2xl">Loading workspace</h2>
           </div>
-        </DefaultLayout>
+        </div>
       )}
-      <DefaultLayout className={cn(isLoading && "hidden")}>
+      <div
+        className={cn(
+          "flex flex-col justify-center items-center h-screen p-2",
+          isLoading && "hidden",
+        )}
+      >
         <PanelGroup autoSaveId="main" direction="horizontal">
           <Panel
             id="sidebar"
@@ -175,7 +180,7 @@ const WorkspacePage: React.FC = () => {
             </Panel>
           )}
         </PanelGroup>
-      </DefaultLayout>
+      </div>
     </>
   );
 };

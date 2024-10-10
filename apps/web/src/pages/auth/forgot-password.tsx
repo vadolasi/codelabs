@@ -1,10 +1,9 @@
 import { valibotResolver } from "@hookform/resolvers/valibot";
+import { Button, Input, Link } from "@nextui-org/react";
 import { useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { toast } from "react-hot-toast";
 import * as v from "valibot";
-import Button from "../../components/Button";
-import Input from "../../components/Input";
 import logo from "../../images/logo.svg";
 import client from "../../utils/httpClient";
 
@@ -13,7 +12,6 @@ const schema = v.object({
 });
 type FormValues = v.InferOutput<typeof schema>;
 
-// million-ignore
 const ForgotPasswordPage: React.FC = () => {
   const { mutateAsync: sendEmail } = useMutation({
     mutationFn: async ({ email }: FormValues) => {
@@ -70,7 +68,9 @@ const ForgotPasswordPage: React.FC = () => {
           >
             <Input
               label="Email or Username"
-              error={errors.email?.message}
+              isInvalid={Boolean(errors.email)}
+              errorMessage={errors.email?.message}
+              autoComplete="username"
               {...register("email")}
             />
             <div className="flex items-start">
@@ -89,16 +89,16 @@ const ForgotPasswordPage: React.FC = () => {
                   className="font-light text-gray-500 dark:text-gray-300"
                 >
                   I accept the{" "}
-                  <a
-                    className="font-medium text-primary-600 hover:underline dark:text-primary-500"
+                  <Link
                     href="https://codelabs.vitordaniel.com/terms-and-conditions"
+                    isExternal={true}
                   >
                     Terms and Conditions
-                  </a>
+                  </Link>
                 </label>
               </div>
             </div>
-            <Button type="submit" className="w-full">
+            <Button type="submit" className="w-full" color="primary">
               Reset password
             </Button>
           </form>

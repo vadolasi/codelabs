@@ -1,11 +1,11 @@
 import { valibotResolver } from "@hookform/resolvers/valibot";
+import { Button, CardBody, CardHeader, Input } from "@nextui-org/react";
 import { useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import toast from "react-hot-toast";
-import { useNavigate, useSearchParams } from "react-router-dom";
 import * as v from "valibot";
-import Button from "../../components/Button";
-import Input from "../../components/Input";
+import { useLocation, useSearch } from "wouter";
+import AuthLayout from "../../layouts/auth";
 import client from "../../utils/httpClient";
 
 const schema = v.pipe(
@@ -33,12 +33,11 @@ const schema = v.pipe(
 
 type FormValues = v.InferOutput<typeof schema>;
 
-// million-ignore
 const ResetPasswordPage: React.FC = () => {
-  const [params] = useSearchParams();
+  const params = new URLSearchParams(useSearch());
   const token = params.get("token") ?? "";
 
-  const navigate = useNavigate();
+  const [, navigate] = useLocation();
 
   const { mutateAsync: resetPassword } = useMutation({
     mutationFn: async (password: string) =>
@@ -72,25 +71,35 @@ const ResetPasswordPage: React.FC = () => {
   };
 
   return (
-    <form
-      className="p-8 rounded-lg shadow-md w-full md:w-1/2 lg:w-1/3 xl:w-1/4 bg-slate-800"
-      onSubmit={handleSubmit(onSubmit)}
-    >
-      <h1 className="text-2xl font-semibold mb-4">Login</h1>
-      <Input
-        label="Password"
-        error={errors.password?.message}
-        type="password"
-        {...register("password")}
-      />
-      <Input
-        label="Confirm Password"
-        error={errors.passwordConfirmation?.message}
-        type="password"
-        {...register("passwordConfirmation")}
-      />
-      <Button type="submit">Login</Button>
-    </form>
+    <AuthLayout>
+      <CardHeader>
+        <h1 className="text-xl font-bold leading-tight tracking-tight text-gray-900 md:text-2xl dark:text-white">
+          Reset your password
+        </h1>
+      </CardHeader>
+      <CardBody>
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <h1 className="text-2xl font-semibold mb-4">Set password</h1>
+          <Input
+            label="Password"
+            isInvalid={Boolean(errors.password)}
+            errorMessage={errors.password?.message}
+            type="password"
+            {...register("password")}
+          />
+          <Input
+            label="Confirm Password"
+            isInvalid={Boolean(errors.passwordConfirmation)}
+            errorMessage={errors.passwordConfirmation?.message}
+            type="password"
+            {...register("passwordConfirmation")}
+          />
+          <Button type="submit" color="primary">
+            Set password
+          </Button>
+        </form>
+      </CardBody>
+    </AuthLayout>
   );
 };
 

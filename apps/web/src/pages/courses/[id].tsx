@@ -1,5 +1,5 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { useParams } from "react-router-dom";
+import { useParams } from "wouter";
 import client from "../../utils/httpClient";
 
 const CoursePage = () => {

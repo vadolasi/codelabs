@@ -2,7 +2,7 @@ name: Bug Report
 description: File a bug report.
 title: "[Bug]: "
 labels: ["bug", "triage"]
-projects: ["octo-org/1", "octo-org/44"]
+projects: ["vadolasi/codelabs"]
 assignees:
   - octocat
 body:
@@ -45,9 +45,9 @@ body:
       multiple: true
       options:
         - Firefox
-        - Chrome
+        - Chromium based (Chrome, Brave, Edge, etc.)
         - Safari
-        - Microsoft Edge
+        - Other
   - type: textarea
     id: logs
     attributes:

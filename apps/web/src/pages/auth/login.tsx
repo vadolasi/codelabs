@@ -1,12 +1,19 @@
 import { valibotResolver } from "@hookform/resolvers/valibot";
+import {
+  Button,
+  CardBody,
+  CardHeader,
+  Checkbox,
+  Input,
+  Link,
+} from "@nextui-org/react";
 import { useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { toast } from "react-hot-toast";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import * as v from "valibot";
-import Button from "../../components/Button";
-import Input from "../../components/Input";
-import logo from "../../images/logo.svg";
+import { useLocation, useSearch } from "wouter";
+import PasswordInput from "../../components/PasswordInput";
+import AuthLayout from "../../layouts/auth";
 import client from "../../utils/httpClient";
 import useStore from "../../utils/store";
 
@@ -16,12 +23,11 @@ const schema = v.object({
 });
 type FormValues = v.InferOutput<typeof schema>;
 
-// million-ignore
 const LoginPage: React.FC = () => {
   const setUser = useStore((state) => state.setUser);
-  const navigate = useNavigate();
+  const [, navigate] = useLocation();
 
-  const [params] = useSearchParams();
+  const params = new URLSearchParams(useSearch());
   const redirect = params.get("redirect") || "/";
 
   const {
@@ -55,96 +61,70 @@ const LoginPage: React.FC = () => {
     },
     onSuccess: ({ email, firstName, lastName, id, picture }) => {
       setUser({ email, firstName, lastName, id, picture });
-      navigate(redirect);
+      navigate(`~${redirect}`);
     },
     onError: (error) => {
+      toast.error(error.message);
+
       if (error.message === "Email not confirmed") {
         navigate("/auth/confirm-email", { state: { email } });
       }
-
-      toast.error(error.message);
     },
   });
 
   return (
-    <section className="bg-gray-50 dark:bg-gray-900">
-      <div className="flex flex-col items-center justify-center px-6 py-8 mx-auto md:h-screen lg:py-0">
-        <a
-          href="https://codelabs.vitordaniel.com"
-          className="flex items-center mb-6 text-2xl font-semibold text-gray-900 dark:text-white"
+    <AuthLayout>
+      <CardHeader>
+        <h1 className="text-xl font-bold leading-tight tracking-tight md:text-2xl">
+          Sign in to your account
+        </h1>
+      </CardHeader>
+      <CardBody>
+        <form
+          className="space-y-4 md:space-y-6"
+          onSubmit={handleSubmit(onSubmit)}
         >
-          <img className="w-8 h-8 mr-2" src={logo} alt="logo" />
-          Codelabs
-        </a>
-        <div className="w-full bg-white rounded-lg shadow dark:border md:mt-0 sm:max-w-md xl:p-0 dark:bg-gray-800 dark:border-gray-700">
-          <div className="p-6 space-y-4 md:space-y-6 sm:p-8">
-            <h1 className="text-xl font-bold leading-tight tracking-tight text-gray-900 md:text-2xl dark:text-white">
-              Sign in to your account
-            </h1>
-            <form
-              className="space-y-4 md:space-y-6"
-              onSubmit={handleSubmit(onSubmit)}
+          <Input
+            label="Email"
+            isInvalid={Boolean(errors.email)}
+            errorMessage={errors.email?.message}
+            autoComplete="username"
+            {...register("email")}
+          />
+          <PasswordInput
+            label="Password"
+            isInvalid={Boolean(errors.password)}
+            errorMessage={errors.password?.message}
+            autoComplete="current-password"
+            {...register("password")}
+          />
+          <div className="flex items-center justify-between">
+            <Checkbox size="sm">Remember me</Checkbox>
+            <Link
+              href="/auth/forgot-password"
+              className="text-sm font-medium text-primary-600 hover:underline dark:text-primary-500"
             >
-              <Input
-                label="Email"
-                error={errors.email?.message}
-                {...register("email")}
-              />
-              <Input
-                label="Password"
-                error={errors.password?.message}
-                type="password"
-                {...register("password")}
-              />
-              <div className="flex items-center justify-between">
-                <div className="flex items-start">
-                  <div className="flex items-center h-5">
-                    <input
-                      id="remember"
-                      aria-describedby="remember"
-                      type="checkbox"
-                      className="w-4 h-4 border border-gray-300 rounded bg-gray-50 focus:ring-3 focus:ring-primary-300 dark:bg-gray-700 dark:border-gray-600 dark:focus:ring-primary-600 dark:ring-offset-gray-800"
-                      required
-                    />
-                  </div>
-                  <div className="ml-3 text-sm">
-                    <label
-                      htmlFor="remember"
-                      className="text-gray-500 dark:text-gray-300"
-                    >
-                      Remember me
-                    </label>
-                  </div>
-                </div>
-                <Link
-                  to="/auth/forgot-password"
-                  className="text-sm font-medium text-primary-600 hover:underline dark:text-primary-500"
-                >
-                  Forgot password?
-                </Link>
-              </div>
-              <Button
-                type="submit"
-                disabled={!isValid}
-                loading={isPending}
-                className="w-full"
-              >
-                Sign in
-              </Button>
-              <p className="text-sm font-light text-gray-500 dark:text-gray-400">
-                Don’t have an account yet?{" "}
-                <Link
-                  to="/auth/register"
-                  className="font-medium text-primary-600 hover:underline dark:text-primary-500"
-                >
-                  Sign up
-                </Link>
-              </p>
-            </form>
+              Forgot password?
+            </Link>
           </div>
-        </div>
-      </div>
-    </section>
+          <Button
+            type="submit"
+            isDisabled={!isValid}
+            isLoading={isPending}
+            className="w-full"
+            color="primary"
+          >
+            Sign in
+          </Button>
+          <p className="text-sm font-light text-default-500">
+            Don't have an account yet?{" "}
+            <Link href="/auth/register" className="font-medium text-sm">
+              Sign up
+            </Link>
+          </p>
+        </form>
+      </CardBody>
+    </AuthLayout>
   );
 };
 

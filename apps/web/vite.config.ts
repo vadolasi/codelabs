@@ -3,7 +3,6 @@ import basicSsl from "@vitejs/plugin-basic-ssl";
 import react from "@vitejs/plugin-react-swc";
 import { defineConfig } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
-import topLevelAwait from "vite-plugin-top-level-await";
 import wasm from "vite-plugin-wasm";
 
 export default defineConfig({
@@ -12,7 +11,6 @@ export default defineConfig({
     MillionLint.vite(),
     react(),
     wasm(),
-    // topLevelAwait(),
     VitePWA({ registerType: "autoUpdate" }),
   ],
   server: {
@@ -23,7 +21,7 @@ export default defineConfig({
       },
     },
     headers: {
-      "Cross-Origin-Embedder-Policy": "credentialless",
+      "Cross-Origin-Embedder-Policy": "require-corp",
       "Cross-Origin-Opener-Policy": "same-origin",
     },
   },

@@ -1,17 +1,15 @@
 import { treaty } from "@elysiajs/eden";
 import { Packr } from "msgpackr";
 import type { App } from "server/src";
+import { navigate } from "wouter/use-browser-location";
 
 const packr = new Packr({ moreTypes: true });
 
 const client = treaty<App>(window.location.origin, {
-  fetch: {
-    credentials: "include",
-  },
   headers: {
     accept: "application/x-msgpack",
   },
-  onRequest: async (_path, { body }) => {
+  onRequest: (_path, { body }) => {
     if (typeof body === "object") {
       return {
         headers: {
@@ -21,9 +19,9 @@ const client = treaty<App>(window.location.origin, {
       };
     }
   },
-  onResponse: async (response) => {
+  onResponse: (response) => {
     if (response.status === 401) {
-      window.location.href = "/auth/login";
+      navigate("/auth/login");
     }
 
     if (

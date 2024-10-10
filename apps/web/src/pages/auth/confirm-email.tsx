@@ -1,11 +1,11 @@
 import { valibotResolver } from "@hookform/resolvers/valibot";
+import { Button } from "@nextui-org/react";
 import { useMutation } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import toast from "react-hot-toast";
-import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import * as v from "valibot";
-import Button from "../../components/Button";
+import { Redirect, useLocation } from "wouter";
 import logo from "../../images/logo.svg";
 import client from "../../utils/httpClient";
 
@@ -17,10 +17,8 @@ const schema = v.object({
 });
 type FormValues = v.InferOutput<typeof schema>;
 
-// million-ignore
 const ConfirmEmailPage: React.FC = () => {
-  const navigate = useNavigate();
-  const { state } = useLocation();
+  const [, navigate] = useLocation();
 
   const {
     register,
@@ -82,9 +80,9 @@ const ConfirmEmailPage: React.FC = () => {
     }
   }, [isValid]);
 
-  if (!state?.email) {
+  if (!history.state.email) {
     toast.error("Invalid email");
-    return <Navigate to="/auth/login" />;
+    return <Redirect to="/auth/login" />;
   }
 
   return (
@@ -157,8 +155,8 @@ const ConfirmEmailPage: React.FC = () => {
               <Button
                 type="button"
                 className="w-full"
-                loading={isLoading}
-                onClick={() => resendEmail(state.email)}
+                isLoading={isLoading}
+                onClick={() => resendEmail(history.state.email)}
               >
                 Resend email
               </Button>

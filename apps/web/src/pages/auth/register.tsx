@@ -1,11 +1,10 @@
 import { valibotResolver } from "@hookform/resolvers/valibot";
+import { Button, CardBody, CardHeader, Input, Link } from "@nextui-org/react";
 import { useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
-import { Link, useNavigate } from "react-router-dom";
 import * as v from "valibot";
-import Button from "../../components/Button";
-import Input from "../../components/Input";
-import logo from "../../images/logo.svg";
+import { useLocation } from "wouter";
+import AuthLayout from "../../layouts/auth";
 import client from "../../utils/httpClient";
 
 const schema = v.pipe(
@@ -50,9 +49,8 @@ const schema = v.pipe(
 
 type FormValues = v.InferOutput<typeof schema>;
 
-// million-ignore
 const RegisterPage: React.FC = () => {
-  const navigate = useNavigate();
+  const [, navigate] = useLocation();
 
   const { mutate, isPending } = useMutation({
     mutationFn: async ({
@@ -93,100 +91,96 @@ const RegisterPage: React.FC = () => {
   };
 
   return (
-    <section className="bg-gray-50 dark:bg-gray-900">
-      <div className="flex flex-col items-center justify-center px-6 py-8 mx-auto md:h-screen lg:py-0">
-        <a
-          href="https://codelabs.vitordaniel.com"
-          className="flex items-center mb-6 text-2xl font-semibold text-gray-900 dark:text-white"
+    <AuthLayout>
+      <CardHeader>
+        <h1 className="text-xl font-bold leading-tight tracking-tight text-gray-900 md:text-2xl dark:text-white">
+          Create an account
+        </h1>
+      </CardHeader>
+      <CardBody>
+        <form
+          className="space-y-4 md:space-y-6"
+          onSubmit={handleSubmit(onSubmit)}
         >
-          <img className="w-8 h-8 mr-2" src={logo} alt="logo" />
-          Codelabs
-        </a>
-        <div className="w-full bg-white rounded-lg shadow dark:border md:mt-0 sm:max-w-md xl:p-0 dark:bg-gray-800 dark:border-gray-700">
-          <div className="p-6 space-y-4 md:space-y-6 sm:p-8">
-            <h1 className="text-xl font-bold leading-tight tracking-tight text-gray-900 md:text-2xl dark:text-white">
-              Create an account
-            </h1>
-            <form
-              className="space-y-4 md:space-y-6"
-              onSubmit={handleSubmit(onSubmit)}
-            >
-              <Input
-                label="Your email"
-                error={errors.email?.message}
-                {...register("email")}
-              />
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <Input
-                  label="First name"
-                  error={errors.firstName?.message}
-                  {...register("firstName")}
-                />
-                <Input
-                  label="Last name"
-                  error={errors.lastName?.message}
-                  {...register("lastName")}
-                />
-              </div>
-              <Input
-                label="Password"
-                error={errors.password?.message}
-                type="password"
-                {...register("password")}
-              />
-              <Input
-                label="Confirm Password"
-                error={errors.passwordConfirmation?.message}
-                type="password"
-                {...register("passwordConfirmation")}
-              />
-              <div className="flex items-start">
-                <div className="flex items-center h-5">
-                  <input
-                    id="terms"
-                    aria-describedby="terms"
-                    type="checkbox"
-                    className="w-4 h-4 border border-gray-300 rounded bg-gray-50 focus:ring-3 focus:ring-primary-300 dark:bg-gray-700 dark:border-gray-600 dark:focus:ring-primary-600 dark:ring-offset-gray-800"
-                    required
-                  />
-                </div>
-                <div className="ml-3 text-sm">
-                  <label
-                    htmlFor="terms"
-                    className="font-light text-gray-500 dark:text-gray-300"
-                  >
-                    I accept the{" "}
-                    <a
-                      className="font-medium text-primary-600 hover:underline dark:text-primary-500"
-                      href="https://codelabs.vitordaniel.com/terms-and-conditions"
-                    >
-                      Terms and Conditions
-                    </a>
-                  </label>
-                </div>
-              </div>
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={!isValid}
-                loading={isPending}
-              >
-                Create an account
-              </Button>
-              <p className="text-sm font-light text-gray-500 dark:text-gray-400">
-                Already have an account?{" "}
-                <Link
-                  to="/auth/login"
-                  className="font-medium text-primary-600 hover:underline dark:text-primary-500"
-                >
-                  Login here
-                </Link>
-              </p>
-            </form>
+          <Input
+            label="Your email"
+            isInvalid={Boolean(errors.email)}
+            errorMessage={errors.email?.message}
+            {...register("email")}
+          />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <Input
+              label="First name"
+              isInvalid={Boolean(errors.firstName)}
+              errorMessage={errors.firstName?.message}
+              {...register("firstName")}
+            />
+            <Input
+              label="Last name"
+              errorMessage={errors.lastName?.message}
+              {...register("lastName")}
+            />
           </div>
-        </div>
-      </div>
-    </section>
+          <Input
+            label="Password"
+            isInvalid={Boolean(errors.password)}
+            errorMessage={errors.password?.message}
+            type="password"
+            {...register("password")}
+          />
+          <Input
+            label="Confirm Password"
+            isInvalid={Boolean(errors.passwordConfirmation)}
+            errorMessage={errors.passwordConfirmation?.message}
+            type="password"
+            {...register("passwordConfirmation")}
+          />
+          <div className="flex items-start">
+            <div className="flex items-center h-5">
+              <input
+                id="terms"
+                aria-describedby="terms"
+                type="checkbox"
+                className="w-4 h-4 border border-gray-300 rounded bg-gray-50 focus:ring-3 focus:ring-primary-300 dark:bg-gray-700 dark:border-gray-600 dark:focus:ring-primary-600 dark:ring-offset-gray-800"
+                required
+              />
+            </div>
+            <div className="ml-3 text-sm">
+              <label
+                htmlFor="terms"
+                className="font-light text-gray-500 dark:text-gray-300"
+              >
+                I accept the{" "}
+                <a
+                  className="font-medium text-primary-600 hover:underline dark:text-primary-500"
+                  href="https://codelabs.vitordaniel.com/terms-and-conditions"
+                >
+                  Terms and Conditions
+                </a>
+              </label>
+            </div>
+          </div>
+          <Button
+            type="submit"
+            className="w-full"
+            disabled={!isValid}
+            isLoading={isPending}
+            color="primary"
+          >
+            Create an account
+          </Button>
+          <p className="text-sm font-light text-gray-500 dark:text-gray-400">
+            Already have an account?{" "}
+            <Link
+              href="/auth/login"
+              className="font-medium text-primary-600 hover:underline dark:text-primary-500"
+            >
+              Login here
+            </Link>
+          </p>
+        </form>
+      </CardBody>
+    </AuthLayout>
   );
 };
 
