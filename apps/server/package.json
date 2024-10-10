@@ -2,12 +2,12 @@
   "name": "server",
   "version": "1.0.50",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "bun run --watch src/index.ts",
     "generate": "drizzle-kit generate",
     "migrate": "drizzle-kit migrate",
     "studio": "drizzle-kit studio",
-    "setup:dev": "bun run --cwd ../../node_modules/better-sqlite3 build-debug"
+    "setup:dev": "bun run --cwd ../../node_modules/better-sqlite3 build-debug",
+    "start": "bun run src/index.ts"
   },
   "dependencies": {
     "@elysiajs/cron": "^1.1.1",
@@ -15,6 +15,7 @@
     "@lucia-auth/adapter-drizzle": "^1.1.0",
     "@sinclair/typebox": "^0.32.35",
     "drizzle-orm": "^0.32.2",
+    "dynamoose": "^4.0.1",
     "elysia": "^1.1.18",
     "elysia-compress": "^1.2.1",
     "elysia-helmet": "^1.0.2",

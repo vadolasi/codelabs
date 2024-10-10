@@ -1,10 +1,8 @@
 import { eq } from "drizzle-orm";
-import { error } from "elysia";
 import _ from "lodash";
 import { type User, generateIdFromEntropySize } from "lucia";
+import { customAlphabet, nanoid } from "nanoid";
 import { TimeSpan, createDate, isWithinExpirationDate } from "oslo";
-import { alphabet, generateRandomString, sha256 } from "oslo/crypto";
-import { encodeHex } from "oslo/encoding";
 import { db } from "../../db";
 import {
   emailVerificationCodeTable,
@@ -18,6 +16,7 @@ import { lucia } from "./auth.utils";
 
 export default class AuthService {
   emailsService = new EmailsService();
+  generateToken = customAlphabet("0123456789", 8);
 
   async generateEmailVerificationCode(
     userId: string,
@@ -26,7 +25,7 @@ export default class AuthService {
     await db
       .delete(emailVerificationCodeTable)
       .where(eq(emailVerificationCodeTable.userId, userId));
-    const code = generateRandomString(8, alphabet("0-9"));
+    const code = this.generateToken();
     await db.insert(emailVerificationCodeTable).values({
       userId,
       email,
@@ -41,17 +40,17 @@ export default class AuthService {
     await db
       .delete(passwordResetTokenTable)
       .where(eq(passwordResetTokenTable.userId, userId));
-    const tokenId = generateIdFromEntropySize(25);
-    const tokenHash = encodeHex(
-      await sha256(new TextEncoder().encode(tokenId)),
-    );
+    const token = nanoid();
+    const tokenHash = new Bun.CryptoHasher("sha256")
+      .update(token)
+      .digest("hex");
     await db.insert(passwordResetTokenTable).values({
       tokenHash,
       expiresAt: createDate(new TimeSpan(2, "h")).getTime(),
       userId,
     });
 
-    return tokenId;
+    return token;
   }
 
   async sendEmailVerificationCode(email: string, id: string) {
@@ -171,7 +170,9 @@ export default class AuthService {
     token,
     password,
   }: { token: string; password: string }) {
-    const tokenHash = encodeHex(await sha256(new TextEncoder().encode(token)));
+    const tokenHash = new Bun.CryptoHasher("sha256")
+      .update(token)
+      .digest("hex");
 
     const passwordResetToken = await db.query.passwordResetTokenTable.findFirst(
       {

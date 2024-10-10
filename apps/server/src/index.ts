@@ -1,9 +1,8 @@
 import serverTiming from "@elysiajs/server-timing";
 import { Elysia } from "elysia";
-// import { compression } from "elysia-compress";
 import { helmet } from "elysia-helmet";
 import { ip } from "elysia-ip";
-import { msgpack } from "elysia-msgpack";
+import { Packr } from "msgpackr";
 import env from "./env";
 import { HTTPError } from "./error";
 import { authController } from "./modules/auth/auth.controller";
@@ -26,19 +25,33 @@ const app = new Elysia({
   },
 })
   .use(ip())
-  .use(msgpack({ moreTypes: true }))
-  .error({
-    HTTPError,
-  })
-  // .use(compression())
-  .onError(({ code, error, set }) => {
-    switch (code) {
-      case "HTTPError":
-        set.status = error.status;
-        return error.message;
+  .use(helmet())
+  .decorate("msgpack", new Packr({ moreTypes: true }))
+  .onParse(async ({ request, msgpack }, contentType) => {
+    if (contentType === "application/x-msgpack") {
+      return msgpack.unpack(Buffer.from(await request.arrayBuffer()));
     }
   })
-  .use(helmet())
+  .mapResponse(({ response, set, msgpack }) => {
+    if (response && typeof response === "object") {
+      set.headers["content-type"] = "application/x-msgpack";
+      set.headers["content-encoding"] = "gzip";
+
+      return Bun.gzipSync(msgpack.pack(response), { level: 9 });
+    }
+
+    set.headers["content-type"] = "text/plain; charset=utf-8";
+
+    return response;
+  })
+  .error({ HTTPError })
+  .onError(({ code, error, set }) => {
+    if (code === "HTTPError") {
+      set.status = error.status;
+    }
+
+    return error.message;
+  })
   .use(authMiddleware)
   .use(authController)
   .use(usersController)
