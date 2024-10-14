@@ -46,7 +46,6 @@ export const authController = new Elysia({ prefix: "/auth" })
         async ({
           body: { email, password },
           cookie: { session: sessionCookie },
-          set,
         }) => {
           const { user, cookie } = await authService.login({
             email,

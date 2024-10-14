@@ -1,4 +1,4 @@
-import Elysia, { error } from "elysia";
+import Elysia from "elysia";
 import type { Session, User } from "lucia";
 import { verifyRequestOrigin } from "oslo/request";
 import { HTTPError } from "../../error";
@@ -13,7 +13,6 @@ const authMiddleware = new Elysia()
       user: User | null;
       session: Session | null;
     }> => {
-      /*
       if (context.request.method !== "GET") {
         const originHeader = context.request.headers.get("Origin");
         const hostHeader = context.request.headers.get("Host");
@@ -28,7 +27,6 @@ const authMiddleware = new Elysia()
           };
         }
       }
-      */
 
       const { session, user } = await lucia.validateSession(
         context.cookie.session?.value || "",

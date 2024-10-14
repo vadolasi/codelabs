@@ -1,9 +1,9 @@
 import { eq } from "drizzle-orm";
 import _ from "lodash";
-import { type User, generateIdFromEntropySize } from "lucia";
+import type { User } from "lucia";
 import { customAlphabet, nanoid } from "nanoid";
 import { TimeSpan, createDate, isWithinExpirationDate } from "oslo";
-import { db } from "../../db";
+import db from "../../db";
 import {
   emailVerificationCodeTable,
   passwordResetTokenTable,
@@ -30,7 +30,7 @@ export default class AuthService {
       userId,
       email,
       code,
-      expiresAt: createDate(new TimeSpan(15, "m")).getTime(),
+      expiresAt: createDate(new TimeSpan(15, "m")),
     });
 
     return code;
@@ -46,7 +46,7 @@ export default class AuthService {
       .digest("hex");
     await db.insert(passwordResetTokenTable).values({
       tokenHash,
-      expiresAt: createDate(new TimeSpan(2, "h")).getTime(),
+      expiresAt: createDate(new TimeSpan(2, "h")),
       userId,
     });
 

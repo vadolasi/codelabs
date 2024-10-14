@@ -67,7 +67,7 @@ const LoginPage: React.FC = () => {
       toast.error(error.message);
 
       if (error.message === "Email not confirmed") {
-        navigate("/auth/confirm-email", { state: { email } });
+        history.pushState({ email }, "Confirm Email", "/auth/confirm-email");
       }
     },
   });

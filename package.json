@@ -15,7 +15,9 @@
   "scripts": {
     "dev:web": "turbo dev --filter=web --filter=server",
     "commit": "gitmoji -c",
-    "prepare": "[ \"$NODE_ENV\" = production ] && exit 0; husky"
+    "prepare": "[ \"$NODE_ENV\" = production ] && exit 0; husky",
+    "format-and-lint": "biome check .",
+    "format-and-lint:fix": "biome check . --write"
   },
   "workspaces": ["apps/*", "packages/*"],
   "lint-staged": {

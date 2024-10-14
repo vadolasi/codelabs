@@ -1,42 +1,48 @@
-import { relations, sql } from "drizzle-orm";
-import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { relations } from "drizzle-orm";
+import {
+  boolean,
+  char,
+  date,
+  json,
+  pgEnum,
+  pgTable,
+  text,
+  timestamp,
+  varchar,
+} from "drizzle-orm/pg-core";
 import { nanoid } from "nanoid";
 
-export const usersTable = sqliteTable("users", {
-  id: text("id")
+export const usersTable = pgTable("users", {
+  id: char("id", { length: 21 })
     .primaryKey()
     .$defaultFn(() => nanoid()),
-  email: text("email").unique().notNull(),
-  emailVerified: integer("email_verified", { mode: "boolean" }).default(false),
-  firstName: text("first_name").notNull(),
-  lastName: text("last_name").notNull(),
-  password: text("password").notNull(),
-  createdAt: integer("created_at", { mode: "timestamp" }).default(
-    sql`(unixepoch())`,
-  ),
-  picture: text("picture").notNull(),
+  email: varchar("email", { length: 64 }).unique().notNull(),
+  emailVerified: boolean("email_verified").default(false),
+  firstName: varchar("first_name", { length: 32 }).notNull(),
+  lastName: varchar("last_name", { length: 32 }).notNull(),
+  password: varchar("password", { length: 128 }).notNull(),
+  createdAt: date("created_at", { mode: "date" }).defaultNow(),
+  picture: varchar("picture", { length: 256 }).notNull(),
 });
 
 export const usersRelations = relations(usersTable, ({ many }) => ({
   sessions: many(sessionTable),
   emailVerificationCodes: many(emailVerificationCodeTable),
   passwordResetTokens: many(passwordResetTokenTable),
-  courses: many(membersTable),
+  courses: many(courseMemberTable),
   notifications: many(notificationsTable),
 }));
 
-export const notificationsTable = sqliteTable("notifications", {
-  id: text("id")
+export const notificationsTable = pgTable("notifications", {
+  id: char("id", { length: 21 })
     .primaryKey()
     .$defaultFn(() => nanoid()),
-  userId: text("user_id")
+  userId: char("user_id", { length: 21 })
     .notNull()
     .references(() => usersTable.id),
-  message: text("message").notNull(),
-  read: integer("read", { mode: "boolean" }).default(false),
-  createdAt: integer("created_at", { mode: "timestamp" }).default(
-    sql`(unixepoch())`,
-  ),
+  message: varchar("message", { length: 256 }).notNull(),
+  read: boolean("read").default(false),
+  createdAt: date("created_at", { mode: "date" }).defaultNow(),
 });
 
 export const notificationsRelations = relations(
@@ -49,12 +55,15 @@ export const notificationsRelations = relations(
   }),
 );
 
-export const sessionTable = sqliteTable("session", {
-  id: text("id").notNull().primaryKey(),
-  userId: text("user_id")
+export const sessionTable = pgTable("session", {
+  id: varchar("id").notNull().primaryKey(),
+  userId: char("user_id", { length: 21 })
     .notNull()
     .references(() => usersTable.id),
-  expiresAt: integer("expires_at").notNull(),
+  expiresAt: timestamp("expires_at", {
+    withTimezone: true,
+    mode: "date",
+  }).notNull(),
 });
 
 export const sessionRelations = relations(sessionTable, ({ one }) => ({
@@ -64,20 +73,20 @@ export const sessionRelations = relations(sessionTable, ({ one }) => ({
   }),
 }));
 
-export const emailVerificationCodeTable = sqliteTable(
-  "email_verification_code",
-  {
-    id: text("id")
-      .primaryKey()
-      .$defaultFn(() => nanoid()),
-    code: text("code").notNull(),
-    userId: text("user_id")
-      .notNull()
-      .references(() => usersTable.id),
-    email: text("email").notNull(),
-    expiresAt: integer("expires_at").notNull(),
-  },
-);
+export const emailVerificationCodeTable = pgTable("email_verification_code", {
+  id: char("id", { length: 21 })
+    .primaryKey()
+    .$defaultFn(() => nanoid()),
+  code: char("code", { length: 8 }).notNull(),
+  userId: char("user_id", { length: 21 })
+    .notNull()
+    .references(() => usersTable.id),
+  email: varchar("email", { length: 64 }).notNull(),
+  expiresAt: timestamp("expires_at", {
+    withTimezone: true,
+    mode: "date",
+  }).notNull(),
+});
 
 export const emailVerificationCodeRelations = relations(
   emailVerificationCodeTable,
@@ -89,15 +98,18 @@ export const emailVerificationCodeRelations = relations(
   }),
 );
 
-export const passwordResetTokenTable = sqliteTable("password_reset_token", {
-  id: text("id")
+export const passwordResetTokenTable = pgTable("password_reset_token", {
+  id: char("id", { length: 21 })
     .primaryKey()
     .$defaultFn(() => nanoid()),
-  tokenHash: text("token_hash").notNull().unique(),
-  userId: text("user_id")
+  tokenHash: varchar("token_hash").notNull().unique(),
+  userId: char("user_id", { length: 21 })
     .notNull()
     .references(() => usersTable.id),
-  expiresAt: integer("expires_at").notNull(),
+  expiresAt: timestamp("expires_at", {
+    withTimezone: true,
+    mode: "date",
+  }).notNull(),
 });
 
 export const passwordResetTokenRelations = relations(
@@ -110,87 +122,126 @@ export const passwordResetTokenRelations = relations(
   }),
 );
 
-export const courseTable = sqliteTable("course", {
-  id: text("id")
+export const courseTable = pgTable("course", {
+  id: char("id", { length: 21 })
     .primaryKey()
     .$defaultFn(() => nanoid()),
-  name: text("name").notNull(),
-  createdAt: integer("created_at", { mode: "timestamp" }).default(
-    sql`(unixepoch())`,
-  ),
+  name: varchar("name", { length: 64 }).notNull(),
+  createdAt: date("created_at", { mode: "date" }).defaultNow(),
 });
 
 export const courseRelations = relations(courseTable, ({ many }) => ({
-  workspaces: many(workspaceTable),
-  members: many(membersTable),
+  conferences: many(conferenceTable),
+  members: many(courseMemberTable),
   invites: many(inviteTable),
 }));
 
-export const workspaceTable = sqliteTable("workspace", {
-  id: text("id")
+export const conferenceTable = pgTable("conference", {
+  id: char("id", { length: 21 })
     .primaryKey()
     .$defaultFn(() => nanoid()),
-  name: text("name").notNull(),
-  createdAt: integer("created_at", { mode: "timestamp" }).default(
-    sql`(unixepoch())`,
-  ),
-  courseId: text("course_id")
+  name: varchar("name", { length: 64 }).notNull(),
+  createdAt: date("created_at", { mode: "date" }).defaultNow(),
+  courseId: char("course_id", { length: 21 })
     .notNull()
     .references(() => courseTable.id),
-  userId: text("user_id")
-    .notNull()
-    .references(() => usersTable.id),
 });
 
-export const workspaceRelations = relations(workspaceTable, ({ one }) => ({
+export const conferenceRelations = relations(conferenceTable, ({ one }) => ({
   course: one(courseTable, {
-    fields: [workspaceTable.courseId],
+    fields: [conferenceTable.courseId],
     references: [courseTable.id],
   }),
 }));
 
-export const membersTable = sqliteTable("members", {
-  id: text("id")
+export const workspaceTable = pgTable("workspace", {
+  id: char("id", { length: 21 })
     .primaryKey()
     .$defaultFn(() => nanoid()),
-  courseId: text("course_id")
+  conferenceId: char("conference_id", { length: 21 })
     .notNull()
-    .references(() => courseTable.id),
-  userId: text("user_id")
-    .notNull()
-    .references(() => usersTable.id),
-  role: text("role", { enum: ["owner", "monitor", "member"] }).notNull(),
-  createdAt: integer("created_at", { mode: "timestamp" }).default(
-    sql`(unixepoch())`,
-  ),
+    .references(() => conferenceTable.id),
+  name: varchar("name", { length: 64 }).notNull(),
+  createdAt: date("created_at", { mode: "date" }).defaultNow(),
 });
 
-export const membersRelations = relations(membersTable, ({ one }) => ({
-  course: one(courseTable, {
-    fields: [membersTable.courseId],
-    references: [courseTable.id],
+export const workspaceRelations = relations(
+  workspaceTable,
+  ({ one, many }) => ({
+    conference: one(conferenceTable, {
+      fields: [workspaceTable.conferenceId],
+      references: [conferenceTable.id],
+    }),
+    members: many(courseMemberTable),
+    data: many(workspaceDataTable),
   }),
-  user: one(usersTable, {
-    fields: [membersTable.userId],
-    references: [usersTable.id],
-  }),
-}));
+);
 
-export const inviteTable = sqliteTable("invite", {
-  id: text("id")
+export const dataTypeEnum = pgEnum("data_type", ["loro", "other"]);
+
+export const workspaceDataTable = pgTable("workspace_data", {
+  id: char("id", { length: 21 })
     .primaryKey()
     .$defaultFn(() => nanoid()),
-  public: integer("public", { mode: "boolean" }).default(false),
-  emails: text("emails", { mode: "json" })
-    .$type<string[]>()
-    .default(sql`(json_array())`),
-  role: text("role", { enum: ["monitor", "member"] }).default("member"),
-  courseId: text("course_id")
+  workspaceId: char("workspace_id", { length: 21 }).references(
+    () => workspaceTable.id,
+  ),
+  type: dataTypeEnum(),
+  data: text("data").notNull(),
+  createdAt: date("created_at", { mode: "date" }).defaultNow(),
+});
+
+export const workspaceDataRelations = relations(
+  workspaceDataTable,
+  ({ one }) => ({
+    workspace: one(workspaceTable, {
+      fields: [workspaceDataTable.workspaceId],
+      references: [workspaceTable.id],
+    }),
+  }),
+);
+
+export const roleEnum = pgEnum("role", ["owner", "monitor", "member"]);
+
+export const courseMemberTable = pgTable("member", {
+  id: char("id", { length: 21 })
+    .primaryKey()
+    .$defaultFn(() => nanoid()),
+  courseId: char("course_id", { length: 21 })
     .notNull()
     .references(() => courseTable.id),
-  createdAt: integer("created_at", { mode: "timestamp" }).default(
-    sql`(unixepoch())`,
-  ),
+  userId: char("user_id", { length: 21 })
+    .notNull()
+    .references(() => usersTable.id),
+  role: roleEnum(),
+  createdAt: date("created_at", { mode: "date" }).defaultNow(),
+});
+
+export const courseMemberRelations = relations(
+  courseMemberTable,
+  ({ one }) => ({
+    course: one(courseTable, {
+      fields: [courseMemberTable.courseId],
+      references: [courseTable.id],
+    }),
+    user: one(usersTable, {
+      fields: [courseMemberTable.userId],
+      references: [usersTable.id],
+    }),
+  }),
+);
+
+export const inviteTable = pgTable("invite", {
+  id: char("id", { length: 21 })
+    .primaryKey()
+    .$defaultFn(() => nanoid()),
+  public: boolean("public").default(false),
+  emails: json("emails").$type<string[]>().default([]),
+  role: roleEnum().default("member"),
+  courseId: char("course_id", { length: 21 })
+    .notNull()
+    .references(() => courseTable.id),
+  createdAt: date("created_at", { mode: "date" }).defaultNow(),
 });
 
 export const inviteRelations = relations(inviteTable, ({ one }) => ({

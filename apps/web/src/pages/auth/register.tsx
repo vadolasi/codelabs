@@ -2,6 +2,7 @@ import { valibotResolver } from "@hookform/resolvers/valibot";
 import { Button, CardBody, CardHeader, Input, Link } from "@nextui-org/react";
 import { useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
+import toast from "react-hot-toast";
 import * as v from "valibot";
 import { useLocation } from "wouter";
 import AuthLayout from "../../layouts/auth";
@@ -73,7 +74,10 @@ const RegisterPage: React.FC = () => {
       return { email };
     },
     onSuccess: ({ email }) => {
-      navigate("/auth/confirm-email", { state: { email } });
+      history.pushState({ email }, "Confirm Email", "/auth/confirm-email");
+    },
+    onError: (error) => {
+      toast.error(error.message);
     },
   });
 

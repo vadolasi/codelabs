@@ -1,10 +1,11 @@
 import type { Config } from "drizzle-kit";
+import env from "./src/env";
 
 const config: Config = {
   schema: "./src/db/schema.ts",
-  dialect: "sqlite",
+  dialect: "postgresql",
   dbCredentials: {
-    url: "db.sqlite",
+    url: env.DATABASE_URL,
   },
 };
 

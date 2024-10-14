@@ -21,7 +21,7 @@ const client = treaty<App>(window.location.origin, {
   },
   onResponse: (response) => {
     if (response.status === 401) {
-      navigate("/auth/login");
+      navigate("~/auth/login");
     }
 
     if (

@@ -2,10 +2,13 @@ import { type Static, Type } from "@sinclair/typebox";
 import { TypeCompiler } from "@sinclair/typebox/compiler";
 
 const envSchema = Type.Object({
-  NODE_ENV: Type.Optional(
-    Type.Union([Type.Literal("development"), Type.Literal("production")], {
+  DATABASE_URL: Type.String(),
+  REDIS_URL: Type.String(),
+  NODE_ENV: Type.Union(
+    [Type.Literal("development"), Type.Literal("production")],
+    {
       default: "development",
-    }),
+    },
   ),
   JWT_SECRET: Type.String(),
   RESEND_API_KEY: Type.String(),
@@ -21,7 +24,9 @@ export type Env = Static<typeof envSchema>;
 const C = TypeCompiler.Compile(envSchema);
 
 const envValue = {
-  NODE_ENV: process.env.NODE_ENV,
+  DATABASE_URL: process.env.DATABASE_URL,
+  REDIS_URL: process.env.REDIS_URL,
+  NODE_ENV: process.env.NODE_ENV || "development",
   JWT_SECRET: process.env.JWT_SECRET,
   RESEND_API_KEY: process.env.RESEND_API_KEY,
   URL: process.env.URL,

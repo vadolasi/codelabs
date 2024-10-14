@@ -1,7 +1,12 @@
-import { Database } from "bun:sqlite";
-import { drizzle } from "drizzle-orm/bun-sqlite";
+import { drizzle } from "drizzle-orm/connect";
 
+import env from "../env";
 import * as schema from "./schema";
 
-const sqlite = new Database("db.sqlite");
-export const db = drizzle(sqlite, { schema });
+// @ts-ignore
+const db = await drizzle("postgres-js", {
+  connection: env.DATABASE_URL,
+  schema,
+});
+
+export default db;

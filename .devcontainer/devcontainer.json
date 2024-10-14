@@ -3,17 +3,25 @@
   "dockerComposeFile": "compose.yaml",
   "service": "codelabs",
   "workspaceFolder": "/workspace",
-  "forwardPorts": [5173],
+  "forwardPorts": [5173, 42423, 4983],
   "remoteUser": "root",
   "features": {
     "ghcr.io/devcontainers/features/common-utils:2": {},
-    "ghcr.io/devcontainers/features/git:1.3.2": {}
+    "ghcr.io/devcontainers/features/git:1": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {}
   },
   "containerEnv": {},
   "remoteEnv": {},
   "customizations": {
     "vscode": {
-      "extensions": ["oven.bun-vscode"],
+      "extensions": [
+        "biomejs.biome",
+        "bradlc.vscode-tailwindcss",
+        "editorconfig.editorconfig",
+        "github.vscode-github-actions",
+        "million.million-lint",
+        "oven.bun-vscode"
+      ],
       "settings": {
         "terminal.integrated.defaultProfile.linux": "zsh",
         "debug.internalConsoleOptions": "neverOpen",

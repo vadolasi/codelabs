@@ -1,9 +1,6 @@
 import { valibotResolver } from "@hookform/resolvers/valibot";
 import {
   Button,
-  Card,
-  CardBody,
-  CardHeader,
   Input,
   Modal,
   ModalBody,
@@ -16,31 +13,35 @@ import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import toast from "react-hot-toast";
 import * as v from "valibot";
-import { Link, useLocation } from "wouter";
-import DefaultLayout from "../layouts/default";
-import client from "../utils/httpClient";
+import { useLocation, useParams } from "wouter";
+import DefaultLayout from "../../layouts/default";
+import client from "../../utils/httpClient";
+import NotFoundPage from "../404";
 
-const createCourseSchema = v.object({
+const createConferenceSchema = v.object({
   name: v.pipe(v.string(), v.minLength(1, "Required field")),
 });
-type CreateCourseFormValues = v.InferOutput<typeof createCourseSchema>;
+type CreateConferenceFormValues = v.InferOutput<typeof createConferenceSchema>;
 
-const IndexPage = () => {
+const CoursePage = () => {
+  const params = useParams();
   const [, navigate] = useLocation();
+  const courseId = params.courseId as string;
 
   const { data } = useSuspenseQuery({
-    queryKey: ["courses"],
+    queryKey: ["courses", courseId],
     queryFn: async () => {
-      const { data } = await client.api.courses.index.get();
+      const { data } = await client.api.courses({ id: courseId }).get();
 
       return data;
     },
   });
 
   const { mutate: createCourse, isPending } = useMutation({
-    mutationFn: async ({ name }: CreateCourseFormValues) => {
-      const { error, data } = await client.api.courses.index.post({
+    mutationFn: async ({ name }: CreateConferenceFormValues) => {
+      const { error, data } = await client.api.conferences.index.post({
         name,
+        courseId,
       });
 
       if (error) {
@@ -49,8 +50,8 @@ const IndexPage = () => {
 
       return data;
     },
-    onSuccess: (id) => {
-      navigate(`/courses/${id}`);
+    onSuccess: (conferenceId) => {
+      navigate(`~/courses/${courseId}/conferences/${conferenceId}`);
     },
     onError: (error) => {
       toast.error(error.message);
@@ -61,55 +62,35 @@ const IndexPage = () => {
     register,
     handleSubmit,
     formState: { errors, isValid },
-  } = useForm<CreateCourseFormValues>({
-    resolver: valibotResolver(createCourseSchema),
+  } = useForm<CreateConferenceFormValues>({
+    resolver: valibotResolver(createConferenceSchema),
     mode: "onBlur",
   });
 
-  const onSubmit = ({ name }: CreateCourseFormValues) => {
+  const onSubmit = ({ name }: CreateConferenceFormValues) => {
     createCourse({ name });
   };
 
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
 
+  if (!data || !data.course) {
+    return <NotFoundPage />;
+  }
+
   return (
     <DefaultLayout>
-      <h2 className="mb-4 text-3xl font-extrabold leading-none tracking-tight md:text-4xl">
-        Courses
-      </h2>
-      {data?.length ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {data.map((course) => (
-            <Link key={course.id} to={`/courses/${course.id}`}>
-              <Card className="hover:bg-default-100 h-30">
-                <CardHeader>
-                  <h5 className="text-2xl font-bold tracking-tight">
-                    {course.name}
-                  </h5>
-                </CardHeader>
-                <CardBody>
-                  <p className="font-normal">{course.membersCount} membros</p>
-                </CardBody>
-              </Card>
-            </Link>
-          ))}
-        </div>
-      ) : (
-        <p className="text-lg text-gray-900 dark:text-white">
-          No courses found
-        </p>
-      )}
-      <div className="flex justify-center m-5">
-        <Button type="button" color="primary" onPress={onOpen}>
-          Create course
+      <h1>{data.course.name}</h1>
+      {data.role === "owner" && (
+        <Button color="primary" onPress={onOpen}>
+          Create conference
         </Button>
-      </div>
+      )}
       <Modal isOpen={isOpen} onClose={onOpenChange}>
         <ModalContent>
           {(onClose) => (
             <>
               <ModalHeader>
-                <h1 className="text-2xl">Create course</h1>
+                <h1 className="text-2xl">Create conference</h1>
               </ModalHeader>
               <form onSubmit={handleSubmit(onSubmit)}>
                 <ModalBody>
@@ -142,4 +123,4 @@ const IndexPage = () => {
   );
 };
 
-export default IndexPage;
+export default CoursePage;

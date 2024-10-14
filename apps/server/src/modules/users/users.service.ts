@@ -1,4 +1,4 @@
-import { db } from "../../db";
+import db from "../../db";
 import { usersTable } from "../../db/schema";
 import env from "../../env";
 import AuthService from "../auth/auth.service";

@@ -1,6 +1,6 @@
 import { and, count, eq } from "drizzle-orm";
-import { db } from "../../db";
-import { courseTable, membersTable } from "../../db/schema";
+import db from "../../db";
+import { courseMemberTable, courseTable } from "../../db/schema";
 import { HTTPError } from "../../error";
 
 export default class CoursesService {
@@ -12,7 +12,7 @@ export default class CoursesService {
         .returning({ id: courseTable.id });
 
       await db
-        .insert(membersTable)
+        .insert(courseMemberTable)
         .values({ role: "owner", userId, courseId: id });
       return id;
     });
@@ -25,23 +25,29 @@ export default class CoursesService {
       .select({
         id: courseTable.id,
         name: courseTable.name,
-        membersCount: count(membersTable.id),
+        membersCount: count(courseMemberTable.id),
       })
       .from(courseTable)
-      .leftJoin(membersTable, eq(courseTable.id, membersTable.courseId))
-      .where(eq(membersTable.userId, userId))
-      .groupBy(courseTable.id)
-      .all();
+      .leftJoin(
+        courseMemberTable,
+        eq(courseTable.id, courseMemberTable.courseId),
+      )
+      .where(eq(courseMemberTable.userId, userId))
+      .groupBy(courseTable.id);
   }
 
   async getCourse({ userId, id }: { userId: string; id: string }) {
-    const data = await db.query.membersTable.findFirst({
+    const data = await db.query.courseMemberTable.findFirst({
       where: and(
-        eq(membersTable.userId, userId),
-        eq(membersTable.courseId, id),
+        eq(courseMemberTable.userId, userId),
+        eq(courseMemberTable.courseId, id),
       ),
       with: {
-        course: true,
+        course: {
+          with: {
+            conferences: true,
+          },
+        },
       },
     });
 
@@ -49,6 +55,6 @@ export default class CoursesService {
       throw new HTTPError(404, "Course not found");
     }
 
-    return data.course;
+    return data;
   }
 }

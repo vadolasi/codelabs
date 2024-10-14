@@ -1,4 +1,3 @@
-import { InternalServerError } from "elysia";
 import { Resend } from "resend";
 
 import EmailConfirmation from "transactional/emails/EmailConfirmation";

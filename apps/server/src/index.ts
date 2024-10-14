@@ -7,6 +7,7 @@ import env from "./env";
 import { HTTPError } from "./error";
 import { authController } from "./modules/auth/auth.controller";
 import authMiddleware from "./modules/auth/auth.middleware";
+import { conferencesController } from "./modules/conferences/conferences.controller";
 import { coursesController } from "./modules/courses/courses.controller";
 import { usersController } from "./modules/users/users.controller";
 import { workspacesController } from "./modules/workspaces/workspaces.controller";
@@ -56,6 +57,7 @@ const app = new Elysia({
   .use(authController)
   .use(usersController)
   .use(coursesController)
+  .use(conferencesController)
   .use(workspacesController)
   .get("/status", () => "OK")
   .listen(3000);

@@ -80,8 +80,10 @@ export default class Codelabs {
     this.emmiter.once(event, listener);
   }
 
-  private setupLoro(id: string, userId: string, initialData: Uint8Array) {
-    const workspace = client.api.workspaces({ id })({ userId }).subscribe();
+  private setupLoro(id: string, conferenceId: string, initialData: Uint8Array) {
+    const workspace = client.api
+      .workspaces({ conferenceId })({ id })
+      .subscribe();
     workspace.ws.binaryType = "arraybuffer";
     this.doc.import(initialData);
 

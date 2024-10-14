@@ -1,12 +1,12 @@
 {
-  "version": "6",
-  "dialect": "sqlite",
+  "version": "7",
+  "dialect": "postgresql",
   "entries": [
     {
       "idx": 0,
-      "version": "6",
-      "when": 1727332214893,
-      "tag": "0000_remarkable_shape",
+      "version": "7",
+      "when": 1728875033553,
+      "tag": "0000_same_champions",
       "breakpoints": true
     }
   ]

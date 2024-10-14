@@ -56,7 +56,7 @@ export default function nodejs(codelabs: Codelabs, finishLoading: () => void) {
   const docTree = codelabs.doc.getTree("fileTree");
   const rootId = docTree.roots()[0].id;
 
-  WebContainer.boot({ workdirName: "codelabs" }).then(
+  WebContainer.boot({ workdirName: "codelabs", coep: "credentialless" }).then(
     async (webcontainerInstance) => {
       webcontainerInstance.on("server-ready", (_port, url) =>
         codelabs.setIframeUrl(url),

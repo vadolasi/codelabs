@@ -38,13 +38,12 @@ const ConfirmEmailPage: React.FC = () => {
         throw new Error(error.value as string);
       }
     },
-    onError: () => {
-      console.log("Failed to confirm email");
-      toast.error("Failed to confirm email");
+    onError: (error) => {
+      toast.error(error.message);
     },
     onSuccess: () => {
       toast.success("Email confirmed");
-      navigate("/auth/login");
+      navigate("~/auth/login");
     },
   });
 
@@ -80,9 +79,9 @@ const ConfirmEmailPage: React.FC = () => {
     }
   }, [isValid]);
 
-  if (!history.state.email) {
-    toast.error("Invalid email");
-    return <Redirect to="/auth/login" />;
+  if (!history.state?.email) {
+    toast.error(history.state);
+    return <Redirect to="~/auth/login" />;
   }
 
   return (

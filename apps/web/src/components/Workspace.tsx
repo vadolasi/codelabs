@@ -1,31 +1,30 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
-import Editor from "../../components/Editor";
-import codemirrorCollab from "../../components/Editor/plugins/collab";
-import FileTree from "../../components/FileTree";
-import LoroDataProviderImplementation from "../../components/FileTree/dataProvider";
-import Codelabs from "../../core";
-import nodejs from "../../core/languages/nodejs";
-import DefaultLayout from "../../layouts/default";
-import cn from "../../utils/cn";
-import client from "../../utils/httpClient";
-import useStore, { type User } from "../../utils/store";
+import Codelabs from "../core";
+import nodejs from "../core/languages/nodejs";
+import cn from "../utils/cn";
+import client from "../utils/httpClient";
+import useStore, { type User } from "../utils/store";
+import Editor from "./Editor";
+import codemirrorCollab from "./Editor/plugins/collab";
+import FileTree from "./FileTree";
+import LoroDataProviderImplementation from "./FileTree/dataProvider";
 import "@xterm/xterm/css/xterm.css";
 import { Spinner } from "@nextui-org/react";
-import { useParams } from "wouter";
 
-const WorkspacePage: React.FC = () => {
-  const params = useParams();
+const Workspace: React.FC<{ id: string; conferenceId: string }> = ({
+  id,
+  conferenceId,
+}) => {
   const user = useStore((state) => state.user) as User;
-  const id = params.id as string;
   const treeId = user.id;
 
   const [isLoading, setIsLoading] = useState(true);
 
   const { data } = useSuspenseQuery({
-    queryKey: ["workspace", id, user.id],
-    queryFn: () => client.api.workspaces({ id })({ userId: treeId }).put(),
+    queryKey: ["conference", conferenceId, id],
+    queryFn: () => client.api.workspaces({ conferenceId })({ id }).put(),
   });
 
   const terminalRef = useRef<HTMLDivElement>(null);
@@ -150,7 +149,7 @@ const WorkspacePage: React.FC = () => {
                 hitAreaMargins={{ coarse: 0, fine: 0 }}
                 className="bg-slate-950 h-2 flex items-center justify-center group p-0"
               >
-                <div className="h-0.5 rounded w-5 bg-slate-800 group-hover:bg-cyan-700" />
+                <div className="h-0.5 roundNão me atentei aos testes, ed w-5 bg-slate-800 group-hover:bg-cyan-700" />
               </PanelResizeHandle>
               <Panel
                 order={2}
@@ -185,4 +184,4 @@ const WorkspacePage: React.FC = () => {
   );
 };
 
-export default WorkspacePage;
+export default Workspace;
