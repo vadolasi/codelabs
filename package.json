@@ -1,0 +1,31 @@
+{
+	"name": "codelabs",
+	"module": "index.ts",
+	"private": true,
+	"packageManager": "bun@1.2.13",
+	"scripts": {
+		"dev": "turbo run dev --filter=backend --filter=frontend",
+		"format-and-lint": "biome check .",
+		"format-and-lint:fix": "biome check . --write",
+		"postinstall": "lefthook install"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "1.9.4",
+		"@types/bun": "latest",
+		"cz-conventional-changelog": "^3.3.0",
+		"lefthook": "^1.11.12",
+		"turbo": "^2.5.3"
+	},
+	"peerDependencies": {
+		"typescript": "^5.8.3"
+	},
+	"workspaces": ["backend", "frontend"],
+	"dependencies": {
+		"commitizen": "^4.3.1"
+	},
+	"config": {
+		"commitizen": {
+			"path": "./node_modules/cz-conventional-changelog"
+		}
+	}
+}
