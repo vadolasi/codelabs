@@ -14,17 +14,29 @@
 		"test": "npm run test:e2e"
 	},
 	"devDependencies": {
-		"@playwright/test": "^1.49.1",
-		"@sveltejs/adapter-auto": "^6.0.0",
-		"@sveltejs/kit": "^2.16.0",
-		"@sveltejs/vite-plugin-svelte": "^5.0.0",
-		"@tailwindcss/forms": "^0.5.9",
-		"@tailwindcss/typography": "^0.5.15",
-		"@tailwindcss/vite": "^4.0.0",
-		"svelte": "^5.0.0",
-		"svelte-check": "^4.0.0",
-		"tailwindcss": "^4.0.0",
-		"typescript": "^5.0.0",
-		"vite": "^6.2.6"
+		"@playwright/test": "^1.52.0",
+		"@sveltejs/adapter-auto": "^6.0.1",
+		"@sveltejs/kit": "^2.21.0",
+		"@sveltejs/vite-plugin-svelte": "^5.0.3",
+		"@tailwindcss/forms": "^0.5.10",
+		"@tailwindcss/typography": "^0.5.16",
+		"@tailwindcss/vite": "^4.1.6",
+		"svelte": "^5.28.6",
+		"svelte-check": "^4.1.7",
+		"tailwindcss": "^4.1.6",
+		"typescript": "^5.8.3",
+		"vite": "^6.3.5"
+	},
+	"dependencies": {
+		"@headless-tree/core": "^1.0.1",
+		"@webcontainer/api": "^1.6.1",
+		"@xterm/addon-clipboard": "^0.1.0",
+		"@xterm/addon-fit": "^0.10.0",
+		"@xterm/addon-image": "^0.8.0",
+		"@xterm/addon-search": "^0.15.0",
+		"@xterm/addon-unicode11": "^0.8.0",
+		"@xterm/addon-web-links": "^0.11.0",
+		"@xterm/addon-webgl": "^0.18.0",
+		"@xterm/xterm": "^5.5.0"
 	}
 }

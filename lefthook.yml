@@ -11,7 +11,7 @@ prepare-commit-msg:
       interactive: true
       run: bun run cz --hook
       env:
-        LEFTHOOK: 0
+        LEFTHOOK: "0"
 
 commit-msg:
   commands:
