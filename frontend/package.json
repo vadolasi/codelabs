@@ -16,6 +16,7 @@
 	"devDependencies": {
 		"@playwright/test": "^1.52.0",
 		"@sveltejs/adapter-auto": "^6.0.1",
+		"@sveltejs/enhanced-img": "^0.6.0",
 		"@sveltejs/kit": "^2.21.0",
 		"@sveltejs/vite-plugin-svelte": "^5.0.3",
 		"@tailwindcss/forms": "^0.5.10",
@@ -37,6 +38,8 @@
 		"@xterm/addon-unicode11": "^0.8.0",
 		"@xterm/addon-web-links": "^0.11.0",
 		"@xterm/addon-webgl": "^0.18.0",
-		"@xterm/xterm": "^5.5.0"
+		"@xterm/xterm": "^5.5.0",
+		"material-icon-theme": "^5.22.0",
+		"svelte-splitpanes": "^8.0.9"
 	}
 }
