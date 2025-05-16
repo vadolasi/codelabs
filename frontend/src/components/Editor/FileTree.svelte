@@ -124,11 +124,13 @@ const tree = createTree<Item>({
 
 onMount(async () => {
 	webcontainer.current.fs.watch("/", { recursive: true }, (_, filename) => {
-		tree
+		const item = tree
 			.getItemInstance(
 				`/${`/${filename as string}`.split("/").slice(1, -1).join("/")}`
 			)
-			.invalidateChildrenIds()
+    if (item) {
+			item.invalidateChildrenIds()
+    }
 	})
 })
 
