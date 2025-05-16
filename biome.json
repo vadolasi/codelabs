@@ -31,5 +31,18 @@
 			"semicolons": "asNeeded",
 			"trailingCommas": "none"
 		}
-	}
+	},
+	"overrides": [
+		{
+			"include": ["*.svelte"],
+			"linter": {
+				"rules": {
+					"style": {
+						"useConst": "off",
+						"useImportType": "off"
+					}
+				}
+			}
+		}
+	]
 }

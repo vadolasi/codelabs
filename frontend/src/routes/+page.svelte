@@ -1,13 +1,13 @@
 <script lang="ts">
-  import { onMount } from "svelte"
-  import { WebContainer } from "@webcontainer/api"
-  import Editor from "../components/Editor.svelte";
+import { WebContainer } from "@webcontainer/api"
+import { onMount } from "svelte"
+import Editor from "../components/Editor/index.svelte"
 
-  let webcontainer: WebContainer | null = $state(null)
+let webcontainer: WebContainer | null = $state(null)
 
-  onMount(async () => {
-    webcontainer = await WebContainer.boot({ workdirName: "codelabs" })
-  })
+onMount(async () => {
+	webcontainer = await WebContainer.boot({ workdirName: "codelabs" })
+})
 </script>
 
 {#if webcontainer}
