@@ -2,6 +2,55 @@
 @plugin "@tailwindcss/forms";
 @plugin "@tailwindcss/typography";
 @plugin "daisyui" {
-  themes: false;
+	themes: false;
 }
 @plugin "./catppuccinTheme.mocha.ts";
+
+.splitpanes.modern-theme {
+	.splitpanes__pane {
+		@apply bg-base-100;
+	}
+	.splitpanes__splitter {
+		@apply bg-base-200 relative;
+
+		&:before {
+			content: "";
+			position: absolute;
+			left: 0;
+			top: 0;
+			transition: opacity 0.4s;
+			@apply bg-primary;
+			opacity: 0;
+			z-index: 1;
+		}
+		&:hover:before {
+			opacity: 1;
+		}
+		&.splitpanes__splitter__active {
+			z-index: 2;
+		}
+	}
+}
+.modern-theme {
+  &.splitpanes--vertical > .splitpanes__splitter,
+  .splitpanes--vertical > .splitpanes__splitter {
+    width: 3px;
+    &:before {
+      left: -2px;
+      right: -2px;
+      height: 100%;
+      cursor: col-resize;
+    }
+  }
+
+  &.splitpanes--horizontal > .splitpanes__splitter,
+  .splitpanes--horizontal > .splitpanes__splitter {
+    height: 3px;
+    &:before {
+      top: -2px;
+      bottom: -2px;
+      width: 100%;
+      cursor: row-resize;
+    }
+  }
+}

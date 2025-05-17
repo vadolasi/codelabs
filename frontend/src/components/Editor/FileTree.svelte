@@ -1,4 +1,5 @@
 <script lang="ts">
+import getIcon from "$lib/icons"
 import {
 	type ItemInstance,
 	asyncDataLoaderFeature,
@@ -7,7 +8,6 @@ import {
 } from "@headless-tree/core"
 import { onMount, tick } from "svelte"
 import editorState, { webcontainer } from "./editorState.svelte"
-import getIcon from "$lib/icons";
 
 type Item = {
 	isFolder: boolean
@@ -55,13 +55,12 @@ const tree = createTree<Item>({
 
 onMount(async () => {
 	webcontainer.current.fs.watch("/", { recursive: true }, (_, filename) => {
-		const item = tree
-			.getItemInstance(
-				`/${`/${filename as string}`.split("/").slice(1, -1).join("/")}`
-			)
-    if (item) {
+		const item = tree.getItemInstance(
+			`/${`/${filename as string}`.split("/").slice(1, -1).join("/")}`
+		)
+		if (item) {
 			item.invalidateChildrenIds()
-    }
+		}
 	})
 })
 

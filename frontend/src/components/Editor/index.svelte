@@ -1,6 +1,6 @@
 <script lang="ts">
-import { onMount } from "svelte"
 import type { WebContainer } from "@webcontainer/api"
+import { onMount } from "svelte"
 import { Pane, Splitpanes } from "svelte-splitpanes"
 import Editor from "./Editor.svelte"
 import FileTree from "./FileTree.svelte"
@@ -14,19 +14,22 @@ webcontainer.current = loadedWebContainer
 let iframeUrl: string | null = $state(null)
 
 onMount(() => {
-  webcontainer.current.on("server-ready", async (_port, url) => {
-    iframeUrl = url
-  })
+	webcontainer.current.on("server-ready", async (_port, url) => {
+		iframeUrl = url
+	})
 })
 </script>
 
-<div class="h-screen w-screen">
-  <Splitpanes class="w-full h-full">
+<div class="h-screen w-screen flex flex-col">
+  <div class="w-full bg-base-200 p-2">
+    <h1>dfsdf</h1>
+  </div>
+  <Splitpanes theme="modern-theme" class="w-full h-full flex-1">
     <Pane maxSize={70} size={20}>
       <FileTree />
     </Pane>
     <Pane>
-      <Splitpanes horizontal={true}>
+      <Splitpanes theme="modern-theme" horizontal={true}>
         <Pane>
           <Editor />
         </Pane>

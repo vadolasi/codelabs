@@ -1,4 +1,6 @@
 <script lang="ts">
+import getIcon from "$lib/icons"
+import { catppuccinMocha } from "@catppuccin/codemirror"
 import {
 	autocompletion,
 	closeBrackets,
@@ -31,16 +33,14 @@ import {
 } from "@codemirror/view"
 import { onMount, tick } from "svelte"
 import editorState, { webcontainer } from "./editorState.svelte"
-import { catppuccinMocha } from "@catppuccin/codemirror"
-import getIcon from "$lib/icons"
 
 let view: EditorView
 const editorTheme = EditorView.theme({
-  "&": {
-    width: "100%",
-    height: "100%",
-    flex: 1
-  }
+	"&": {
+		width: "100%",
+		height: "100%",
+		flex: 1
+	}
 })
 
 onMount(() => {
@@ -56,94 +56,96 @@ $effect(() => {
 			if (previousTab) {
 				editorState.saveState(previousTab, view.state.toJSON())
 			}
-      const config: EditorStateConfig = {
-        doc: await webcontainer.current.fs.readFile(
-          editorState.currentTab!,
-          "utf-8"
-        ),
-        extensions: [
-          keymap.of(defaultKeymap),
-          lineNumbers(),
-          highlightActiveLineGutter(),
-          highlightSpecialChars(),
-          history(),
-          foldGutter(),
-          drawSelection(),
-          dropCursor(),
-          EditorState.allowMultipleSelections.of(true),
-          indentOnInput(),
-          syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
-          bracketMatching(),
-          closeBrackets(),
-          autocompletion(),
-          rectangularSelection(),
-          crosshairCursor(),
-          highlightActiveLine(),
-          highlightSelectionMatches(),
-          keymap.of([
-            ...closeBracketsKeymap,
-            ...defaultKeymap,
-            ...searchKeymap,
-            ...historyKeymap,
-            ...foldKeymap,
-            ...completionKeymap,
-            ...lintKeymap
-          ]),
-          EditorView.updateListener.of(async (update) => {
-            if (update.docChanged) {
-              webcontainer.current.fs.writeFile(
-                editorState.currentTab!,
-                update.state.doc.toString()
-              )
-            }
-          }),
-          editorTheme,
-          catppuccinMocha
-        ]
-      }
-      const previousState = editorState.getState(editorState.currentTab!)
+			const config: EditorStateConfig = {
+				doc: await webcontainer.current.fs.readFile(
+					editorState.currentTab!,
+					"utf-8"
+				),
+				extensions: [
+					keymap.of(defaultKeymap),
+					lineNumbers(),
+					highlightActiveLineGutter(),
+					highlightSpecialChars(),
+					history(),
+					foldGutter(),
+					drawSelection(),
+					dropCursor(),
+					EditorState.allowMultipleSelections.of(true),
+					indentOnInput(),
+					syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
+					bracketMatching(),
+					closeBrackets(),
+					autocompletion(),
+					rectangularSelection(),
+					crosshairCursor(),
+					highlightActiveLine(),
+					highlightSelectionMatches(),
+					keymap.of([
+						...closeBracketsKeymap,
+						...defaultKeymap,
+						...searchKeymap,
+						...historyKeymap,
+						...foldKeymap,
+						...completionKeymap,
+						...lintKeymap
+					]),
+					EditorView.updateListener.of(async (update) => {
+						if (update.docChanged) {
+							webcontainer.current.fs.writeFile(
+								editorState.currentTab!,
+								update.state.doc.toString()
+							)
+						}
+					}),
+					editorTheme,
+					catppuccinMocha
+				]
+			}
+			const previousState = editorState.getState(editorState.currentTab!)
 			view.setState(
-        previousState ?
-          EditorState.fromJSON(previousState, config)
-          : EditorState.create(config)
+				previousState
+					? EditorState.fromJSON(previousState, config)
+					: EditorState.create(config)
 			)
 		}
 
 		setupEditor()
 
-    const watcher = webcontainer.current.fs.watch(
-      editorState.currentTab!,
-      async (event) => {
-        if (event === "change") {
-          const content = await webcontainer.current.fs.readFile(
-            editorState.currentTab!,
-            "utf-8"
-          )
-          tick().then(() => {
-            if (content !== view.state.doc.toString()) {
-              view.dispatch({
-                changes: {
-                  from: 0,
-                  to: view.state.doc.length,
-                  insert: content
-                }
-              })
-            }
-          })
-        } else {
-          if (editorState.currentTab) {
-            editorState.closeTab(editorState.currentTab)
-          }
-        }
-      }
-    )
+		const watcher = webcontainer.current.fs.watch(
+			editorState.currentTab!,
+			async (event) => {
+				if (event === "change") {
+					const content = await webcontainer.current.fs.readFile(
+						editorState.currentTab!,
+						"utf-8"
+					)
+					tick().then(() => {
+						if (content !== view.state.doc.toString()) {
+							view.dispatch({
+								changes: {
+									from: 0,
+									to: view.state.doc.length,
+									insert: content
+								}
+							})
+						}
+					})
+				} else {
+					if (editorState.currentTab) {
+						editorState.closeTab(editorState.currentTab)
+					}
+				}
+			}
+		)
 
-    return () => watcher.close()
+		return () => watcher.close()
 	}
 })
 
-const tabNames = $derived(editorState.tabs.map(tab => tab.getItemName()))
-const duplicateFileNames = $derived(tabNames.filter((item, index) => tabNames.indexOf(item) !== index))
+const tabNames = $derived(editorState.tabs.map((tab) => tab.getItemName()))
+const duplicateFileNames = $derived(
+	tabNames.filter((item, index) => tabNames.indexOf(item) !== index)
+)
 </script>
 
 <div class="w-full h-full">
