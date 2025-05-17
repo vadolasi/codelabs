@@ -29,8 +29,10 @@ import {
 	lineNumbers,
 	rectangularSelection
 } from "@codemirror/view"
-import { onMount } from "svelte"
+import { onMount, tick } from "svelte"
 import editorState, { webcontainer } from "./editorState.svelte"
+import { catppuccinMocha } from "@catppuccin/codemirror"
+import getIcon from "$lib/icons"
 
 let view: EditorView
 const editorTheme = EditorView.theme({
@@ -95,7 +97,8 @@ $effect(() => {
               )
             }
           }),
-          editorTheme
+          editorTheme,
+          catppuccinMocha
         ]
       }
       const previousState = editorState.getState(editorState.currentTab!)
@@ -107,23 +110,75 @@ $effect(() => {
 		}
 
 		setupEditor()
+
+    const watcher = webcontainer.current.fs.watch(
+      editorState.currentTab!,
+      async (event) => {
+        if (event === "change") {
+          const content = await webcontainer.current.fs.readFile(
+            editorState.currentTab!,
+            "utf-8"
+          )
+          tick().then(() => {
+            if (content !== view.state.doc.toString()) {
+              view.dispatch({
+                changes: {
+                  from: 0,
+                  to: view.state.doc.length,
+                  insert: content
+                }
+              })
+            }
+          })
+        } else {
+          if (editorState.currentTab) {
+            editorState.closeTab(editorState.currentTab)
+          }
+        }
+      }
+    )
+
+    return () => watcher.close()
 	}
 })
+
+const tabNames = $derived(editorState.tabs.map(tab => tab.getItemName()))
+const duplicateFileNames = $derived(tabNames.filter((item, index) => tabNames.indexOf(item) !== index))
 </script>
 
-<div class="flex flex-col w-full h-full">
+<div class="w-full h-full">
   {#if editorState.tabs.length > 0}
-    <div class="flex w-full h-12">
+    <div class="flex w-full bg-base-100">
       {#each editorState.tabs as tab (tab.getItemData().path)}
-        <button type="button" class="p-3 hover:bg-gray-200" onclick={() => editorState.setCurrentTab(tab)}>
+        <!-- svelte-ignore a11y_click_events_have_key_events -->
+        <!-- svelte-ignore a11y_no_static_element_interactions -->
+        <div role="button" tabindex="0" class="py-1 px-3 flex gap-1 items-center justify-center hover:bg-base-200 text-sm group border-primery select-none" class:bg-base-200={editorState.currentTab === tab.getItemData().path} onclick={() => editorState.setCurrentTab(tab)}>
+          <img src={getIcon(tab.getItemName(), "file")} alt="file icon" class="w-4 h-4" />
           <span>{tab.getItemName()}</span>
-        </button>
+          {#if duplicateFileNames.includes(tab.getItemName())}
+            <span class="text-xs text-base-content/50 group-hover:text-base-content/70">/{tab.getItemData().path.split("/").splice(-2, 1)}</span>
+          {/if}
+          <button
+            type="button"
+            aria-label="Close tab"
+            class="invisible group-hover:visible p-1 rounded-sm hover:bg-base-200 group-hover:hover:bg-base-300"
+            class:visible={editorState.currentTab === tab.getItemData().path}
+            onclick={(event) => {
+              event.stopPropagation()
+              editorState.closeTab(tab.getItemData().path)
+            }}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
       {/each}
     </div>
   {/if}
-  <div bind:this={editorContainer} class="w-full h-[calc(100%-3rem)]" class:hidden={editorState.currentTab === null}></div>
+  <div bind:this={editorContainer} class="w-full h-full" class:hidden={editorState.currentTab === null}></div>
   {#if editorState.currentTab === null}
-    <div class="w-full h-full flex items-center justify-center">
+    <div class="w-full h-full flex items-center justify-center bg-base-100 select-none">
       <span>No file selected</span>
     </div>
   {/if}

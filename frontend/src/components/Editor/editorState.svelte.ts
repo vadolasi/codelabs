@@ -18,9 +18,10 @@ class EditorState {
 		this.tabHistory.push(path)
 	}
 
-	public removeTab(path: string) {
+	public closeTab(path: string) {
 		this.tabs = this.tabs.filter((t) => t.getItemData().path !== path)
 		this.tabHistory = this.tabHistory.filter((t) => t !== path)
+		this.states.delete(path)
 		if (this.currentTab === path) {
 			this.currentTab = this.tabHistory[this.tabHistory.length - 1] || null
 		}

@@ -1,5 +1,5 @@
 <script lang="ts">
-import type { WebContainer, WebContainerProcess } from "@webcontainer/api"
+import type { WebContainerProcess } from "@webcontainer/api"
 import { ClipboardAddon } from "@xterm/addon-clipboard"
 import { FitAddon } from "@xterm/addon-fit"
 import { ImageAddon } from "@xterm/addon-image"
@@ -10,12 +10,37 @@ import { WebglAddon } from "@xterm/addon-webgl"
 import { Terminal } from "@xterm/xterm"
 import { onMount } from "svelte"
 import { webcontainer } from "./editorState.svelte"
+import { flavors } from "@catppuccin/palette"
 
 import "@xterm/xterm/css/xterm.css"
 
+const { colors } = flavors.mocha
+
 const terminal = new Terminal({
 	convertEol: true,
-	allowProposedApi: true
+	allowProposedApi: true,
+  theme: {
+    background: colors.base.hex,
+    foreground: colors.text.hex,
+    cursor: colors.pink.hex,
+    cursorAccent: colors.base.hex,
+    black: colors.base.hex,
+    red: colors.red.hex,
+    green: colors.green.hex,
+    yellow: colors.yellow.hex,
+    blue: colors.blue.hex,
+    magenta: colors.pink.hex,
+    cyan: colors.teal.hex,
+    white: colors.text.hex,
+    brightBlack: colors.overlay0.hex,
+    brightRed: colors.red.hex,
+    brightGreen: colors.green.hex,
+    brightYellow: colors.yellow.hex,
+    brightBlue: colors.blue.hex,
+    brightMagenta: colors.pink.hex,
+    brightCyan: colors.teal.hex,
+    brightWhite: colors.text.hex
+  }
 })
 terminal.loadAddon(new ClipboardAddon())
 terminal.loadAddon(new ImageAddon())

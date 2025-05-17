@@ -13,5 +13,8 @@ onMount(async () => {
 {#if webcontainer}
   <Editor webcontainer={webcontainer} />
 {:else}
-  <h1>Loading WebContainer...</h1>
+  <div class="flex flex-col items-center justify-center h-screen gap-4">
+    <div class="radial-progress animate-spin" style:--value={70} aria-valuenow="70" role="progressbar"></div>
+    <span class="text-2xl text-base-content/50 text-center">Carregando ambiente de<br />desenvolvimento</span>
+  </div>
 {/if}
