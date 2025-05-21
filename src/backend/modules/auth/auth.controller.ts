@@ -17,23 +17,56 @@ const authController = new Elysia({ name: "api.auth", prefix: "/auth" }).post(
 				)
 		})
 
-		if (!user || !(await Bun.password.verify(user.password, password))) {
-			return status(401, { message: "INVALID_CREDENTIALS" })
+		if (!user) {
+			return status(401, { code: "USER_NOT_FOUND" })
 		}
 
-		const session = await createSession(generateSessionToken(), user.id)
+		if (!(await Bun.password.verify(password, user.password))) {
+			return status(401, { code: "INVALID_PASSWORD" })
+		}
 
-		sessionCookie.set({ value: session.id, expires: session.expiresAt })
+		if (user.emailVerified === false) {
+			return status(401, {
+				code: "EMAIL_NOT_VERIFIED",
+				data: { email: user.email }
+			})
+		}
 
-		return {}
+		const sessionToken = generateSessionToken()
+		const session = await createSession(sessionToken, user.id)
+
+		sessionCookie.value = sessionToken
+		sessionCookie.expires = session.expiresAt
+
+		return user
 	},
 	{
 		body: t.Object({
 			emailOrUsername: t.String(),
 			password: t.String()
 		}),
-		cookie: t.Object({
-			session: t.String()
+		response: {
+			200: t.Object({
+				email: t.String(),
+				username: t.String()
+			}),
+			401: t.Union([
+				t.Object({
+					code: t.Literal("EMAIL_NOT_VERIFIED"),
+					data: t.Object({
+						email: t.String()
+					})
+				}),
+				t.Object({
+					code: t.Union([
+						t.Literal("USER_NOT_FOUND"),
+						t.Literal("INVALID_PASSWORD")
+					])
+				})
+			])
+		},
+		cookie: t.Cookie({
+			session: t.Optional(t.String())
 		})
 	}
 )

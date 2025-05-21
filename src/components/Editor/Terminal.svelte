@@ -83,7 +83,7 @@ onMount(async () => {
 	terminal.onData((data) => {
 		input.write(data)
 	})
-  resize()
+	resize()
 })
 </script>
 

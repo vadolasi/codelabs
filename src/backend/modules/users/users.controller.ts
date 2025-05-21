@@ -1,11 +1,15 @@
-import { verifyEmail } from "@devmehq/email-validator-js"
 import { zxcvbnAsync, zxcvbnOptions } from "@zxcvbn-ts/core"
 import * as zxcvbnCommonPackage from "@zxcvbn-ts/language-common"
 import { matcherPwnedFactory } from "@zxcvbn-ts/matcher-pwned"
+import { eq } from "drizzle-orm"
 import Elysia, { t } from "elysia"
 import { normalizeEmail } from "email-normalizer"
+import MailChecker from "mailchecker"
 import db from "../../database"
 import { users } from "../../database/schema"
+import sendEmail from "../../emails"
+import authMiddleware from "../auth/auth.middleware"
+import { generateOTPCode } from "./users.service"
 
 const matcherPwned = matcherPwnedFactory(fetch, zxcvbnOptions)
 zxcvbnOptions.addMatcher("pwned", matcherPwned)
@@ -16,59 +20,160 @@ zxcvbnOptions.setOptions({
 	useLevenshteinDistance: true
 })
 
+const unauthenticated = new Elysia()
+	.post(
+		"/register",
+		async ({ body: { email, username, password }, status }) => {
+			const emailNormalized = normalizeEmail({ email })
+
+			if (!MailChecker.isValid(emailNormalized)) {
+				return status(400, { message: "INVALID_EMAIL" })
+			}
+
+			const existingUser = await db.query.users.findFirst({
+				where: (users, { or, eq }) =>
+					or(eq(users.email, emailNormalized), eq(users.username, username)),
+				columns: {
+					id: true
+				}
+			})
+
+			if (existingUser) {
+				return status(400, { message: "USER_ALREADY_EXISTS" })
+			}
+
+			if ((await zxcvbnAsync(password)).score < 3) {
+				return status(400, { message: "WEAK_PASSWORD" })
+			}
+
+			const emailOTP = generateOTPCode()
+
+			await db.insert(users).values({
+				email,
+				username,
+				password: await Bun.password.hash(password),
+				emailOTP,
+				emailOTPExpiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24)
+			})
+
+			await sendEmail("emailVerification", {
+				subject: "Verifique o seu email",
+				data: { code: emailOTP },
+				to: email
+			})
+
+			return {}
+		},
+		{
+			body: t.Object({
+				email: t.String({ maxLength: 255, minLength: 5 }),
+				username: t.String({ maxLength: 255, minLength: 3 }),
+				password: t.String({ minLength: 8 })
+			})
+		}
+	)
+	.post(
+		"/verify-user",
+		async ({ body: { email, code }, status }) => {
+			console.log("email", email, "code", code)
+			const user = await db.query.users.findFirst({
+				where: (users, { eq, and, gt }) =>
+					and(
+						eq(users.email, email),
+						eq(users.emailOTP, code),
+						gt(users.emailOTPExpiresAt, new Date())
+					),
+				columns: {
+					id: true
+				}
+			})
+
+			if (!user) {
+				return status(400, { message: "INVALID_VERIFICATION_CODE" })
+			}
+
+			await db
+				.update(users)
+				.set({
+					emailVerified: true,
+					emailOTP: null,
+					emailOTPExpiresAt: null
+				})
+				.where(eq(users.id, user.id))
+
+			return {}
+		},
+		{
+			body: t.Object({
+				email: t.String({ maxLength: 255, minLength: 5 }),
+				code: t.String({ maxLength: 6, minLength: 6 })
+			}),
+			rateLimit: {
+				level: "medium",
+				useIP: true
+			}
+		}
+	)
+	.get(
+		"/check-email-exists",
+		async ({ query: { email }, status }) => {
+			const emailNormalized = normalizeEmail({ email })
+
+			const existingUser = await db.query.users.findFirst({
+				where: (users, { eq }) => eq(users.email, emailNormalized),
+				columns: {
+					id: true
+				}
+			})
+
+			if (existingUser) {
+				return status(400, { message: "EMAIL_ALREADY_EXISTS" })
+			}
+
+			return {}
+		},
+		{
+			query: t.Object({
+				email: t.String()
+			})
+		}
+	)
+	.get(
+		"/check-username-exists",
+		async ({ query: { username }, status }) => {
+			const existingUser = await db.query.users.findFirst({
+				where: (users, { eq }) => eq(users.username, username),
+				columns: {
+					id: true
+				}
+			})
+
+			if (existingUser) {
+				return status(400, { message: "USERNAME_ALREADY_EXISTS" })
+			}
+
+			return {}
+		},
+		{
+			query: t.Object({
+				username: t.String()
+			})
+		}
+	)
+
+const authenticated = new Elysia().use(authMiddleware).get(
+	"/me",
+	({ user }) => {
+		return user
+	},
+	{ user: true }
+)
+
 const usersController = new Elysia({
 	name: "api.users",
 	prefix: "/users"
-}).post(
-	"/register",
-	async ({ body: { email, username, password }, status }) => {
-		const emailNormalized = normalizeEmail({ email })
-
-		const existingUser = await db.query.users.findFirst({
-			where: (users, { or, eq }) =>
-				or(
-					eq(users.emailNormalized, emailNormalized),
-					eq(users.username, username)
-				),
-			columns: { id: true }
-		})
-
-		if (existingUser) {
-			return {}
-		}
-
-		if ((await zxcvbnAsync(password)).score < 3) {
-			return status(400, { message: "WEAK_PASSWORD" })
-		}
-
-		if (
-			Object.values(
-				await verifyEmail({
-					emailAddress: email,
-					verifyMx: true,
-					verifySmtp: true
-				})
-			).some((result) => result === false || result === null)
-		) {
-			return status(400, { message: "INVALID_EMAIL" })
-		}
-
-		await db.insert(users).values({
-			email: email.toLowerCase(),
-			emailNormalized,
-			username,
-			password: await Bun.password.hash(password)
-		})
-
-		return {}
-	},
-	{
-		body: t.Object({
-			email: t.String({ maxLength: 255, minLength: 5 }),
-			username: t.String({ maxLength: 255, minLength: 3 }),
-			password: t.String({ minLength: 8 })
-		})
-	}
-)
+})
+	.use(unauthenticated)
+	.use(authenticated)
 
 export default usersController

@@ -1,3 +1,4 @@
+import { logger } from "@bogeychan/elysia-logger"
 import cors from "@elysiajs/cors"
 import serverTiming from "@elysiajs/server-timing"
 import { Elysia } from "elysia"
@@ -24,11 +25,12 @@ const app = new Elysia({
 	.use(
 		cors({
 			origin: process.env.PUBLIC_SITE_URL,
-			allowedHeaders: ["Content-Type"],
+			allowedHeaders: ["Content-Type", "Accept"],
 			methods: ["GET", "POST", "PUT", "PATCH", "DELETE"]
 		})
 	)
 	.use(serverTiming())
+	.use(logger())
 	.onParse(async ({ request }, contentType) => {
 		if (contentType === "application/x-msgpack") {
 			return packr.unpack(Buffer.from(await request.arrayBuffer()))
