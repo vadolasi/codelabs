@@ -1,17 +1,11 @@
 <script lang="ts">
+import { QueryClientProvider } from "@tanstack/svelte-query"
 import "../app.css"
-import { browser } from "$app/environment"
-import { QueryClient, QueryClientProvider } from "@tanstack/svelte-query"
+import type { LayoutData } from "./$types"
+import type { Snippet } from "svelte"
 
-const { children } = $props()
-
-const queryClient = new QueryClient({
-	defaultOptions: {
-		queries: {
-			enabled: browser
-		}
-	}
-})
+const { queryClient, children }: LayoutData & { children: Snippet<[]> } =
+	$props()
 </script>
 
 <QueryClientProvider client={queryClient}>

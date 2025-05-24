@@ -1,12 +1,11 @@
 import { zxcvbnAsync, zxcvbnOptions } from "@zxcvbn-ts/core"
 import * as zxcvbnCommonPackage from "@zxcvbn-ts/language-common"
 import { matcherPwnedFactory } from "@zxcvbn-ts/matcher-pwned"
-import { eq } from "drizzle-orm"
+import { and, eq, gt } from "drizzle-orm"
 import Elysia, { t } from "elysia"
 import { normalizeEmail } from "email-normalizer"
 import MailChecker from "mailchecker"
-import db from "../../database"
-import { users } from "../../database/schema"
+import db, { users } from "../../database"
 import sendEmail from "../../emails"
 import authMiddleware from "../auth/auth.middleware"
 import { generateOTPCode } from "./users.service"
@@ -30,13 +29,14 @@ const unauthenticated = new Elysia()
 				return status(400, { message: "INVALID_EMAIL" })
 			}
 
-			const existingUser = await db.query.users.findFirst({
-				where: (users, { or, eq }) =>
-					or(eq(users.email, emailNormalized), eq(users.username, username)),
-				columns: {
-					id: true
-				}
-			})
+			const [existingUser] = await db
+				.select()
+				.from(users)
+				.where(
+					and(eq(users.email, emailNormalized), eq(users.username, username))
+				)
+				.limit(1)
+				.$withCache()
 
 			if (existingUser) {
 				return status(400, { message: "USER_ALREADY_EXISTS" })
@@ -75,18 +75,18 @@ const unauthenticated = new Elysia()
 	.post(
 		"/verify-user",
 		async ({ body: { email, code }, status }) => {
-			console.log("email", email, "code", code)
-			const user = await db.query.users.findFirst({
-				where: (users, { eq, and, gt }) =>
+			const [user] = await db
+				.select()
+				.from(users)
+				.where(
 					and(
 						eq(users.email, email),
 						eq(users.emailOTP, code),
 						gt(users.emailOTPExpiresAt, new Date())
-					),
-				columns: {
-					id: true
-				}
-			})
+					)
+				)
+				.limit(1)
+				.$withCache()
 
 			if (!user) {
 				return status(400, { message: "INVALID_VERIFICATION_CODE" })
@@ -119,12 +119,12 @@ const unauthenticated = new Elysia()
 		async ({ query: { email }, status }) => {
 			const emailNormalized = normalizeEmail({ email })
 
-			const existingUser = await db.query.users.findFirst({
-				where: (users, { eq }) => eq(users.email, emailNormalized),
-				columns: {
-					id: true
-				}
-			})
+			const [existingUser] = await db
+				.select()
+				.from(users)
+				.where(and(eq(users.email, emailNormalized)))
+				.limit(1)
+				.$withCache()
 
 			if (existingUser) {
 				return status(400, { message: "EMAIL_ALREADY_EXISTS" })
@@ -141,12 +141,12 @@ const unauthenticated = new Elysia()
 	.get(
 		"/check-username-exists",
 		async ({ query: { username }, status }) => {
-			const existingUser = await db.query.users.findFirst({
-				where: (users, { eq }) => eq(users.username, username),
-				columns: {
-					id: true
-				}
-			})
+			const [existingUser] = await db
+				.select()
+				.from(users)
+				.where(and(eq(users.username, username)))
+				.limit(1)
+				.$withCache()
 
 			if (existingUser) {
 				return status(400, { message: "USERNAME_ALREADY_EXISTS" })

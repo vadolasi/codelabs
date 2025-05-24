@@ -2,9 +2,9 @@
 import { cn } from "$lib/cn"
 import type { HTMLInputAttributes } from "svelte/elements"
 import {
-	formFieldProxy,
 	type FormPathLeaves,
-	type SuperForm
+	type SuperForm,
+	formFieldProxy
 } from "sveltekit-superforms/client"
 
 interface Props extends Omit<HTMLInputAttributes, "form"> {
@@ -30,7 +30,7 @@ const { value, errors, constraints } = formFieldProxy(form, field)
 <label class={cn("floating-label", containerClass)}>
   <input
     placeholder={label}
-    class={cn("input input-lg validator w-full", className)}
+    class={cn("input validator", className)}
     {...props}
     aria-invalid={$errors?.length ? true : undefined}
     bind:value={$value}

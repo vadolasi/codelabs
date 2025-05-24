@@ -54,13 +54,15 @@ const tree = createTree<Item>({
 })
 
 onMount(async () => {
-	webcontainer.current.fs.watch("/", { recursive: true }, (_, filename) => {
+	webcontainer.current.fs.watch("/", { recursive: true }, (event, filename) => {
 		const item = tree.getItemInstance(
 			`/${`/${filename as string}`.split("/").slice(1, -1).join("/")}`
 		)
 		if (item) {
 			item.invalidateChildrenIds()
 		}
+
+    editorState.isUpToDate = false
 	})
 })
 

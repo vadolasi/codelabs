@@ -5,6 +5,7 @@ import { Elysia } from "elysia"
 import { Packr } from "msgpackr"
 import authController from "./modules/auth/auth.controller"
 import usersController from "./modules/users/users.controller"
+import workspacesController from "./modules/workspaces/workspaces.controller"
 
 const packr = new Packr({ bundleStrings: true })
 
@@ -47,6 +48,7 @@ const app = new Elysia({
 	})
 	.use(authController)
 	.use(usersController)
+	.use(workspacesController)
 	.listen(3000)
 
 export default app

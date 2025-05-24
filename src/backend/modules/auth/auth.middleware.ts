@@ -1,5 +1,6 @@
-import Elysia, { t } from "elysia"
-import db from "../../database"
+import { and, eq } from "drizzle-orm"
+import Elysia from "elysia"
+import db, { users } from "../../database"
 import { validateSessionToken } from "./auth.service"
 
 const authMiddleware = new Elysia()
@@ -26,14 +27,16 @@ const authMiddleware = new Elysia()
 		user: (_: true) => ({
 			resolve: async ({ userId, status }) => {
 				if (userId !== undefined) {
-					const user = await db.query.users.findFirst({
-						where: (users, { eq }) => eq(users.id, userId),
-						columns: {
-							id: true,
-							username: true,
-							email: true
-						}
-					})
+					const [user] = await db
+						.select({
+							id: users.id,
+							email: users.email,
+							username: users.username
+						})
+						.from(users)
+						.where(and(eq(users.id, userId)))
+						.limit(1)
+						.$withCache()
 
 					if (!user) {
 						return status(401, { message: "UNAUTHORIZED" })

@@ -1,11 +1,11 @@
 <script lang="ts">
 import { goto } from "$app/navigation"
 import { page } from "$app/state"
-import { onMount } from "svelte"
-import * as pinInput from "@zag-js/pin-input"
-import { useMachine, normalizeProps } from "@zag-js/svelte"
-import { createMutation } from "@tanstack/svelte-query"
 import httpClient from "$lib/httpClient"
+import { createMutation } from "@tanstack/svelte-query"
+import * as pinInput from "@zag-js/pin-input"
+import { normalizeProps, useMachine } from "@zag-js/svelte"
+import { onMount } from "svelte"
 import Button from "../../../components/Button.svelte"
 
 const { email } = page.state as { email: string }
@@ -59,8 +59,8 @@ const api = $derived(pinInput.connect(service, normalizeProps))
         {/each}
       </div>
       <div class="card-actions">
-        <Button class="btn-primary btn-block" loading={$verifyEmailMutation.isPending}>Continuar</Button>
-        <Button class="btn-ghost btn-block" disabled={$verifyEmailMutation.isPending}>Reenviar código</Button>
+        <Button class="btn-primary btn-block btn-lg" loading={$verifyEmailMutation.isPending}>Continuar</Button>
+        <Button class="btn-ghost btn-block btn-lg" disabled={$verifyEmailMutation.isPending}>Reenviar código</Button>
       </div>
     </div>
   </div>

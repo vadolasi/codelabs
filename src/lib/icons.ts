@@ -1,7 +1,7 @@
 import { generateManifest } from "material-icon-theme"
 
 const icons: Record<string, { default: string }> = import.meta.glob(
-	"../../../node_modules/material-icon-theme/icons/*.svg",
+	"../../node_modules/material-icon-theme/icons/*.svg",
 	{
 		eager: true,
 		query: {
@@ -41,13 +41,13 @@ export default function getIcon(
 		}
 
 		return icons[
-			`../../../node_modules/material-icon-theme/icons/${icon ?? "file"}.svg`
+			`../../node_modules/material-icon-theme/icons/${icon ?? "file"}.svg`
 		].default
 	}
 
 	icon = manifest.folderNames?.[filename] ?? "folder"
 
 	return icons[
-		`../../../node_modules/material-icon-theme/icons/${icon}${type === "folder-open" ? "-open" : ""}.svg`
+		`../../node_modules/material-icon-theme/icons/${icon}${type === "folder-open" ? "-open" : ""}.svg`
 	].default
 }

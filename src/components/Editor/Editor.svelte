@@ -52,7 +52,7 @@ let editorContainer: HTMLDivElement
 $effect(() => {
 	if (editorState.currentTab) {
 		async function setupEditor() {
-			const previousTab = editorState.getPreviousTab()
+			const previousTab = editorState.previousTab
 			if (previousTab) {
 				editorState.saveState(previousTab, view.state.toJSON())
 			}
@@ -181,7 +181,7 @@ const duplicateFileNames = $derived(
   <div bind:this={editorContainer} class="w-full h-full" class:hidden={editorState.currentTab === null}></div>
   {#if editorState.currentTab === null}
     <div class="w-full h-full flex items-center justify-center bg-base-100 select-none">
-      <span>No file selected</span>
+      <span>Nenhum arquivo selecionado</span>
     </div>
   {/if}
 </div>

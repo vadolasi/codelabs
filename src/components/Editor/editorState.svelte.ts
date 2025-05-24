@@ -6,6 +6,7 @@ class EditorState {
 	public tabs: ItemInstance<{ path: string; isFolder: boolean }>[] = $state([])
 	private states: Map<string, object> = new Map()
 	private tabHistory: string[] = []
+	private upToDate = $state(true)
 
 	public setCurrentTab(
 		item: ItemInstance<{ path: string; isFolder: boolean }>
@@ -27,7 +28,7 @@ class EditorState {
 		}
 	}
 
-	public getPreviousTab() {
+	public get previousTab() {
 		return this.tabHistory[this.tabHistory.length - 2] || null
 	}
 
@@ -37,6 +38,14 @@ class EditorState {
 
 	public getState(path: string) {
 		return this.states.get(path)
+	}
+
+	public get isUpToDate() {
+		return this.upToDate
+	}
+
+	public set isUpToDate(value: boolean) {
+		this.upToDate = value
 	}
 }
 
