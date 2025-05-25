@@ -36,7 +36,6 @@ const unauthenticated = new Elysia()
 					and(eq(users.email, emailNormalized), eq(users.username, username))
 				)
 				.limit(1)
-				.$withCache()
 
 			if (existingUser) {
 				return status(400, { message: "USER_ALREADY_EXISTS" })
@@ -86,7 +85,6 @@ const unauthenticated = new Elysia()
 					)
 				)
 				.limit(1)
-				.$withCache()
 
 			if (!user) {
 				return status(400, { message: "INVALID_VERIFICATION_CODE" })
@@ -124,7 +122,6 @@ const unauthenticated = new Elysia()
 				.from(users)
 				.where(and(eq(users.email, emailNormalized)))
 				.limit(1)
-				.$withCache()
 
 			if (existingUser) {
 				return status(400, { message: "EMAIL_ALREADY_EXISTS" })
@@ -146,7 +143,6 @@ const unauthenticated = new Elysia()
 				.from(users)
 				.where(and(eq(users.username, username)))
 				.limit(1)
-				.$withCache()
 
 			if (existingUser) {
 				return status(400, { message: "USERNAME_ALREADY_EXISTS" })

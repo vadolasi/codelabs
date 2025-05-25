@@ -7,10 +7,13 @@ import {
 } from "@tanstack/svelte-table"
 import Table from "../../components/Table.svelte"
 import Actions from "./actions.svelte"
-import { formatDate, formatRelativeTime } from "$lib/date";
-import type httpClient from "$lib/httpClient";
+import { formatDate, formatRelativeTime } from "$lib/date"
+import type httpClient from "$lib/httpClient"
 
-type Data = Exclude<Awaited<ReturnType<typeof httpClient.workspaces.get>>["data"], undefined | null>
+type Data = Exclude<
+	Awaited<ReturnType<typeof httpClient.workspaces.get>>["data"],
+	undefined | null
+>
 
 const { data }: { data: Data } = $props()
 

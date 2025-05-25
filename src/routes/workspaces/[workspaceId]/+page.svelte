@@ -1,16 +1,20 @@
 <script lang="ts">
 import { WebContainer } from "@webcontainer/api"
 import Editor from "../../../components/Editor/index.svelte"
-import { createQuery } from "@tanstack/svelte-query";
-import httpClient from "$lib/httpClient";
-import { page } from '$app/state';
+import { createQuery } from "@tanstack/svelte-query"
+import httpClient from "$lib/httpClient"
+import { page } from "$app/state"
 
-const { params: { workspaceId } } = page
+const {
+	params: { workspaceId }
+} = page
 
 const query = createQuery({
 	queryKey: ["workspaces", workspaceId],
 	queryFn: async () => {
-		const { data, error } = await httpClient.workspaces({ id: workspaceId }).get()
+		const { data, error } = await httpClient
+			.workspaces({ id: workspaceId })
+			.get()
 
 		if (error) {
 			throw new Error("Error fetching workspace")
@@ -23,13 +27,20 @@ const query = createQuery({
 let webcontainer: WebContainer | null = $state(null)
 
 $effect(() => {
-  if ($query.data !== undefined && webcontainer === null) {
-    WebContainer.boot({ workdirName: "codelabs" })
-      .then(async (loadedWebcontainer) => {
-        await loadedWebcontainer.mount($query.data!.content)
-        webcontainer = loadedWebcontainer
-      })
-  }
+	if ($query.data !== undefined && webcontainer === null) {
+		WebContainer.boot({ workdirName: "codelabs" }).then(
+			async (loadedWebcontainer) => {
+				await loadedWebcontainer.mount($query.data!.content)
+				webcontainer = loadedWebcontainer
+			}
+		)
+	}
+
+	return () => {
+		if (webcontainer) {
+			webcontainer.teardown()
+		}
+	}
 })
 </script>
 

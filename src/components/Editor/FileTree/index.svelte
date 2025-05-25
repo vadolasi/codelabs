@@ -1,18 +1,14 @@
 <script lang="ts">
-import getIcon from "$lib/icons"
 import {
-	type ItemInstance,
 	asyncDataLoaderFeature,
 	createTree,
-	selectionFeature
+	selectionFeature,
+	hotkeysCoreFeature,
+	renamingFeature
 } from "@headless-tree/core"
 import { onMount, tick } from "svelte"
-import editorState, { webcontainer } from "./editorState.svelte"
-
-type Item = {
-	isFolder: boolean
-	path: string
-}
+import editorState, { webcontainer } from "../editorState.svelte"
+import TreeItem from "./TreeItem.svelte"
 
 let render = $state(0)
 
@@ -24,6 +20,13 @@ const tree = createTree<Item>({
 		path: "Loading...",
 		isFolder: false
 	}),
+	canRename: () => true,
+	onRename: async (item, newName) => {
+		console.log("renaming", item.getItemData().path, newName)
+		const parentPath = item.getParent()!.getItemData().path
+		const newPath = `${parentPath}/${newName}`
+		await webcontainer.current.fs.rename(item.getItemData().path, newPath)
+	},
 	dataLoader: {
 		getItem: async (itemId) => {
 			try {
@@ -50,11 +53,16 @@ const tree = createTree<Item>({
 			render++
 		})
 	},
-	features: [asyncDataLoaderFeature, selectionFeature]
+	features: [
+		asyncDataLoaderFeature,
+		selectionFeature,
+		renamingFeature,
+		hotkeysCoreFeature
+	]
 })
 
 onMount(async () => {
-	webcontainer.current.fs.watch("/", { recursive: true }, (event, filename) => {
+	webcontainer.current.fs.watch("/", { recursive: true }, (_, filename) => {
 		const item = tree.getItemInstance(
 			`/${`/${filename as string}`.split("/").slice(1, -1).join("/")}`
 		)
@@ -62,43 +70,15 @@ onMount(async () => {
 			item.invalidateChildrenIds()
 		}
 
-    editorState.isUpToDate = false
+		editorState.isUpToDate = false
 	})
 })
-
-function handleFolderClick(item: ItemInstance<Item>) {
-	if (item.isExpanded()) {
-		item.collapse()
-	} else {
-		item.expand()
-	}
-}
 </script>
 
 <div class="h-full p-3 overflow-auto bg-base-100" {...tree.getContainerProps()}>
   {#key render}
     {#each tree.getItems() as item (item.getId())}
-      <button
-        {...item.getProps()}
-        style:padding-left={`${item.getItemMeta().level * 10}px`}
-        class="w-full cursor-pointer hover:text-primary flex items-center gap-1 text-sm text-ellipsis select-none"
-        onclick={item.getItemData().isFolder ? () => handleFolderClick(item) : () => editorState.setCurrentTab(item)}
-      >
-        <img
-          src={
-            getIcon(
-              item.getItemName(),
-              item.getItemData().isFolder ? item.isExpanded() ? "folder-open" : "folder-closed" : "file"
-            )
-          }
-          alt="file icon"
-          class="w-4 h-4"
-        />
-        {item.getItemName()}
-        {#if item.isLoading()}
-          <span>Loading...</span>
-        {/if}
-      </button>
+      <TreeItem item={item} />
     {/each}
   {/key}
 </div>

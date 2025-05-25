@@ -17,20 +17,22 @@ const query = createQuery({
 })
 </script>
 
-<h1 class="title">Workspaces</h1>
+<div class="container p-10 mx-auto">
+  <h1 class="title">Workspaces</h1>
 
-{#if $query.isLoading}
-   <div class="skeleton h-48 w-full"></div>
-{:else if $query.isError}
-  <p>Error: {$query.error.message}</p>
-{:else if $query.isSuccess}
-  {#if $query.data.length === 0}
-    <p>Nenhum workspace criado</p>
-  {:else}
-    <Workspaces data={$query.data} />
+  {#if $query.isLoading}
+    <div class="skeleton h-48 w-full"></div>
+  {:else if $query.isError}
+    <p>Error: {$query.error.message}</p>
+  {:else if $query.isSuccess}
+    {#if $query.data.length === 0}
+      <p>Nenhum workspace criado</p>
+    {:else}
+      <Workspaces data={$query.data} />
+    {/if}
   {/if}
-{/if}
 
-<a href="/workspaces/create" class="btn btn-primary mt-5">
-  Criar Workspace
-</a>
+  <a href="/workspaces/create" class="btn btn-primary mt-5">
+    Criar Workspace
+  </a>
+</div>

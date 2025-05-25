@@ -33,6 +33,7 @@ import {
 } from "@codemirror/view"
 import { onMount, tick } from "svelte"
 import editorState, { webcontainer } from "./editorState.svelte"
+import { javascript } from "@codemirror/lang-javascript"
 
 let view: EditorView
 const editorTheme = EditorView.theme({
@@ -80,6 +81,7 @@ $effect(() => {
 					crosshairCursor(),
 					highlightActiveLine(),
 					highlightSelectionMatches(),
+					javascript(),
 					keymap.of([
 						...closeBracketsKeymap,
 						...defaultKeymap,
@@ -148,9 +150,9 @@ const duplicateFileNames = $derived(
 )
 </script>
 
-<div class="w-full h-full">
+<div class="w-full h-full flex flex-col">
   {#if editorState.tabs.length > 0}
-    <div class="flex w-full bg-base-100">
+    <div class="flex w-full bg-base-100 shrink-0">
       {#each editorState.tabs as tab (tab.getItemData().path)}
         <!-- svelte-ignore a11y_click_events_have_key_events -->
         <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -178,7 +180,7 @@ const duplicateFileNames = $derived(
       {/each}
     </div>
   {/if}
-  <div bind:this={editorContainer} class="w-full h-full" class:hidden={editorState.currentTab === null}></div>
+  <div bind:this={editorContainer} class="flex-1 overflow-hidden" class:hidden={editorState.currentTab === null}></div>
   {#if editorState.currentTab === null}
     <div class="w-full h-full flex items-center justify-center bg-base-100 select-none">
       <span>Nenhum arquivo selecionado</span>

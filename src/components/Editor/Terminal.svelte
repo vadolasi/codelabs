@@ -66,25 +66,33 @@ function resize() {
 	})
 }
 
-onMount(async () => {
+onMount(() => {
 	terminal.open(terminalContainer)
-	shellProcess = await webcontainer.current.spawn("jsh", {
-		terminal: {
-			cols: terminal.cols,
-			rows: terminal.rows
-		}
-	})
-	shellProcess.output.pipeTo(
-		new WritableStream({
-			write: (data) => terminal.write(data)
+	webcontainer.current
+		.spawn("jsh", {
+			terminal: {
+				cols: terminal.cols,
+				rows: terminal.rows
+			}
 		})
-	)
-	const input = shellProcess.input.getWriter()
-	terminal.onData((data) => {
-		input.write(data)
-	})
-	resize()
+		.then((process) => {
+			shellProcess = process
+			shellProcess.output.pipeTo(
+				new WritableStream({
+					write: (data) => terminal.write(data)
+				})
+			)
+			const input = shellProcess.input.getWriter()
+			terminal.onData((data) => {
+				input.write(data)
+			})
+			resize()
+		})
+
+	return () => terminal.dispose()
 })
 </script>
 
+
 <div bind:this={terminalContainer} bind:borderBoxSize={null, resize} class="w-full h-full bg-base-100 p-1"></div>
+
