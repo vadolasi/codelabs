@@ -1,0 +1,55 @@
+{
+	"version": "7",
+	"dialect": "postgresql",
+	"entries": [
+		{
+			"idx": 0,
+			"version": "7",
+			"when": 1747806308088,
+			"tag": "0000_friendly_maverick",
+			"breakpoints": true
+		},
+		{
+			"idx": 1,
+			"version": "7",
+			"when": 1748042817815,
+			"tag": "0001_military_roxanne_simpson",
+			"breakpoints": true
+		},
+		{
+			"idx": 2,
+			"version": "7",
+			"when": 1748042868385,
+			"tag": "0002_faulty_spirit",
+			"breakpoints": true
+		},
+		{
+			"idx": 3,
+			"version": "7",
+			"when": 1748059037700,
+			"tag": "0003_overjoyed_lorna_dane",
+			"breakpoints": true
+		},
+		{
+			"idx": 4,
+			"version": "7",
+			"when": 1748078090394,
+			"tag": "0004_sad_deathbird",
+			"breakpoints": true
+		},
+		{
+			"idx": 5,
+			"version": "7",
+			"when": 1748100052072,
+			"tag": "0005_black_whiplash",
+			"breakpoints": true
+		},
+		{
+			"idx": 6,
+			"version": "7",
+			"when": 1748157545715,
+			"tag": "0006_brown_cerise",
+			"breakpoints": true
+		}
+	]
+}
