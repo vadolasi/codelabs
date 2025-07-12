@@ -2,12 +2,13 @@
 import {
 	asyncDataLoaderFeature,
 	createTree,
-	selectionFeature,
 	hotkeysCoreFeature,
-	renamingFeature
+	renamingFeature,
+	selectionFeature
 } from "@headless-tree/core"
+import picoMatch from "picomatch"
 import { onMount, tick } from "svelte"
-import editorState, { fileTree, webcontainer } from "../editorState.svelte"
+import editorState, { loroDoc, webcontainer } from "../editorState.svelte"
 import TreeItem from "./TreeItem.svelte"
 
 let render = $state(0)
@@ -17,8 +18,9 @@ const tree = createTree<Item>({
 	getItemName: (item) => item.getItemData().path?.split("/")?.pop() || "",
 	isItemFolder: (item) => item.getItemData().isFolder,
 	createLoadingItemData: () => ({
-		path: "Loading...",
-		isFolder: false
+		path: "Carregando...",
+		isFolder: false,
+		isHidden: true
 	}),
 	canRename: () => true,
 	onRename: async (item, newName) => {
@@ -28,17 +30,20 @@ const tree = createTree<Item>({
 	},
 	dataLoader: {
 		getItem: async (itemId) => {
+			loroDoc
 			try {
 				await webcontainer.current.fs.readdir(itemId)
 
 				return {
 					path: itemId,
-					isFolder: true
+					isFolder: true,
+					isHidden: false
 				}
 			} catch (e) {
 				return {
 					path: itemId,
-					isFolder: false
+					isFolder: false,
+					isHidden: false
 				}
 			}
 		},
@@ -60,31 +65,58 @@ const tree = createTree<Item>({
 	]
 })
 
-onMount(async () => {
-	webcontainer.current.fs.watch("/", { recursive: true }, (event, filename) => {
-		if (typeof filename === "string") {
-			const item = tree.getItemInstance(
-				`/${`/${filename as string}`.split("/").slice(1, -1).join("/")}`
-			)
-			if (item) {
-				item.invalidateChildrenIds()
-			}
+const isMatch = picoMatch("**/node_modules/**", { dot: true })
 
-			editorState.isUpToDate = false
+const filesnamesMap = loroDoc.getMap("filesnames")
 
-			const segments = filename.split("/")
+onMount(() => {
+	const watcher = webcontainer.current.fs.watch(
+		"/",
+		{ recursive: true },
+		async (event, filename) => {
+			if (typeof filename === "string") {
+				if (isMatch(`/${filename}`)) {
+				} else {
+					try {
+						await webcontainer.current.fs.readdir(filename)
+						filesnamesMap.set(filename, {
+							type: "dir"
+						})
+					} catch (error) {
+						if (error instanceof Error && error.message.includes("ENOTDIR")) {
+							const content = await webcontainer.current.fs.readFile(
+								filename,
+								"utf-8"
+							)
+							loroDoc
+								.getText(`/${filename}`.replaceAll("/", "_"))
+								.update(content)
+							filesnamesMap.set(filename, {
+								type: "file"
+							})
+						}
+					}
 
-			let currentNode = {}
+					if (event === "rename") {
+						const parentItem = tree.getItemInstance(
+							`/${`/${filename as string}`.split("/").slice(1, -1).join("/")}`
+						)
+						if (parentItem) {
+							parentItem.invalidateChildrenIds()
+						}
 
-			for (const segment of segments) {
-				if (segment === "..") {
-					continue
+						editorState.isUpToDate = false
+
+						if (editorState.currentTab) {
+							editorState.closeTab(editorState.currentTab)
+						}
+					}
 				}
-
-				fileTree.createNode().id
 			}
 		}
-	})
+	)
+
+	return () => watcher.close()
 })
 </script>
 

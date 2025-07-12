@@ -1,6 +1,6 @@
 <script lang="ts">
-import { createQuery } from "@tanstack/svelte-query"
 import httpClient from "$lib/httpClient"
+import { createQuery } from "@tanstack/svelte-query"
 import Workspaces from "./data.svelte"
 
 const query = createQuery({

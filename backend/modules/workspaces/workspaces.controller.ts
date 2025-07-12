@@ -37,6 +37,7 @@ const workspacesController = new Elysia({
 			0,
 			-1
 		)
+
 		if (workspaceContent.length > 0) {
 			const doc = new LoroDoc()
 			doc.importBatch(workspaceContent)
@@ -94,11 +95,7 @@ const workspacesController = new Elysia({
 		}
 	)
 	.ws("/:id", {
-		beforeHandle: ({ params, cookie, status }) => {
-			console.log("WebSocket connection request", params.id)
-		},
 		open: async (ws) => {
-			console.log("WebSocket connection opened", ws.data.params.id)
 			const userId = ws.data.userId
 			const workspaceId = ws.data.params.id
 			ws.raw.subscribe(`workspace:${workspaceId}`)
@@ -125,9 +122,6 @@ const workspacesController = new Elysia({
 			ws.raw.publish(`workspace:${workspaceId}`, message as Buffer)
 
 			await redis.lPush(`workspace:${workspaceId}#doc`, message as Buffer)
-		},
-		drain: async (ws) => {
-			console.log("WebSocket connection drained", ws.data.params.id)
 		},
 		close: async (ws) => {
 			ws.raw.unsubscribe(`workspace:${ws.data.params.id}`)

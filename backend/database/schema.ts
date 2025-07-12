@@ -1,4 +1,3 @@
-import type { FileSystemTree } from "@webcontainer/api"
 import { relations } from "drizzle-orm"
 import {
 	boolean,
@@ -77,7 +76,7 @@ export const workspaces = pgTable("workspaces", {
 	})
 })
 
-export const workspacesRelations = relations(workspaces, ({ one }) => ({
+export const workspacesRelations = relations(workspaces, ({ one, many }) => ({
 	user: one(users, {
 		fields: [workspaces.userId],
 		references: [users.id]
@@ -85,7 +84,8 @@ export const workspacesRelations = relations(workspaces, ({ one }) => ({
 	lesson: one(lessons, {
 		fields: [workspaces.lessonId],
 		references: [lessons.id]
-	})
+	}),
+	databases: many(database__workspaces)
 }))
 
 export const databaseDriverEnum = pgEnum("database_driver", [
@@ -117,6 +117,45 @@ export const databases = pgTable("databases", {
 		.defaultNow()
 		.$onUpdateFn(() => new Date())
 })
+
+export const databasesRelations = relations(databases, ({ one, many }) => ({
+	user: one(users, {
+		fields: [databases.userId],
+		references: [users.id]
+	}),
+	workspaces: many(database__workspaces)
+}))
+
+export const database__workspaces = pgTable("database_workspaces", {
+	id: uuid("id").primaryKey().$defaultFn(Bun.randomUUIDv7),
+	databaseId: uuid("database_id")
+		.notNull()
+		.references(() => databases.id, { onDelete: "cascade" }),
+	workspaceId: uuid("workspace_id")
+		.notNull()
+		.references(() => workspaces.id, { onDelete: "cascade" }),
+	createdAt: timestamp("created_at", {
+		mode: "date",
+		precision: 0,
+		withTimezone: true
+	})
+		.notNull()
+		.defaultNow()
+})
+
+export const database__workspacesRelations = relations(
+	database__workspaces,
+	({ one }) => ({
+		database: one(databases, {
+			fields: [database__workspaces.databaseId],
+			references: [databases.id]
+		}),
+		workspace: one(workspaces, {
+			fields: [database__workspaces.workspaceId],
+			references: [workspaces.id]
+		})
+	})
+)
 
 export const courses = pgTable("courses", {
 	id: uuid("id").primaryKey().$defaultFn(Bun.randomUUIDv7),

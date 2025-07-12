@@ -17,6 +17,9 @@ export default defineConfig({
 		// topLevelAwait(),
 		visualizer()
 	],
+	define: {
+		"process.env": {}
+	},
 	server: {
 		proxy: {
 			"/api": {

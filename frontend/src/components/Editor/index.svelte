@@ -1,15 +1,16 @@
 <script lang="ts">
+import { formatRelativeTime } from "$lib/date"
+import httpClient from "$lib/httpClient"
+import { createMutation } from "@tanstack/svelte-query"
 import type { WebContainer } from "@webcontainer/api"
 import { onMount } from "svelte"
 import { Pane, Splitpanes } from "svelte-splitpanes"
+import Button from "../Button.svelte"
 import Editor from "./Editor.svelte"
 import FileTree from "./FileTree/index.svelte"
+import Previewers from "./Previewers/index.svelte"
 import Terminal from "./Terminal.svelte"
 import editorState, { loroDoc, webcontainer } from "./editorState.svelte"
-import httpClient from "$lib/httpClient"
-import Button from "../Button.svelte"
-import { createMutation } from "@tanstack/svelte-query"
-import { formatRelativeTime } from "$lib/date"
 
 const {
 	webcontainer: loadedWebContainer,
@@ -30,27 +31,32 @@ let currentWorkspace: Exclude<
 	null | undefined
 > = $state(workspace)
 
-let iframeUrl: string | null = $state(null)
-
 onMount(() => {
-	webcontainer.current.on("server-ready", async (_port, url) => {
-		iframeUrl = url
+	webcontainer.current.on("server-ready", async (port, url) => {
+		editorState.addPreviewer(port, url)
+	})
+	webcontainer.current.on("port", (port, event) => {
+		if (event === "close") {
+			editorState.removePreviewer(port)
+		}
 	})
 	setInterval(() => {
 		renderCurrentDate++
 	}, 1000)
-  const websocketClient = httpClient.workspaces({ id: workspace.id }).subscribe()
-  websocketClient.subscribe(({ data }) => {
-    loroDoc.import(data as Uint8Array)
-  })
-  loroDoc.subscribeLocalUpdates((update) => {
-    websocketClient.send(update)
-  })
+	const websocketClient = httpClient
+		.workspaces({ id: workspace.id })
+		.subscribe()
+	websocketClient.subscribe(({ data }) => {
+		loroDoc.import(data as Uint8Array)
+	})
+	loroDoc.subscribeLocalUpdates((update) => {
+		websocketClient.send(update)
+	})
 })
 
 const saveWorkspaceMutation = createMutation({
 	mutationFn: async () => {
-    /*
+		/*
 		const { data, error } = await httpClient
 			.workspaces({ id: workspace.id })
 			.patch({
@@ -160,14 +166,9 @@ function closeTerminal(terminal: string) {
         </Pane>
       </Splitpanes>
     </Pane>
-    {#if iframeUrl !== null}
+    {#if editorState.hasPreviewers }
       <Pane size={20}>
-        <iframe
-          title={`WebContainer - ${iframeUrl}`}
-          src={iframeUrl}
-          class="w-full h-full"
-          sandbox="allow-same-origin allow-scripts allow-modals allow-forms"
-        ></iframe>
+        <Previewers />
       </Pane>
     {/if}
   </Splitpanes>

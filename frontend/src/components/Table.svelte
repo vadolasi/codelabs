@@ -1,11 +1,11 @@
 <script lang="ts" generics="T">
-import { writable } from "svelte/store"
 import {
 	createSvelteTable,
 	flexRender,
 	getCoreRowModel
 } from "@tanstack/svelte-table"
 import type { ColumnDef, TableOptions } from "@tanstack/svelte-table"
+import { writable } from "svelte/store"
 
 export let columns: ColumnDef<T, string>[]
 export let data: T[]

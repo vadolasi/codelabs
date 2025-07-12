@@ -50,6 +50,13 @@
 			"when": 1748157545715,
 			"tag": "0006_brown_cerise",
 			"breakpoints": true
+		},
+		{
+			"idx": 7,
+			"version": "7",
+			"when": 1750389545191,
+			"tag": "0007_chilly_payback",
+			"breakpoints": true
 		}
 	]
 }

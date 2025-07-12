@@ -1,8 +1,8 @@
 <script lang="ts">
 import { QueryClientProvider } from "@tanstack/svelte-query"
 import "../app.css"
-import type { LayoutData } from "./$types"
 import type { Snippet } from "svelte"
+import type { LayoutData } from "./$types"
 
 const { queryClient, children }: LayoutData & { children: Snippet<[]> } =
 	$props()

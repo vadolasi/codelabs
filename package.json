@@ -4,15 +4,19 @@
 	"packageManager": "bun@1.2.14",
 	"scripts": {
 		"dev": "turbo run dev",
-		"postinstall": "lefthook install"
+		"postinstall": "lefthook install",
+		"format-and-lint": "biome check .",
+		"format-and-lint:fix": "biome check . --write"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^1.9.4",
-		"@types/bun": "^1.2.14",
+		"@commitlint/cli": "^19.8.1",
+		"@commitlint/config-conventional": "^19.8.1",
+		"@types/bun": "^1.2.18",
 		"commitizen": "^4.3.1",
 		"cz-conventional-changelog": "^3.3.0",
-		"lefthook": "^1.11.13",
-		"turbo": "^2.5.3"
+		"lefthook": "^1.12.2",
+		"turbo": "^2.5.4"
 	},
 	"peerDependencies": {
 		"typescript": "^5.8.3"
@@ -32,5 +36,13 @@
 		"lefthook",
 		"msgpackr-extract",
 		"sharp"
-	]
+	],
+	"dependencies": {
+		"@codemirror/lang-cpp": "^6.0.3",
+		"@codemirror/lang-markdown": "^6.3.3",
+		"@codemirror/lang-python": "^6.2.1",
+		"@codemirror/lang-sass": "^6.0.2",
+		"@codemirror/lang-wast": "^6.0.2",
+		"@electric-sql/pglite": "^0.3.4"
+	}
 }

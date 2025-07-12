@@ -1,13 +1,13 @@
 <script lang="ts">
 import { goto } from "$app/navigation"
 import httpClient from "$lib/httpClient"
+import randomName from "@scaleway/random-name"
 import { createMutation } from "@tanstack/svelte-query"
 import { superForm } from "sveltekit-superforms"
 import { zodClient } from "sveltekit-superforms/adapters"
 import { z } from "zod"
 import Button from "../../../components/Button.svelte"
 import FormField from "../../../components/FormField.svelte"
-import randomName from "@scaleway/random-name"
 
 const schema = z.object({
 	name: z.string().min(1, "Este campo é obrigatório")

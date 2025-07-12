@@ -18,7 +18,11 @@ import {
 } from "@codemirror/language"
 import { lintKeymap } from "@codemirror/lint"
 import { highlightSelectionMatches, searchKeymap } from "@codemirror/search"
-import { EditorState, type EditorStateConfig } from "@codemirror/state"
+import {
+	EditorState,
+	type EditorStateConfig,
+	type Extension
+} from "@codemirror/state"
 import {
 	EditorView,
 	crosshairCursor,
@@ -31,15 +35,16 @@ import {
 	lineNumbers,
 	rectangularSelection
 } from "@codemirror/view"
-import { onMount, tick } from "svelte"
+import { LoroExtensions } from "loro-codemirror"
+import { Loro, LoroText } from "loro-crdt"
+import { onMount } from "svelte"
 import editorState, {
 	loroDoc,
 	ephemeralStore,
 	undoManager,
 	webcontainer
 } from "./editorState.svelte"
-import { javascript } from "@codemirror/lang-javascript"
-import { LoroExtensions } from "loro-codemirror"
+import { getLanguage } from "./language"
 
 let view: EditorView
 const editorTheme = EditorView.theme({
@@ -63,11 +68,8 @@ $effect(() => {
 			if (previousTab) {
 				editorState.saveState(previousTab, view.state.toJSON())
 			}
+
 			const config: EditorStateConfig = {
-				doc: await webcontainer.current.fs.readFile(
-					editorState.currentTab!,
-					"utf-8"
-				),
 				extensions: [
 					keymap.of(defaultKeymap),
 					lineNumbers(),
@@ -87,7 +89,6 @@ $effect(() => {
 					crosshairCursor(),
 					highlightActiveLine(),
 					highlightSelectionMatches(),
-					javascript(),
 					LoroExtensions(
 						loroDoc,
 						{
@@ -95,7 +96,7 @@ $effect(() => {
 							user: { name: "a", colorClassName: "red" }
 						},
 						undoManager,
-						(doc) => doc.getText("Teste")
+						(doc) => doc.getText(editorState.currentTab!.replaceAll("/", "_"))
 					),
 					keymap.of([
 						...closeBracketsKeymap,
@@ -118,6 +119,13 @@ $effect(() => {
 					catppuccinMocha
 				]
 			}
+
+			const languageSupport = await getLanguage(editorState.currentTab!)
+
+			if (languageSupport) {
+				;(config.extensions as Extension[]).push(languageSupport)
+			}
+
 			const previousState = editorState.getState(editorState.currentTab!)
 			view.setState(
 				previousState
@@ -127,35 +135,6 @@ $effect(() => {
 		}
 
 		setupEditor()
-
-		const watcher = webcontainer.current.fs.watch(
-			editorState.currentTab!,
-			async (event) => {
-				if (event === "change") {
-					const content = await webcontainer.current.fs.readFile(
-						editorState.currentTab!,
-						"utf-8"
-					)
-					tick().then(() => {
-						if (content !== view.state.doc.toString()) {
-							view.dispatch({
-								changes: {
-									from: 0,
-									to: view.state.doc.length,
-									insert: content
-								}
-							})
-						}
-					})
-				} else {
-					if (editorState.currentTab) {
-						editorState.closeTab(editorState.currentTab)
-					}
-				}
-			}
-		)
-
-		return () => watcher.close()
 	}
 })
 
@@ -167,13 +146,13 @@ const duplicateFileNames = $derived(
 
 <div class="w-full h-full flex flex-col">
   {#if editorState.tabs.length > 0}
-    <div class="flex w-full bg-base-100 shrink-0">
+    <div class="flex w-full bg-base-100 shrink-0 overflow-x-auto">
       {#each editorState.tabs as tab (tab.getItemData().path)}
         <!-- svelte-ignore a11y_click_events_have_key_events -->
         <!-- svelte-ignore a11y_no_static_element_interactions -->
         <div role="button" tabindex="0" class="py-1 px-3 flex gap-1 items-center justify-center hover:bg-base-200 text-sm group border-primery select-none" class:bg-base-200={editorState.currentTab === tab.getItemData().path} onclick={() => editorState.setCurrentTab(tab)}>
           <img src={getIcon(tab.getItemName(), "file")} alt="file icon" class="w-4 h-4" />
-          <span>{tab.getItemName()}</span>
+          <span class="text-nowrap">{tab.getItemName()}</span>
           {#if duplicateFileNames.includes(tab.getItemName())}
             <span class="text-xs text-base-content/50 group-hover:text-base-content/70">/{tab.getItemData().path.split("/").splice(-2, 1)}</span>
           {/if}

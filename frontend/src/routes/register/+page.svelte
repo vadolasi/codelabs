@@ -19,7 +19,7 @@ const matcherPwned = matcherPwnedFactory(fetch, zxcvbnOptions)
 zxcvbnOptions.addMatcher("pwned", matcherPwned)
 
 zxcvbnOptions.setOptions({
-	translations: zxcvbnEnPackage.translations,
+	translations: zxcvbnPtBrPackage.translations,
 	graphs: zxcvbnCommonPackage.adjacencyGraphs,
 	dictionary: {
 		...zxcvbnCommonPackage.dictionary,

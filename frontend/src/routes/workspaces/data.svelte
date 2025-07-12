@@ -1,14 +1,14 @@
 <script lang="ts">
+import { formatDate, formatRelativeTime } from "$lib/date"
 import type { ApiData } from "$lib/httpClient"
+import type httpClient from "$lib/httpClient"
 import {
+	type ColumnDef,
 	createColumnHelper,
-	renderComponent,
-	type ColumnDef
+	renderComponent
 } from "@tanstack/svelte-table"
 import Table from "../../components/Table.svelte"
 import Actions from "./actions.svelte"
-import { formatDate, formatRelativeTime } from "$lib/date"
-import type httpClient from "$lib/httpClient"
 
 type Data = Exclude<
 	Awaited<ReturnType<typeof httpClient.workspaces.get>>["data"],

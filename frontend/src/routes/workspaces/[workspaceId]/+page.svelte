@@ -1,9 +1,9 @@
 <script lang="ts">
+import { page } from "$app/state"
+import httpClient from "$lib/httpClient"
+import { createQuery } from "@tanstack/svelte-query"
 import { WebContainer } from "@webcontainer/api"
 import Editor from "../../../components/Editor/index.svelte"
-import { createQuery } from "@tanstack/svelte-query"
-import httpClient from "$lib/httpClient"
-import { page } from "$app/state"
 
 const {
 	params: { workspaceId }
@@ -28,12 +28,12 @@ let webcontainer: WebContainer | null = $state(null)
 
 $effect(() => {
 	if ($query.data !== undefined && webcontainer === null) {
-		WebContainer.boot({ workdirName: "codelabs" }).then(
-			async (loadedWebcontainer) => {
-				// await loadedWebcontainer.mount($query.data!.content)
-				webcontainer = loadedWebcontainer
-			}
-		)
+		WebContainer.boot({
+			workdirName: "codelabs",
+			forwardPreviewErrors: true
+		}).then(async (loadedWebcontainer) => {
+			webcontainer = loadedWebcontainer
+		})
 	}
 
 	return () => {

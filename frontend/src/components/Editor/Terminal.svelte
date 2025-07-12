@@ -94,5 +94,4 @@ onMount(() => {
 </script>
 
 
-<div bind:this={terminalContainer} bind:borderBoxSize={null, resize} class="w-full h-full bg-base-100 p-1"></div>
-
+<div bind:this={terminalContainer} class="w-full h-full bg-base-100 p-1"></div>

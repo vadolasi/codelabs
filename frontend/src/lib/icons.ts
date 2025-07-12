@@ -24,28 +24,39 @@ function getExtensions(filename: string): string[] {
 	return exts
 }
 
-export default function getIcon(
+export function getIconName(
 	filename: string,
 	type: "file" | "folder-open" | "folder-closed"
 ) {
+	const formmatedFilename = filename.toLocaleLowerCase()
 	let icon: string | undefined
 
 	if (type === "file") {
-		icon = manifest.fileNames?.[filename]
+		icon = manifest.fileNames?.[formmatedFilename]
 
 		if (icon === undefined) {
-			for (const ext of getExtensions(filename)) {
+			for (const ext of getExtensions(formmatedFilename)) {
 				icon = manifest.fileExtensions?.[ext]
+				if (icon === undefined) {
+					icon = manifest.languageIds?.[ext]
+				}
 				if (icon) break
 			}
 		}
 
-		return icons[
-			`../../../node_modules/material-icon-theme/icons/${icon ?? "file"}.svg`
-		].default
+		return icon ?? "file"
 	}
 
-	icon = manifest.folderNames?.[filename] ?? "folder"
+	icon = manifest.folderNames?.[formmatedFilename] ?? "folder"
+
+	return icon
+}
+
+export default function getIcon(
+	filename: string,
+	type: "file" | "folder-open" | "folder-closed"
+) {
+	const icon = getIconName(filename, type)
 
 	return icons[
 		`../../../node_modules/material-icon-theme/icons/${icon}${type === "folder-open" ? "-open" : ""}.svg`
