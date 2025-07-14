@@ -1,6 +1,5 @@
 <script lang="ts">
 import { formatDate, formatRelativeTime } from "$lib/date"
-import type { ApiData } from "$lib/httpClient"
 import type httpClient from "$lib/httpClient"
 import {
 	type ColumnDef,

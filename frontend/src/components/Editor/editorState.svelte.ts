@@ -1,11 +1,23 @@
 import type { ItemInstance } from "@headless-tree/core"
 import type { WebContainer } from "@webcontainer/api"
-import { EphemeralStore, LoroDoc, UndoManager } from "loro-crdt"
+import {
+	EphemeralStore,
+	LoroDoc,
+	type LoroMap,
+	type LoroText,
+	UndoManager
+} from "loro-crdt"
+import { SvelteMap } from "svelte/reactivity"
 
 export const loroDoc = new LoroDoc()
+export const filenamesMap = loroDoc.getMap("filesnames") as LoroMap<
+	Record<string, Item>
+>
+export const filesMap = loroDoc.getMap("files") as LoroMap<
+	Record<string, LoroText>
+>
 export const ephemeralStore = new EphemeralStore()
 export const undoManager = new UndoManager(loroDoc, {})
-export const fileTree = loroDoc.getTree("fileTree")
 
 class EditorState {
 	public currentTab: string | null = $state(null)
@@ -13,7 +25,7 @@ class EditorState {
 	private states: Map<string, object> = new Map()
 	private tabHistory: string[] = []
 	private upToDate = $state(true)
-	private prewviewers: Map<number, string> = new Map()
+	private prewviewers: SvelteMap<number, string> = new SvelteMap()
 
 	public setCurrentTab(item: ItemInstance<Item>) {
 		const path = item.getItemData().path

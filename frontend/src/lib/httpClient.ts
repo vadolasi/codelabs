@@ -1,20 +1,15 @@
-import { browser } from "$app/environment"
 import { treaty } from "@elysiajs/eden"
 import type { App } from "backend"
 
-const { api: httpClient } = treaty<App>(
-	// browser ? window.location.origin : "localhost:3000",
-	"localhost:8000",
-	{
-		headers: {
-			"Content-Type": "application/json",
-			Accept: "application/json"
-		},
-		fetch: {
-			credentials: "include"
-		}
+const { api: httpClient } = treaty<App>("localhost:3000", {
+	headers: {
+		"Content-Type": "application/json",
+		Accept: "application/json"
+	},
+	fetch: {
+		credentials: "include"
 	}
-)
+})
 
 type GeneratePaths<T> = {
 	[K in keyof T]-?: K extends string

@@ -52,6 +52,7 @@ const unauthenticated = new Elysia()
 			const emailOTP = generateOTPCode()
 
 			await db.insert(users).values({
+				id: Bun.randomUUIDv7(),
 				email,
 				username,
 				password: await Bun.password.hash(password),

@@ -1,5 +1,4 @@
 type Item = {
-	isFolder: boolean
+	type: "file" | "directory"
 	path: string
-	isHidden: boolean
 }

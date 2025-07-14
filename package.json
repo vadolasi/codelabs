@@ -6,7 +6,10 @@
 		"dev": "turbo run dev",
 		"postinstall": "lefthook install",
 		"format-and-lint": "biome check .",
-		"format-and-lint:fix": "biome check . --write"
+		"format-and-lint:fix": "biome check . --write",
+		"database:generate": "drizzle-kit generate --config backend/drizzle.config.ts",
+		"database:migrate": "drizzle-kit push --config backend/drizzle.config.ts",
+		"database:studio": "drizzle-kit studio --config backend/drizzle.config.ts"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^1.9.4",
@@ -15,6 +18,8 @@
 		"@types/bun": "^1.2.18",
 		"commitizen": "^4.3.1",
 		"cz-conventional-changelog": "^3.3.0",
+		"express": "^5.1.0",
+		"http-proxy-middleware": "^3.0.5",
 		"lefthook": "^1.12.2",
 		"turbo": "^2.5.4"
 	},

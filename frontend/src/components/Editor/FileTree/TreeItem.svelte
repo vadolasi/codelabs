@@ -40,13 +40,13 @@ const renameProps = item.getRenameInputProps()
   {...contextMenuApi.getContextTriggerProps()}
   style:padding-left={`${item.getItemMeta().level * 10}px`}
   class="w-full cursor-pointer hover:text-primary flex items-center gap-1 text-sm text-ellipsis select-none"
-  onclick={itemData.isFolder ? () => handleFolderClick(item) : () => editorState.setCurrentTab(item)}
+  onclick={itemData.type === "directory" ? () => handleFolderClick(item) : () => editorState.setCurrentTab(item)}
 >
   <img
     src={
       getIcon(
         itemName,
-        itemData.isFolder ? item.isExpanded() ? "folder-open" : "folder-closed" : "file"
+        itemData.type === "directory" ? item.isExpanded() ? "folder-open" : "folder-closed" : "file"
       )
     }
     alt="file icon"

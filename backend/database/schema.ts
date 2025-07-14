@@ -20,7 +20,7 @@ const bytea = customType<{
 })
 
 export const users = pgTable("users", {
-	id: uuid("id").primaryKey().$defaultFn(Bun.randomUUIDv7),
+	id: uuid("id").primaryKey(),
 	email: text("email").notNull().unique(),
 	username: text("username").notNull().unique(),
 	password: text("password").notNull(),
@@ -46,8 +46,9 @@ export const usersRelations = relations(users, ({ many }) => ({
 }))
 
 export const workspaces = pgTable("workspaces", {
-	id: uuid("id").primaryKey().$defaultFn(Bun.randomUUIDv7),
+	id: uuid("id").primaryKey(),
 	name: text("name").notNull(),
+	slug: text("slug").notNull().unique(),
 	content: bytea("content").notNull(),
 	config: json("config")
 		.$type<{ initialTerminals: { command: string }[]; exclude: string[] }>()
@@ -94,7 +95,7 @@ export const databaseDriverEnum = pgEnum("database_driver", [
 ])
 
 export const databases = pgTable("databases", {
-	id: uuid("id").primaryKey().$defaultFn(Bun.randomUUIDv7),
+	id: uuid("id").primaryKey(),
 	name: text("name").notNull(),
 	driver: databaseDriverEnum("driver").notNull(),
 	userId: uuid("user_id")
@@ -127,7 +128,7 @@ export const databasesRelations = relations(databases, ({ one, many }) => ({
 }))
 
 export const database__workspaces = pgTable("database_workspaces", {
-	id: uuid("id").primaryKey().$defaultFn(Bun.randomUUIDv7),
+	id: uuid("id").primaryKey(),
 	databaseId: uuid("database_id")
 		.notNull()
 		.references(() => databases.id, { onDelete: "cascade" }),
@@ -158,7 +159,7 @@ export const database__workspacesRelations = relations(
 )
 
 export const courses = pgTable("courses", {
-	id: uuid("id").primaryKey().$defaultFn(Bun.randomUUIDv7),
+	id: uuid("id").primaryKey(),
 	name: text("name").notNull(),
 	description: text("description").notNull(),
 	createdAt: timestamp("created_at", {
@@ -185,7 +186,7 @@ export const coursesRelations = relations(courses, ({ many }) => ({
 }))
 
 export const classes = pgTable("classes", {
-	id: uuid("id").primaryKey().$defaultFn(Bun.randomUUIDv7),
+	id: uuid("id").primaryKey(),
 	name: text("name").notNull(),
 	description: text("description").notNull(),
 	createdAt: timestamp("created_at", {
@@ -213,7 +214,7 @@ export const courseMemberRoleEnum = pgEnum("course_member_role", [
 ])
 
 export const coursesMembers = pgTable("courses_members", {
-	id: uuid("id").primaryKey().$defaultFn(Bun.randomUUIDv7),
+	id: uuid("id").primaryKey(),
 	courseId: uuid("course_id")
 		.notNull()
 		.references(() => courses.id, { onDelete: "cascade" }),
@@ -245,7 +246,7 @@ export const coursesMembersRelations = relations(coursesMembers, ({ one }) => ({
 }))
 
 export const lessons = pgTable("lessons", {
-	id: uuid("id").primaryKey().$defaultFn(Bun.randomUUIDv7),
+	id: uuid("id").primaryKey(),
 	courseId: uuid("course_id")
 		.notNull()
 		.references(() => courses.id, { onDelete: "cascade" }),

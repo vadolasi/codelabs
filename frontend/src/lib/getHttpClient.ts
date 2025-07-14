@@ -2,7 +2,7 @@ import { treaty } from "@elysiajs/eden"
 import type { App } from "backend"
 
 export default function getHttpClient(fetchFn: typeof fetch) {
-	const { api: httpClient } = treaty<App>("localhost:8000", {
+	const { api: httpClient } = treaty<App>("localhost:3000", {
 		headers: {
 			"Content-Type": "application/json",
 			Accept: "application/json"

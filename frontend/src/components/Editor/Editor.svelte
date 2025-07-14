@@ -20,6 +20,7 @@ import { lintKeymap } from "@codemirror/lint"
 import { highlightSelectionMatches, searchKeymap } from "@codemirror/search"
 import {
 	EditorState,
+	Prec,
 	type EditorStateConfig,
 	type Extension
 } from "@codemirror/state"
@@ -36,7 +37,7 @@ import {
 	rectangularSelection
 } from "@codemirror/view"
 import { LoroExtensions } from "loro-codemirror"
-import { Loro, LoroText } from "loro-crdt"
+import { LoroText } from "loro-crdt"
 import { onMount } from "svelte"
 import editorState, {
 	loroDoc,
@@ -96,7 +97,10 @@ $effect(() => {
 							user: { name: "a", colorClassName: "red" }
 						},
 						undoManager,
-						(doc) => doc.getText(editorState.currentTab!.replaceAll("/", "_"))
+						(doc) =>
+							doc
+								.getMap("files")
+								.getOrCreateContainer(editorState.currentTab!, new LoroText())
 					),
 					keymap.of([
 						...closeBracketsKeymap,
@@ -116,7 +120,14 @@ $effect(() => {
 						}
 					}),
 					editorTheme,
-					catppuccinMocha
+					catppuccinMocha,
+          Prec.highest(keymap.of([{
+            key: "Mod-s",
+            run() {
+              console.log("Saving workspace...")
+              return true
+            }
+          }]))
 				]
 			}
 

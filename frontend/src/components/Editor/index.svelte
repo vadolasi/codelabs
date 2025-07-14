@@ -11,6 +11,11 @@ import FileTree from "./FileTree/index.svelte"
 import Previewers from "./Previewers/index.svelte"
 import Terminal from "./Terminal.svelte"
 import editorState, { loroDoc, webcontainer } from "./editorState.svelte"
+import { Packr } from "msgpackr"
+
+const packr = new Packr({
+  bundleStrings: true
+})
 
 const {
 	webcontainer: loadedWebContainer,
@@ -44,13 +49,13 @@ onMount(() => {
 		renderCurrentDate++
 	}, 1000)
 	const websocketClient = httpClient
-		.workspaces({ id: workspace.id })
+		.workspaces({ slug: workspace.slug })
 		.subscribe()
 	websocketClient.subscribe(({ data }) => {
 		loroDoc.import(data as Uint8Array)
 	})
 	loroDoc.subscribeLocalUpdates((update) => {
-		websocketClient.send(update)
+		websocketClient.ws.send(packr.pack({ type: "loro-update", update }))
 	})
 })
 

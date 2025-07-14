@@ -25,8 +25,8 @@ const createWorkspaceMutation = createMutation({
 
 		return data
 	},
-	onSuccess: ({ id }) => {
-		goto(`/workspaces/${id}`)
+	onSuccess: ({ slug }) => {
+		goto(`/workspaces/${slug}`)
 	},
 	onError: (error) => {
 		console.error("Login error:", error)

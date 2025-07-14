@@ -5,10 +5,10 @@ export const load: PageLoad = async ({ params, parent, fetch }) => {
 	const { queryClient } = await parent()
 
 	await queryClient.prefetchQuery({
-		queryKey: ["workspaces", params.workspaceId],
+		queryKey: ["workspaces", params.workspaceSlug],
 		queryFn: async () => {
 			const { data, error } = await getHttpClient(fetch)
-				.workspaces({ id: params.workspaceId })
+				.workspaces({ slug: params.workspaceSlug })
 				.get()
 
 			if (error) {

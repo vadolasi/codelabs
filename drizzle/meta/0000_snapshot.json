@@ -1,6 +1,6 @@
 {
-	"id": "1a222c18-f713-43ac-8a3e-b6d769ab3646",
-	"prevId": "ca9b2db5-ac0a-462e-b41b-fcf5ac7f57a8",
+	"id": "685078e8-c46c-4f89-b446-e0c3a07fe9a3",
+	"prevId": "00000000-0000-0000-0000-000000000000",
 	"version": "7",
 	"dialect": "postgresql",
 	"tables": {
@@ -171,6 +171,63 @@
 					"tableFrom": "courses_members",
 					"tableTo": "classes",
 					"columnsFrom": ["class_id"],
+					"columnsTo": ["id"],
+					"onDelete": "cascade",
+					"onUpdate": "no action"
+				}
+			},
+			"compositePrimaryKeys": {},
+			"uniqueConstraints": {},
+			"policies": {},
+			"checkConstraints": {},
+			"isRLSEnabled": false
+		},
+		"public.database_workspaces": {
+			"name": "database_workspaces",
+			"schema": "",
+			"columns": {
+				"id": {
+					"name": "id",
+					"type": "uuid",
+					"primaryKey": true,
+					"notNull": true
+				},
+				"database_id": {
+					"name": "database_id",
+					"type": "uuid",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"workspace_id": {
+					"name": "workspace_id",
+					"type": "uuid",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"created_at": {
+					"name": "created_at",
+					"type": "timestamp (0) with time zone",
+					"primaryKey": false,
+					"notNull": true,
+					"default": "now()"
+				}
+			},
+			"indexes": {},
+			"foreignKeys": {
+				"database_workspaces_database_id_databases_id_fk": {
+					"name": "database_workspaces_database_id_databases_id_fk",
+					"tableFrom": "database_workspaces",
+					"tableTo": "databases",
+					"columnsFrom": ["database_id"],
+					"columnsTo": ["id"],
+					"onDelete": "cascade",
+					"onUpdate": "no action"
+				},
+				"database_workspaces_workspace_id_workspaces_id_fk": {
+					"name": "database_workspaces_workspace_id_workspaces_id_fk",
+					"tableFrom": "database_workspaces",
+					"tableTo": "workspaces",
+					"columnsFrom": ["workspace_id"],
 					"columnsTo": ["id"],
 					"onDelete": "cascade",
 					"onUpdate": "no action"
@@ -388,6 +445,12 @@
 					"primaryKey": false,
 					"notNull": true
 				},
+				"slug": {
+					"name": "slug",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true
+				},
 				"content": {
 					"name": "content",
 					"type": "bytea",
@@ -450,7 +513,13 @@
 				}
 			},
 			"compositePrimaryKeys": {},
-			"uniqueConstraints": {},
+			"uniqueConstraints": {
+				"workspaces_slug_unique": {
+					"name": "workspaces_slug_unique",
+					"nullsNotDistinct": false,
+					"columns": ["slug"]
+				}
+			},
 			"policies": {},
 			"checkConstraints": {},
 			"isRLSEnabled": false

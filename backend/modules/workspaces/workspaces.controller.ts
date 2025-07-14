@@ -18,14 +18,22 @@ const workspacesController = new Elysia({
 				name: true,
 				createdAt: true,
 				updatedAt: true,
-				content: true
+				content: true,
+				slug: true
 			}
 		})
 	})
-	.get("/:id", async ({ params: { id }, userId, status }) => {
+	.get("/:slug", async ({ params: { slug }, userId, status }) => {
 		const workspace = await db.query.workspaces.findFirst({
 			where: (workspaces, { eq, and }) =>
-				and(eq(workspaces.id, id), eq(workspaces.userId, userId))
+				and(eq(workspaces.slug, slug), eq(workspaces.userId, userId)),
+			columns: {
+				id: true,
+				name: true,
+				slug: true,
+				content: true,
+				updatedAt: true
+			}
 		})
 
 		if (!workspace) {
@@ -42,11 +50,6 @@ const workspacesController = new Elysia({
 			const doc = new LoroDoc()
 			doc.importBatch(workspaceContent)
 			workspace.content = Buffer.from(doc.export({ mode: "snapshot" }))
-			await redis
-				.multi()
-				.lTrim(`workspace:${workspace.id}#doc`, 1, 0)
-				.lPush(`workspace:${workspace.id}#doc`, workspace.content)
-				.execAsPipeline()
 		}
 
 		return workspace
@@ -55,13 +58,15 @@ const workspacesController = new Elysia({
 		"/",
 		async ({ body: { name }, userId }) => {
 			const doc = new LoroDoc()
-			const rootNode = doc.getTree("fileTree").createNode()
-			rootNode.data.set("type", "folder")
-			rootNode.data.set("name", "")
+
+			const id = Bun.randomUUIDv7()
+
 			const [data] = await db
 				.insert(workspaces)
 				.values({
-					name: name,
+					id,
+					name,
+					slug: `${name.toLowerCase().replace(/\s+/g, "-")}-${id.slice(-8)}`,
 					userId,
 					content: Buffer.from(doc.export({ mode: "snapshot" }))
 				})
@@ -76,14 +81,14 @@ const workspacesController = new Elysia({
 		}
 	)
 	.patch(
-		"/:id",
-		async ({ body: { name }, params: { id }, userId }) => {
+		"/:slug",
+		async ({ body: { name }, params: { slug }, userId }) => {
 			const data = await db
 				.update(workspaces)
 				.set({
 					name
 				})
-				.where(and(eq(workspaces.id, id), eq(workspaces.userId, userId)))
+				.where(and(eq(workspaces.slug, slug), eq(workspaces.userId, userId)))
 				.returning()
 
 			return data[0]
@@ -94,15 +99,18 @@ const workspacesController = new Elysia({
 			})
 		}
 	)
-	.ws("/:id", {
+	.ws("/:slug", {
 		open: async (ws) => {
 			const userId = ws.data.userId
-			const workspaceId = ws.data.params.id
-			ws.raw.subscribe(`workspace:${workspaceId}`)
-			if ((await redis.lLen(`workspace:${workspaceId}#doc`)) < 1) {
+			const workspaceSlug = ws.data.params.slug
+			ws.subscribe(`workspace:${workspaceSlug}`)
+			if ((await redis.lLen(`workspace:${workspaceSlug}#doc`)) < 1) {
 				const workspace = await db.query.workspaces.findFirst({
 					where: (workspaces, { eq, and }) =>
-						and(eq(workspaces.id, workspaceId), eq(workspaces.userId, userId)),
+						and(
+							eq(workspaces.slug, workspaceSlug),
+							eq(workspaces.userId, userId)
+						),
 					columns: {
 						content: true
 					}
@@ -113,18 +121,19 @@ const workspacesController = new Elysia({
 					return
 				}
 
-				await redis.lPush(`workspace:${workspaceId}#doc`, workspace.content)
+				await redis.lPush(`workspace:${workspaceSlug}#doc`, workspace.content)
 			}
 		},
 		message: async (ws, message) => {
-			const workspaceId = ws.data.params.id
+			const workspaceSlug = ws.data.params.slug
+			console.log(typeof message)
 
-			ws.raw.publish(`workspace:${workspaceId}`, message as Buffer)
+			ws.publish(`workspace:${workspaceSlug}`, message as Buffer)
 
-			await redis.lPush(`workspace:${workspaceId}#doc`, message as Buffer)
+			await redis.lPush(`workspace:${workspaceSlug}#doc`, message as Buffer)
 		},
 		close: async (ws) => {
-			ws.raw.unsubscribe(`workspace:${ws.data.params.id}`)
+			ws.unsubscribe(`workspace:${ws.data.params.slug}`)
 		}
 	})
 

@@ -114,8 +114,8 @@ export const supportedLanguages = [
 		}
 	}),
 	LanguageDescription.of({
-		name: "XML",
-		extensions: ["xml"],
+		name: "XML / SVG",
+		extensions: ["xml", "svg"],
 		async load() {
 			return import("@codemirror/lang-xml").then((module) => module.xml())
 		}

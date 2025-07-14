@@ -4,16 +4,17 @@ import httpClient from "$lib/httpClient"
 import { createQuery } from "@tanstack/svelte-query"
 import { WebContainer } from "@webcontainer/api"
 import Editor from "../../../components/Editor/index.svelte"
+  import { onMount } from "svelte";
 
 const {
-	params: { workspaceId }
+	params: { workspaceSlug }
 } = page
 
 const query = createQuery({
-	queryKey: ["workspaces", workspaceId],
+	queryKey: ["workspaces", workspaceSlug],
 	queryFn: async () => {
 		const { data, error } = await httpClient
-			.workspaces({ id: workspaceId })
+			.workspaces({ slug: workspaceSlug })
 			.get()
 
 		if (error) {
@@ -24,18 +25,17 @@ const query = createQuery({
 	}
 })
 
-let webcontainer: WebContainer | null = $state(null)
+let webcontainer: WebContainer | null = null
 
-$effect(() => {
-	if ($query.data !== undefined && webcontainer === null) {
-		WebContainer.boot({
-			workdirName: "codelabs",
-			forwardPreviewErrors: true
-		}).then(async (loadedWebcontainer) => {
-			webcontainer = loadedWebcontainer
-		})
-	}
+$: if ($query.data !== undefined && webcontainer === null) {
+	WebContainer.boot({
+		workdirName: "codelabs"
+	}).then(async (loadedWebcontainer) => {
+		webcontainer = loadedWebcontainer
+	})
+}
 
+onMount(() => {
 	return () => {
 		if (webcontainer) {
 			webcontainer.teardown()
