@@ -131,6 +131,7 @@
         "tailwind-merge": "^3.3.1",
         "typescript": "^5.8.3",
         "unified": "^11.0.5",
+        "vite-plugin-devtools-json": "^0.2.1",
         "volar-service-typescript": "^0.0.64",
         "vscode-css-languageservice": "^6.3.7",
         "vscode-html-languageservice": "^5.5.1",
@@ -464,7 +465,7 @@
 
     "@drizzle-team/brocli": ["@drizzle-team/brocli@0.10.2", "", {}, "sha512-z33Il7l5dKjUgGULTqBsQBQwckHh5AbIuxhdsIxDDiZAzBOrZO6q9ogcWC65kU382AfynTfgNumVcNIjuIua6w=="],
 
-    "@electric-sql/pglite": ["@electric-sql/pglite@0.3.4", "", {}, "sha512-h5hoL2GuxcWN8Q3+jtesIRem14iIvAZVEsTeUF6eO9RiUb6ar73QVIEW9t+Ud58iXAcAE2dFMtWqw3W2Oo4LDw=="],
+    "@electric-sql/pglite": ["@electric-sql/pglite@0.3.5", "", {}, "sha512-fhODErXJjOrnsJj5f1A8sH/Zj0INpLUbqOCiskufIUImUsFOBNHE6/FApY656Q2VSOp46wkXX3rvbBBO8O8Cag=="],
 
     "@elysiajs/eden": ["@elysiajs/eden@1.3.2", "", { "peerDependencies": { "elysia": ">= 1.3.0" } }, "sha512-0bCU5DO7J7hQfS2y3O3399GtoxMWRDMgQNMTHOnf70/F2nF8SwGHvzwh3+wO62Ko5FMF7EYqTN9Csw/g/Q7qwg=="],
 
@@ -2230,6 +2231,8 @@
 
     "vite-imagetools": ["vite-imagetools@7.1.0", "", { "dependencies": { "@rollup/pluginutils": "^5.0.5", "imagetools-core": "^7.1.0", "sharp": "^0.34.1" } }, "sha512-Mqh1uUY2DEMuBOogFz5Rd7cAs70VP6wsdQh2IShrJ+qGk5f7yQa4pN8w0YMLlGIKYW1JfM8oXrznUwVkhG+qxg=="],
 
+    "vite-plugin-devtools-json": ["vite-plugin-devtools-json@0.2.1", "", { "dependencies": { "uuid": "^11.1.0" }, "peerDependencies": { "vite": "^2.7.0 || ^3.0.0 || ^4.0.0 || ^5.0.0 || ^6.0.0 || ^7.0.0" } }, "sha512-5aiNvf/iLTuLR1dUqoI5CLLGgeK2hd6u+tA+RIp7GUZDyAcM6ECaUEWOOtGpidbcxbkKq++KtmSqA3jhMbPwMA=="],
+
     "vite-plugin-pwa": ["vite-plugin-pwa@1.0.1", "", { "dependencies": { "debug": "^4.3.6", "pretty-bytes": "^6.1.1", "tinyglobby": "^0.2.10", "workbox-build": "^7.3.0", "workbox-window": "^7.3.0" }, "peerDependencies": { "@vite-pwa/assets-generator": "^1.0.0", "vite": "^3.1.0 || ^4.0.0 || ^5.0.0 || ^6.0.0 || ^7.0.0" }, "optionalPeers": ["@vite-pwa/assets-generator"] }, "sha512-STyUomQbydj7vGamtgQYIJI0YsUZ3T4pJLGBQDQPhzMse6aGSncmEN21OV35PrFsmCvmtiH+Nu1JS1ke4RqBjQ=="],
 
     "vite-plugin-top-level-await": ["vite-plugin-top-level-await@1.5.0", "", { "dependencies": { "@rollup/plugin-virtual": "^3.0.2", "@swc/core": "^1.10.16", "uuid": "^10.0.0" }, "peerDependencies": { "vite": ">=2.8" } }, "sha512-r/DtuvHrSqUVk23XpG2cl8gjt1aATMG5cjExXL1BUTcSNab6CzkcPua9BPEc9fuTP5UpwClCxUe3+dNGL0yrgQ=="],
@@ -2453,6 +2456,8 @@
     "stringify-object/is-obj": ["is-obj@1.0.1", "", {}, "sha512-l4RyHgRqGN4Y3+9JHVrNqO+tN0rV5My76uW5/nuO4K1b6vw5G8d/cmFjP9tRfEsdhZNt0IFdZuK/c2Vr4Nb+Qg=="],
 
     "tempy/type-fest": ["type-fest@0.16.0", "", {}, "sha512-eaBzG6MxNzEn9kiwvtre90cXaNLkmadMWa1zQMs3XORCXNbsH/OewwbxC5ia9dCxIxnTAsSxXJaa/p5y8DlvJg=="],
+
+    "vite-plugin-devtools-json/uuid": ["uuid@11.1.0", "", { "bin": { "uuid": "dist/esm/bin/uuid" } }, "sha512-0/A9rDy9P7cJ+8w1c9WD9V//9Wj15Ce2MPz8Ri6032usz+NfePxx5AcN3bN+r6ZL6jEo066/yNYB3tn4pQEx+A=="],
 
     "vscode-markdown-languageservice/@vscode/l10n": ["@vscode/l10n@0.0.10", "", {}, "sha512-E1OCmDcDWa0Ya7vtSjp/XfHFGqYJfh+YPC1RkATU71fTac+j1JjCcB3qwSzmlKAighx2WxhLlfhS0RwAN++PFQ=="],
 

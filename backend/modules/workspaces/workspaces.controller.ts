@@ -1,9 +1,12 @@
 import { and, eq } from "drizzle-orm"
 import Elysia, { t } from "elysia"
 import { LoroDoc } from "loro-crdt"
+import { Packr } from "msgpackr"
 import db, { workspaces } from "../../database"
 import redis from "../../lib/redis"
 import authMiddleware from "../auth/auth.middleware"
+
+const packr = new Packr()
 
 const workspacesController = new Elysia({
 	name: "api.workspaces",
@@ -18,7 +21,6 @@ const workspacesController = new Elysia({
 				name: true,
 				createdAt: true,
 				updatedAt: true,
-				content: true,
 				slug: true
 			}
 		})
@@ -41,15 +43,16 @@ const workspacesController = new Elysia({
 		}
 
 		const workspaceContent = await redis.lRange(
-			`workspace:${workspace.id}#doc`,
+			`workspace:${workspace.slug}#doc`,
 			0,
 			-1
 		)
 
 		if (workspaceContent.length > 0) {
 			const doc = new LoroDoc()
+			doc.detach()
 			doc.importBatch(workspaceContent)
-			workspace.content = Buffer.from(doc.export({ mode: "snapshot" }))
+			workspace.content = Buffer.from(doc.export({ mode: "snapshot" }).buffer)
 		}
 
 		return workspace
@@ -58,6 +61,7 @@ const workspacesController = new Elysia({
 		"/",
 		async ({ body: { name }, userId }) => {
 			const doc = new LoroDoc()
+			doc.detach()
 
 			const id = Bun.randomUUIDv7()
 
@@ -67,8 +71,7 @@ const workspacesController = new Elysia({
 					id,
 					name,
 					slug: `${name.toLowerCase().replace(/\s+/g, "-")}-${id.slice(-8)}`,
-					userId,
-					content: Buffer.from(doc.export({ mode: "snapshot" }))
+					userId
 				})
 				.returning()
 
@@ -121,16 +124,24 @@ const workspacesController = new Elysia({
 					return
 				}
 
-				await redis.lPush(`workspace:${workspaceSlug}#doc`, workspace.content)
+				if (workspace.content) {
+					await redis.lPush(`workspace:${workspaceSlug}#doc`, workspace.content)
+				}
 			}
 		},
 		message: async (ws, message) => {
 			const workspaceSlug = ws.data.params.slug
-			console.log(typeof message)
 
 			ws.publish(`workspace:${workspaceSlug}`, message as Buffer)
 
-			await redis.lPush(`workspace:${workspaceSlug}#doc`, message as Buffer)
+			const { type, update } = packr.unpack(message as Buffer) as {
+				type: "loro-update"
+				update: ArrayBufferLike
+			}
+
+			if (type === "loro-update") {
+				await redis.lPush(`workspace:${workspaceSlug}#doc`, Buffer.from(update))
+			}
 		},
 		close: async (ws) => {
 			ws.unsubscribe(`workspace:${ws.data.params.slug}`)

@@ -8,6 +8,13 @@
 			"when": 1752381927234,
 			"tag": "0000_dazzling_hitman",
 			"breakpoints": true
+		},
+		{
+			"idx": 1,
+			"version": "7",
+			"when": 1752540068559,
+			"tag": "0001_elite_moira_mactaggert",
+			"breakpoints": true
 		}
 	]
 }

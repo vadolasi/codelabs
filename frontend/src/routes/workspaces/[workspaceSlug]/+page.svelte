@@ -2,9 +2,40 @@
 import { page } from "$app/state"
 import httpClient from "$lib/httpClient"
 import { createQuery } from "@tanstack/svelte-query"
-import { WebContainer } from "@webcontainer/api"
+import {
+	type FileSystemTree,
+	WebContainer
+} from "@webcontainer/api"
+import { onMount } from "svelte"
+import { filesMap, loroDoc } from "../../../components/Editor/editorState.svelte"
 import Editor from "../../../components/Editor/index.svelte"
-  import { onMount } from "svelte";
+import type { LoroList } from "loro-crdt";
+
+function getFileTree(rootPath = "/"): FileSystemTree {
+  const fileTree: FileSystemTree = {}
+
+  const rootChildren = filesMap.get(rootPath).get("children") as LoroList<string>
+
+  for (const childId of rootChildren.toArray()) {
+    const filename = childId.split("/").pop()!
+    const childData = filesMap.get(childId)
+    const itemData = childData.get("data") as Item
+
+    if (itemData.type === "file") {
+      fileTree[filename] = {
+        file: {
+          contents: itemData.content,
+        }
+      }
+    } else if (itemData.type === "directory") {
+      fileTree[filename] = {
+        directory: getFileTree(itemData.path)
+      }
+    }
+  }
+
+  return fileTree
+}
 
 const {
 	params: { workspaceSlug }
@@ -28,10 +59,16 @@ const query = createQuery({
 let webcontainer: WebContainer | null = null
 
 $: if ($query.data !== undefined && webcontainer === null) {
+	if ($query.data.content) {
+		loroDoc.import(new Uint8Array($query.data.content))
+	}
+
 	WebContainer.boot({
 		workdirName: "codelabs"
 	}).then(async (loadedWebcontainer) => {
-		webcontainer = loadedWebcontainer
+		loadedWebcontainer.mount(getFileTree()).then(() => {
+			webcontainer = loadedWebcontainer
+		})
 	})
 }
 
@@ -51,6 +88,6 @@ onMount(() => {
   </div>
 {:else if $query.isError}
   <p>Error: {$query.error.message}</p>
-{:else if $query.isSuccess}
+{:else if $query.isSuccess && webcontainer !== null}
   <Editor webcontainer={webcontainer} workspace={$query.data!} />
 {/if}

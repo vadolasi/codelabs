@@ -1,6 +1,6 @@
 <script lang="ts">
 const { iframeUrl }: { iframeUrl: string } = $props()
-import { RotateCcw, ExternalLink } from "@lucide/svelte"
+import { ExternalLink, RotateCcw } from "@lucide/svelte"
 
 let render = $state(0)
 </script>

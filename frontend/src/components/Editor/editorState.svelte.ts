@@ -3,18 +3,15 @@ import type { WebContainer } from "@webcontainer/api"
 import {
 	EphemeralStore,
 	LoroDoc,
+	type LoroList,
 	type LoroMap,
-	type LoroText,
 	UndoManager
 } from "loro-crdt"
 import { SvelteMap } from "svelte/reactivity"
 
 export const loroDoc = new LoroDoc()
-export const filenamesMap = loroDoc.getMap("filesnames") as LoroMap<
-	Record<string, Item>
->
 export const filesMap = loroDoc.getMap("files") as LoroMap<
-	Record<string, LoroText>
+	Record<string, LoroMap<Record<string, Item | LoroList>>>
 >
 export const ephemeralStore = new EphemeralStore()
 export const undoManager = new UndoManager(loroDoc, {})

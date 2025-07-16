@@ -3,6 +3,7 @@ import { formatRelativeTime } from "$lib/date"
 import httpClient from "$lib/httpClient"
 import { createMutation } from "@tanstack/svelte-query"
 import type { WebContainer } from "@webcontainer/api"
+import { Packr } from "msgpackr"
 import { onMount } from "svelte"
 import { Pane, Splitpanes } from "svelte-splitpanes"
 import Button from "../Button.svelte"
@@ -11,10 +12,9 @@ import FileTree from "./FileTree/index.svelte"
 import Previewers from "./Previewers/index.svelte"
 import Terminal from "./Terminal.svelte"
 import editorState, { loroDoc, webcontainer } from "./editorState.svelte"
-import { Packr } from "msgpackr"
 
 const packr = new Packr({
-  bundleStrings: true
+	bundleStrings: true
 })
 
 const {
@@ -29,6 +29,7 @@ const {
 		null | undefined
 	>
 } = $props()
+
 webcontainer.current = loadedWebContainer
 
 let currentWorkspace: Exclude<
@@ -55,7 +56,9 @@ onMount(() => {
 		loroDoc.import(data as Uint8Array)
 	})
 	loroDoc.subscribeLocalUpdates((update) => {
-		websocketClient.ws.send(packr.pack({ type: "loro-update", update }))
+		websocketClient.ws.send(
+			packr.pack({ type: "loro-update", update: update.buffer })
+		)
 	})
 })
 

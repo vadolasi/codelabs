@@ -49,7 +49,7 @@ export const workspaces = pgTable("workspaces", {
 	id: uuid("id").primaryKey(),
 	name: text("name").notNull(),
 	slug: text("slug").notNull().unique(),
-	content: bytea("content").notNull(),
+	content: bytea("content"),
 	config: json("config")
 		.$type<{ initialTerminals: { command: string }[]; exclude: string[] }>()
 		.default({ initialTerminals: [], exclude: [] })

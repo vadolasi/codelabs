@@ -1,0 +1,1 @@
+ALTER TABLE "workspaces" ALTER COLUMN "content" DROP NOT NULL;

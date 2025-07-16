@@ -4,6 +4,7 @@ import tailwindcss from "@tailwindcss/vite"
 import { SvelteKitPWA } from "@vite-pwa/sveltekit"
 import { visualizer } from "rollup-plugin-visualizer"
 import { defineConfig } from "vite"
+import devtoolsJson from "vite-plugin-devtools-json"
 // import topLevelAwait from "vite-plugin-top-level-await"
 import wasm from "vite-plugin-wasm"
 
@@ -15,7 +16,8 @@ export default defineConfig({
 		SvelteKitPWA(),
 		wasm(),
 		// topLevelAwait(),
-		visualizer()
+		visualizer(),
+		devtoolsJson()
 	],
 	define: {
 		"process.env": {}

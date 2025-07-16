@@ -20,9 +20,9 @@ import { lintKeymap } from "@codemirror/lint"
 import { highlightSelectionMatches, searchKeymap } from "@codemirror/search"
 import {
 	EditorState,
-	Prec,
 	type EditorStateConfig,
-	type Extension
+	type Extension,
+	Prec
 } from "@codemirror/state"
 import {
 	EditorView,
@@ -37,13 +37,13 @@ import {
 	rectangularSelection
 } from "@codemirror/view"
 import { LoroExtensions } from "loro-codemirror"
-import { LoroText } from "loro-crdt"
+import { LoroMap, LoroText } from "loro-crdt"
 import { onMount } from "svelte"
 import editorState, {
 	loroDoc,
 	ephemeralStore,
 	undoManager,
-	webcontainer
+	filesMap
 } from "./editorState.svelte"
 import { getLanguage } from "./language"
 
@@ -61,6 +61,18 @@ onMount(() => {
 })
 
 let editorContainer: HTMLDivElement
+
+function getRandomDarkColor() {
+	function toHex(c: number) {
+		return c.toString(16).padStart(2, "0")
+	}
+
+	const r = Math.floor(Math.random() * 128)
+	const g = Math.floor(Math.random() * 128)
+	const b = Math.floor(Math.random() * 128)
+
+	return `#${toHex(r)}${toHex(g)}${toHex(b)}`
+}
 
 $effect(() => {
 	if (editorState.currentTab) {
@@ -94,13 +106,23 @@ $effect(() => {
 						loroDoc,
 						{
 							ephemeral: ephemeralStore,
-							user: { name: "a", colorClassName: "red" }
+							user: { name: "a", colorClassName: getRandomDarkColor() }
 						},
 						undoManager,
-						(doc) =>
-							doc
-								.getMap("files")
-								.getOrCreateContainer(editorState.currentTab!, new LoroText())
+						() => {
+							const item = filesMap.get(editorState.currentTab!)
+
+							const container = item.get("editableContent")
+							if (container instanceof LoroText) {
+								return container
+							}
+
+							const text = new LoroText()
+							const data = item.get("data") as Item
+							text.update(data.type === "file" ? data.content : "")
+							item.setContainer("editableContent", text)
+							return text
+						}
 					),
 					keymap.of([
 						...closeBracketsKeymap,
@@ -111,23 +133,24 @@ $effect(() => {
 						...completionKeymap,
 						...lintKeymap
 					]),
-					EditorView.updateListener.of(async (update) => {
-						if (update.docChanged) {
-							webcontainer.current.fs.writeFile(
-								editorState.currentTab!,
-								update.state.doc.toString()
-							)
-						}
-					}),
 					editorTheme,
 					catppuccinMocha,
-          Prec.highest(keymap.of([{
-            key: "Mod-s",
-            run() {
-              console.log("Saving workspace...")
-              return true
-            }
-          }]))
+					Prec.highest(
+						keymap.of([
+							{
+								key: "Mod-s",
+								run(view) {
+									filesMap.get(editorState.currentTab!).set("data", {
+										type: "file",
+										path: editorState.currentTab!,
+										content: view.state.doc.toString()
+									})
+									loroDoc.commit()
+									return true
+								}
+							}
+						])
+					)
 				]
 			}
 

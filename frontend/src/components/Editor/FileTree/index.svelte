@@ -6,15 +6,10 @@ import {
 	selectionFeature,
 	syncDataLoaderFeature
 } from "@headless-tree/core"
-import { LoroText } from "loro-crdt"
+import { LoroList, LoroMap } from "loro-crdt"
 import picoMatch from "picomatch"
 import { onMount, tick } from "svelte"
-import {
-	filenamesMap,
-	filesMap,
-	loroDoc,
-	webcontainer
-} from "../editorState.svelte"
+import { filesMap, loroDoc, webcontainer } from "../editorState.svelte"
 import TreeItem from "./TreeItem.svelte"
 
 let render = $state(0)
@@ -30,29 +25,10 @@ const tree = createTree<Item>({
 		await webcontainer.current.fs.rename(item.getItemData().path, newPath)
 	},
 	dataLoader: {
-		getItem: (itemId) => {
-			if (itemId === "/") {
-				return {
-					type: "directory",
-					path: "/"
-				}
-			}
-
-			return filenamesMap.get(itemId)
-		},
-		getChildren: (itemId) => {
-			const matcher = picoMatch(`${itemId}/*`.replace("//", "/"), { dot: true })
-
-			const children: string[] = []
-
-			for (const [path] of filenamesMap.entries()) {
-				if (matcher(path)) {
-					children.push(path)
-				}
-			}
-
-			return children
-		}
+		getItem: (itemId) => filesMap.get(itemId).get("data") as Item,
+		getChildren: (itemId) =>
+			(filesMap.get(itemId)?.get("children") as LoroList<string>).toArray() ||
+			[]
 	},
 	setState: () => {
 		tick().then(() => {
@@ -68,9 +44,17 @@ const tree = createTree<Item>({
 })
 
 onMount(() => {
+	tree.rebuildTree()
+
 	const isMatch = picoMatch("**/node_modules/**", { dot: true })
 
-	const unsubscribeLoroWatcher = filenamesMap.subscribe(() => {
+	const unsubscribeLoroWatcher = filesMap.subscribe(({ events }) => {
+		for (const update of events) {
+			if (update.diff.type === "map") {
+				for (const value of Object.values(update.diff.updated)) {
+				}
+			}
+		}
 		tree.rebuildTree()
 	})
 
@@ -101,7 +85,9 @@ onMount(() => {
 								isDir = false
 							} else if (error.message.includes("ENOENT")) {
 								exists = false
-								if (filenamesMap.get(filename)?.type === "file") {
+								if (
+									(filesMap.get(filename)?.get("data") as Item).type === "file"
+								) {
 									isDir = false
 								}
 							}
@@ -130,33 +116,73 @@ onMount(() => {
 						}
 					}
 
-					if (processedEvent === "dir-add") {
-						filenamesMap.set(filename, {
-							type: "directory",
-							path: filename
-						})
+					if (processedEvent === "dir-add" || processedEvent === "file-add") {
+						const newMap = new LoroMap<Record<string, Item>>()
+
+						if (processedEvent === "file-add") {
+							newMap.set("data", {
+								type: "file",
+								path: filename,
+								content: await webcontainer.current.fs.readFile(
+									filename,
+									"utf-8"
+								)
+							})
+						} else {
+							newMap.set("data", {
+								type: "directory",
+								path: filename
+							})
+							newMap.setContainer("children", new LoroList<string>())
+						}
+
+						filesMap.setContainer(filename, newMap)
+
+						const parent =
+							`/${filename.split("/").slice(0, -1).join("/")}`.replaceAll(
+								"//",
+								"/"
+							)
+						const parentItem = filesMap.get(parent)
+
+						if (parentItem !== undefined) {
+							;(parentItem.get("children") as LoroList<string>).push(filename)
+						} else {
+							const newMap = new LoroMap<Record<string, Item | LoroList>>()
+							newMap.set("data", {
+								type: "directory",
+								path: parent
+							})
+							const children = new LoroList<string>()
+							children.push(filename)
+							newMap.setContainer("children", children)
+							filesMap.setContainer(parent, newMap)
+						}
 					} else if (
 						processedEvent === "file-remove" ||
 						processedEvent === "dir-remove"
 					) {
-						filenamesMap.delete(filename)
 						filesMap.delete(filename)
-					} else if (
-						processedEvent === "file-add" ||
-						processedEvent === "file-change"
-					) {
-						const content = await webcontainer.current.fs.readFile(
-							filename,
-							"utf-8"
-						)
-						filesMap
-							.getOrCreateContainer(filename, new LoroText())
-							.update(content)
+						const parent = `/${filename.split("/").slice(0, -1).join("/")}`
+						const parentItem = filesMap.get(parent)
 
-						if (processedEvent === "file-add") {
-							filenamesMap.set(filename, {
+						if (parentItem) {
+							const children = parentItem.get("children") as LoroList<string>
+							const index = children.toArray().indexOf(filename)
+							if (index !== -1) {
+								children.delete(index, 1)
+							}
+						}
+					} else if (processedEvent === "file-change") {
+						const item = filesMap.get(filename)
+						if (item) {
+							item.set("data", {
 								type: "file",
-								path: filename
+								path: filename,
+								content: await webcontainer.current.fs.readFile(
+									filename,
+									"utf-8"
+								)
 							})
 						}
 					}

@@ -48,6 +48,6 @@
 		"@codemirror/lang-python": "^6.2.1",
 		"@codemirror/lang-sass": "^6.0.2",
 		"@codemirror/lang-wast": "^6.0.2",
-		"@electric-sql/pglite": "^0.3.4"
+		"@electric-sql/pglite": "^0.3.5"
 	}
 }
