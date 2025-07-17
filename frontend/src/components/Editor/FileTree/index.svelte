@@ -26,9 +26,23 @@ const tree = createTree<Item>({
 	},
 	dataLoader: {
 		getItem: (itemId) => filesMap.get(itemId).get("data") as Item,
-		getChildren: (itemId) =>
-			(filesMap.get(itemId)?.get("children") as LoroList<string>).toArray() ||
+		getChildren: (itemId) => {
+			const children = (filesMap.get(itemId)?.get("children") as LoroList<string>).toArray() ||
 			[]
+
+	  return children.sort((a, b) => {
+		const aType = filesMap.get(a)?.get("data") as Item
+		const bType = filesMap.get(b)?.get("data") as Item
+
+		if (aType.type === "directory" && bType.type !== "directory") {
+		  return -1
+		}
+		if (aType.type !== "directory" && bType.type === "directory") {
+		  return 1
+		}
+		return a.localeCompare(b)
+	  })
+    }
 	},
 	setState: () => {
 		tick().then(() => {
@@ -51,8 +65,39 @@ onMount(() => {
 	const unsubscribeLoroWatcher = filesMap.subscribe(({ events }) => {
 		for (const update of events) {
 			if (update.diff.type === "map") {
-				for (const value of Object.values(update.diff.updated)) {
-				}
+        const [_, file] = update.path as ["file", string | undefined]
+
+        if (file !== undefined && update.diff.updated.editableContent === undefined) {
+          const data = update.diff.updated.data as Item
+          console.log(update.diff.updated)
+
+          if (data.type === "file") {
+            webcontainer.current.fs.writeFile(
+              data.path,
+              data.content || "",
+              "utf-8"
+            ).catch()
+          } else if (data.type === "directory") {
+            webcontainer.current.fs.mkdir(data.path, { recursive: true }).catch()
+          }
+        } else {
+          for (const [key, value] of Object.entries(update.diff.updated)) {
+            if (value === null) {
+              webcontainer.current.fs.rm(key, { recursive: true }).catch()
+            } else if (value instanceof LoroMap) {
+              const itemData = value.get("data") as Item
+              if (itemData.type === "file") {
+                webcontainer.current.fs.writeFile(
+                  itemData.path,
+                  itemData.content || "",
+                  "utf-8"
+                ).catch()
+              } else if (itemData.type === "directory") {
+                webcontainer.current.fs.mkdir(itemData.path, { recursive: true }).catch()
+              }
+            }
+          }
+        }
 			}
 		}
 		tree.rebuildTree()

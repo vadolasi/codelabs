@@ -108,7 +108,7 @@ export const supportedLanguages = [
 	}),
 	LanguageDescription.of({
 		name: "Yaml",
-		extensions: ["ymal", "yml"],
+		extensions: ["yaml", "yml"],
 		async load() {
 			return import("@codemirror/lang-yaml").then((module) => module.yaml())
 		}

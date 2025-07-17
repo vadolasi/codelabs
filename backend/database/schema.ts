@@ -41,7 +41,7 @@ export const users = pgTable("users", {
 })
 
 export const usersRelations = relations(users, ({ many }) => ({
-	workspaces: many(workspaces),
+	workspaces: many(workspaces__users),
 	courses: many(coursesMembers)
 }))
 
@@ -49,7 +49,7 @@ export const workspaces = pgTable("workspaces", {
 	id: uuid("id").primaryKey(),
 	name: text("name").notNull(),
 	slug: text("slug").notNull().unique(),
-	content: bytea("content"),
+	content: bytea("content").notNull(),
 	config: json("config")
 		.$type<{ initialTerminals: { command: string }[]; exclude: string[] }>()
 		.default({ initialTerminals: [], exclude: [] })
@@ -78,16 +78,52 @@ export const workspaces = pgTable("workspaces", {
 })
 
 export const workspacesRelations = relations(workspaces, ({ one, many }) => ({
-	user: one(users, {
-		fields: [workspaces.userId],
-		references: [users.id]
-	}),
+	users: many(workspaces__users),
 	lesson: one(lessons, {
 		fields: [workspaces.lessonId],
 		references: [lessons.id]
 	}),
 	databases: many(database__workspaces)
 }))
+
+const workspaceRoleEnum = pgEnum("workspace_role", [
+	"owner",
+	"admin",
+	"editor",
+	"viewer"
+])
+
+export const workspaces__users = pgTable("workspace_users", {
+	id: uuid("id").primaryKey(),
+	workspaceId: uuid("workspace_id")
+		.notNull()
+		.references(() => workspaces.id, { onDelete: "cascade" }),
+	userId: uuid("user_id")
+		.notNull()
+		.references(() => users.id, { onDelete: "cascade" }),
+	createdAt: timestamp("created_at", {
+		mode: "date",
+		precision: 0,
+		withTimezone: true
+	})
+		.notNull()
+		.defaultNow(),
+	role: workspaceRoleEnum("role").notNull()
+})
+
+export const workspaces__usersRelations = relations(
+	workspaces__users,
+	({ one }) => ({
+		workspace: one(workspaces, {
+			fields: [workspaces__users.workspaceId],
+			references: [workspaces.id]
+		}),
+		user: one(users, {
+			fields: [workspaces__users.userId],
+			references: [users.id]
+		})
+	})
+)
 
 export const databaseDriverEnum = pgEnum("database_driver", [
 	"postgres",

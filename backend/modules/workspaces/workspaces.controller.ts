@@ -1,8 +1,8 @@
-import { and, eq } from "drizzle-orm"
+import { eq } from "drizzle-orm"
 import Elysia, { t } from "elysia"
 import { LoroDoc } from "loro-crdt"
 import { Packr } from "msgpackr"
-import db, { workspaces } from "../../database"
+import db, { workspaces, workspaces__users } from "../../database"
 import redis from "../../lib/redis"
 import authMiddleware from "../auth/auth.middleware"
 
@@ -20,38 +20,67 @@ const workspacesController = new Elysia({
 				id: true,
 				name: true,
 				createdAt: true,
-				updatedAt: true,
 				slug: true
 			}
 		})
 	})
 	.get("/:slug", async ({ params: { slug }, userId, status }) => {
-		const workspace = await db.query.workspaces.findFirst({
-			where: (workspaces, { eq, and }) =>
-				and(eq(workspaces.slug, slug), eq(workspaces.userId, userId)),
+		const userAlreadyInWorkspace = await redis.sIsMember(
+			`workspace:${slug}:users`,
+			userId
+		)
+
+		if (userAlreadyInWorkspace) {
+			return status(400, { message: "You are already in this workspace" })
+		}
+
+		const user = await db.query.workspaces__users.findFirst({
+			where: (workspaces__users, { eq, and, inArray }) =>
+				and(
+					eq(workspaces__users.userId, userId),
+					inArray(
+						workspaces__users.workspaceId,
+						db
+							.select({ id: workspaces.id })
+							.from(workspaces)
+							.where(eq(workspaces.slug, slug))
+					)
+				),
 			columns: {
-				id: true,
-				name: true,
-				slug: true,
-				content: true,
-				updatedAt: true
+				role: true
+			},
+			with: {
+				workspace: {
+					columns: {
+						id: true,
+						name: true,
+						slug: true,
+						content: true,
+						updatedAt: true
+					}
+				}
 			}
 		})
 
-		if (!workspace) {
+		if (!user) {
 			return status(404, { message: "Workspace not found" })
 		}
 
-		const workspaceContent = await redis.lRange(
-			`workspace:${workspace.slug}#doc`,
-			0,
-			-1
-		)
+		const workspace = user.workspace
 
-		if (workspaceContent.length > 0) {
+		const workspaceUpdates = await redis.lRange(`workspace:${slug}:doc`, 0, -1)
+
+		if (workspaceUpdates.length > 0) {
 			const doc = new LoroDoc()
 			doc.detach()
-			doc.importBatch(workspaceContent)
+			doc.importBatch([workspace.content, ...workspaceUpdates])
+
+			db.update(workspaces)
+				.set({ content: workspace.content })
+				.where(eq(workspaces.id, workspace.id))
+
+			redis.lTrim(`workspace:${slug}:doc`, workspaceUpdates.length, -1)
+
 			workspace.content = Buffer.from(doc.export({ mode: "snapshot" }).buffer)
 		}
 
@@ -59,7 +88,7 @@ const workspacesController = new Elysia({
 	})
 	.post(
 		"/",
-		async ({ body: { name }, userId }) => {
+		async ({ body: { name }, userId, status }) => {
 			const doc = new LoroDoc()
 			doc.detach()
 
@@ -71,9 +100,21 @@ const workspacesController = new Elysia({
 					id,
 					name,
 					slug: `${name.toLowerCase().replace(/\s+/g, "-")}-${id.slice(-8)}`,
+					content: Buffer.from(doc.export({ mode: "snapshot" }).buffer),
 					userId
 				})
 				.returning()
+
+			if (!data) {
+				return status(500, { message: "Failed to create workspace" })
+			}
+
+			await db.insert(workspaces__users).values({
+				id: Bun.randomUUIDv7(),
+				userId,
+				workspaceId: data.id,
+				role: "owner"
+			})
 
 			return data
 		},
@@ -85,13 +126,13 @@ const workspacesController = new Elysia({
 	)
 	.patch(
 		"/:slug",
-		async ({ body: { name }, params: { slug }, userId }) => {
+		async ({ body: { name }, params: { slug } }) => {
 			const data = await db
 				.update(workspaces)
 				.set({
 					name
 				})
-				.where(and(eq(workspaces.slug, slug), eq(workspaces.userId, userId)))
+				.where(eq(workspaces.slug, slug))
 				.returning()
 
 			return data[0]
@@ -107,13 +148,9 @@ const workspacesController = new Elysia({
 			const userId = ws.data.userId
 			const workspaceSlug = ws.data.params.slug
 			ws.subscribe(`workspace:${workspaceSlug}`)
-			if ((await redis.lLen(`workspace:${workspaceSlug}#doc`)) < 1) {
+			if ((await redis.lLen(`workspace:${workspaceSlug}:doc`)) < 1) {
 				const workspace = await db.query.workspaces.findFirst({
-					where: (workspaces, { eq, and }) =>
-						and(
-							eq(workspaces.slug, workspaceSlug),
-							eq(workspaces.userId, userId)
-						),
+					where: (workspaces, { eq }) => eq(workspaces.slug, workspaceSlug),
 					columns: {
 						content: true
 					}
@@ -123,11 +160,8 @@ const workspacesController = new Elysia({
 					ws.close(1008, "Workspace not found")
 					return
 				}
-
-				if (workspace.content) {
-					await redis.lPush(`workspace:${workspaceSlug}#doc`, workspace.content)
-				}
 			}
+			await redis.sAdd(`workspace:${workspaceSlug}:users`, userId)
 		},
 		message: async (ws, message) => {
 			const workspaceSlug = ws.data.params.slug
@@ -140,11 +174,14 @@ const workspacesController = new Elysia({
 			}
 
 			if (type === "loro-update") {
-				await redis.lPush(`workspace:${workspaceSlug}#doc`, Buffer.from(update))
+				await redis.lPush(`workspace:${workspaceSlug}:doc`, Buffer.from(update))
 			}
 		},
 		close: async (ws) => {
-			ws.unsubscribe(`workspace:${ws.data.params.slug}`)
+			const workspaceSlug = ws.data.params.slug
+			const userId = ws.data.userId
+			await redis.sRem(`workspace:${workspaceSlug}:users`, userId)
+			ws.unsubscribe(`workspace:${workspaceSlug}`)
 		}
 	})
 

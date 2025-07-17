@@ -21,7 +21,7 @@
 		"express": "^5.1.0",
 		"http-proxy-middleware": "^3.0.5",
 		"lefthook": "^1.12.2",
-		"turbo": "^2.5.4"
+		"turbo": "^2.5.5"
 	},
 	"peerDependencies": {
 		"typescript": "^5.8.3"

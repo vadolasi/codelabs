@@ -21,7 +21,6 @@ class EditorState {
 	public tabs: ItemInstance<Item>[] = $state([])
 	private states: Map<string, object> = new Map()
 	private tabHistory: string[] = []
-	private upToDate = $state(true)
 	private prewviewers: SvelteMap<number, string> = new SvelteMap()
 
 	public setCurrentTab(item: ItemInstance<Item>) {
@@ -52,14 +51,6 @@ class EditorState {
 
 	public getState(path: string) {
 		return this.states.get(path)
-	}
-
-	public get isUpToDate() {
-		return this.upToDate
-	}
-
-	public set isUpToDate(value: boolean) {
-		this.upToDate = value
 	}
 
 	public addPreviewer(port: number, url: string) {

@@ -1,17 +1,16 @@
 <script lang="ts">
-import { formatRelativeTime } from "$lib/date"
 import httpClient from "$lib/httpClient"
-import { createMutation } from "@tanstack/svelte-query"
 import type { WebContainer } from "@webcontainer/api"
 import { Packr } from "msgpackr"
 import { onMount } from "svelte"
 import { Pane, Splitpanes } from "svelte-splitpanes"
-import Button from "../Button.svelte"
 import Editor from "./Editor.svelte"
 import FileTree from "./FileTree/index.svelte"
 import Previewers from "./Previewers/index.svelte"
 import Terminal from "./Terminal.svelte"
-import editorState, { loroDoc, webcontainer } from "./editorState.svelte"
+import { Home } from "@lucide/svelte"
+import editorState, { ephemeralStore, loroDoc, webcontainer } from "./editorState.svelte"
+import { WebSocket } from "partysocket"
 
 const packr = new Packr({
 	bundleStrings: true
@@ -46,48 +45,34 @@ onMount(() => {
 			editorState.removePreviewer(port)
 		}
 	})
-	setInterval(() => {
-		renderCurrentDate++
-	}, 1000)
-	const websocketClient = httpClient
-		.workspaces({ slug: workspace.slug })
-		.subscribe()
-	websocketClient.subscribe(({ data }) => {
-		loroDoc.import(data as Uint8Array)
-	})
+	const websocketClient = new WebSocket(
+    `${import.meta.env.VITE_PUBLIC_SITE_URL.replace("https", "wss").replace("http", "ws")}/api/workspaces/${currentWorkspace.slug}`
+  )
+	websocketClient.onmessage = (event) => {
+    const update = packr.unpack(new Uint8Array(event.data)) as {
+      type: string
+      update: ArrayBuffer
+    }
+    if (update.type === "loro-update") {
+      loroDoc.import(new Uint8Array(update.update))
+    } else if (update.type === "ephemeral-update") {
+      ephemeralStore.apply(new Uint8Array(update.update))
+    }
+	}
 	loroDoc.subscribeLocalUpdates((update) => {
-		websocketClient.ws.send(
+		websocketClient.send(
 			packr.pack({ type: "loro-update", update: update.buffer })
 		)
 	})
+  ephemeralStore.subscribeLocalUpdates((update) => {
+    websocketClient.send(
+      packr.pack({ type: "ephemeral-update", update: update.buffer })
+    )
+  })
+
+  return () => websocketClient.close()
 })
 
-const saveWorkspaceMutation = createMutation({
-	mutationFn: async () => {
-		/*
-		const { data, error } = await httpClient
-			.workspaces({ id: workspace.id })
-			.patch({
-				content: await webcontainer.current.export(".", { format: "json" })
-			})
-
-		if (error) {
-			throw new Error(error.value.message ?? "UNKNOWN_ERROR")
-		}
-
-		return data
-    */
-	},
-	onSuccess: (newWorkspace) => {
-		// currentWorkspace = newWorkspace
-		editorState.isUpToDate = true
-	},
-	onError: (error) => {
-		console.error("Login error:", error)
-	}
-})
-
-let renderCurrentDate = $state(0)
 
 const terminals: string[] = $state([])
 let currentTerminal: string | null = $state(null)
@@ -114,17 +99,11 @@ function closeTerminal(terminal: string) {
 
 <div class="h-screen w-screen flex flex-col">
   <div class="w-full bg-base-200 p-2 flex justify-between items-center shrink-0">
-    <div></div>
-    <div class="flex gap-2 items-center">
-      {#if editorState.isUpToDate}
-        {#key renderCurrentDate}
-          <span class="text-sm text-base-content/50">Última atualização: {formatRelativeTime(currentWorkspace.updatedAt)}</span>
-        {/key}
-      {:else}
-        <span class="text-sm text-primary">Existem alterações não salvas</span>
-      {/if}
-      <Button class="btn-primary btn-sm" loading={$saveWorkspaceMutation.isPending} disabled={editorState.isUpToDate} onclick={() => $saveWorkspaceMutation.mutate()}>Salvar</Button>
+    <div>
+      <a href="/"><Home /></a>
     </div>
+    <div class="text-sm text-secondary-content">{currentWorkspace.name}</div>
+    <div></div>
   </div>
   <Splitpanes theme="modern-theme" class="w-full h-full flex-1 overflow-hidden">
     <Pane maxSize={70} size={20}>

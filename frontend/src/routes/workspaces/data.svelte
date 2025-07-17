@@ -1,5 +1,5 @@
 <script lang="ts">
-import { formatDate, formatRelativeTime } from "$lib/date"
+import { formatDate } from "$lib/date"
 import type httpClient from "$lib/httpClient"
 import {
 	type ColumnDef,
@@ -28,14 +28,9 @@ const columns: ColumnDef<Data[0], string>[] = [
 		header: "Criado em",
 		cell: (info) => info.renderValue()
 	}),
-	columnHelper.accessor((row) => formatRelativeTime(row.updatedAt), {
-		id: "updatedAt",
-		header: "Última atualização",
-		cell: (info) => info.renderValue()
-	}),
 	columnHelper.display({
 		id: "actions",
-		header: "Ações",
+		header: "",
 		cell: (info) => renderComponent(Actions, info)
 	})
 ]

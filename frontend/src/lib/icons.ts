@@ -44,6 +44,11 @@ export function getIconName(
 			}
 		}
 
+		if (icon === undefined) {
+			if (filename.endsWith(".ts")) icon = "typescript"
+			if (filename.endsWith(".js")) icon = "javascript"
+		}
+
 		return icon ?? "file"
 	}
 

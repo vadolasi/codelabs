@@ -7,6 +7,7 @@ const packr = new Packr({
 })
 
 const { api: httpClient } = treaty<App>("localhost:3000", {
+	/*
 	onRequest: (_path, options) => {
 		if (options.body !== undefined) {
 			return {
@@ -17,6 +18,7 @@ const { api: httpClient } = treaty<App>("localhost:3000", {
 			}
 		}
 	},
+  */
 	onResponse: async (response) => {
 		if (
 			response.headers.get("Content-Type")?.startsWith("application/x-msgpack")

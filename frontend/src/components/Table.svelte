@@ -41,7 +41,7 @@ const table = createSvelteTable(options)
     </thead>
     <tbody>
       {#each $table.getRowModel().rows as row}
-        <tr>
+        <tr class="hover:bg-base-200">
           {#each row.getVisibleCells() as cell}
             <td>
               <svelte:component

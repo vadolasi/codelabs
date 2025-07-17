@@ -4,7 +4,7 @@
 	"version": "0.0.1",
 	"type": "module",
 	"scripts": {
-		"dev": "bun --bun vite dev --host",
+		"dev": "bun --env-file ../.env --bun vite dev --host",
 		"build": "bun --bun vite build",
 		"preview": "bun --bun vite preview",
 		"prepare": "svelte-kit sync || echo ''",
@@ -92,6 +92,7 @@
 		"loro-crdt": "^1.5.9",
 		"material-icon-theme": "^5.24.0",
 		"msgpackr": "^1.11.4",
+		"partysocket": "^1.1.4",
 		"picomatch": "^4.0.2",
 		"react-router": "^7.6.3",
 		"rehype-starry-night": "^2.2.0",

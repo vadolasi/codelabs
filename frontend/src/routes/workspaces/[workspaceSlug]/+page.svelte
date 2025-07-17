@@ -14,9 +14,10 @@ import type { LoroList } from "loro-crdt";
 function getFileTree(rootPath = "/"): FileSystemTree {
   const fileTree: FileSystemTree = {}
 
-  const rootChildren = filesMap.get(rootPath).get("children") as LoroList<string>
+  const rootChildren = (filesMap.get(rootPath)?.get("children") as LoroList<string>)?.toArray() || []
 
-  for (const childId of rootChildren.toArray()) {
+
+  for (const childId of rootChildren) {
     const filename = childId.split("/").pop()!
     const childData = filesMap.get(childId)
     const itemData = childData.get("data") as Item
