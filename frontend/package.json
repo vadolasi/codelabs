@@ -4,9 +4,9 @@
 	"version": "0.0.1",
 	"type": "module",
 	"scripts": {
-		"dev": "bun --env-file ../.env --bun vite dev --host",
-		"build": "bun --bun vite build",
-		"preview": "bun --bun vite preview",
+		"dev": "bun --env-file ../.env vite dev --host",
+		"build": "bun vite build",
+		"preview": "bun vite preview",
 		"prepare": "svelte-kit sync || echo ''",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",

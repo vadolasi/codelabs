@@ -5,7 +5,7 @@ import { SvelteKitPWA } from "@vite-pwa/sveltekit"
 import { visualizer } from "rollup-plugin-visualizer"
 import { defineConfig } from "vite"
 import devtoolsJson from "vite-plugin-devtools-json"
-// import topLevelAwait from "vite-plugin-top-level-await"
+import topLevelAwait from "vite-plugin-top-level-await"
 import wasm from "vite-plugin-wasm"
 
 export default defineConfig({
@@ -13,9 +13,13 @@ export default defineConfig({
 		tailwindcss(),
 		enhancedImages(),
 		sveltekit(),
-		SvelteKitPWA(),
+		SvelteKitPWA({
+			workbox: {
+				maximumFileSizeToCacheInBytes: 5 * 1024 * 1024
+			}
+		}),
 		wasm(),
-		// topLevelAwait(),
+		topLevelAwait(),
 		visualizer(),
 		devtoolsJson()
 	],

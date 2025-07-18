@@ -4,12 +4,12 @@
 	"packageManager": "bun@1.2.14",
 	"scripts": {
 		"dev": "turbo run dev",
-		"postinstall": "lefthook install",
 		"format-and-lint": "biome check .",
 		"format-and-lint:fix": "biome check . --write",
 		"database:generate": "drizzle-kit generate --config backend/drizzle.config.ts",
 		"database:migrate": "drizzle-kit push --config backend/drizzle.config.ts",
-		"database:studio": "drizzle-kit studio --config backend/drizzle.config.ts"
+		"database:studio": "drizzle-kit studio --config backend/drizzle.config.ts",
+		"postinstall": "if [ \"$CI\" != \"true\" ]; then lefthook install; fi"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^1.9.4",
@@ -21,9 +21,7 @@
 		"express": "^5.1.0",
 		"http-proxy-middleware": "^3.0.5",
 		"lefthook": "^1.12.2",
-		"turbo": "^2.5.5"
-	},
-	"peerDependencies": {
+		"turbo": "^2.5.5",
 		"typescript": "^5.8.3"
 	},
 	"config": {
