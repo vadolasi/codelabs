@@ -12,4 +12,6 @@ WORKDIR /app/frontend
 
 RUN bun run build
 
+EXPOSE 4173
+
 CMD ["bun", "run", "preview"]
