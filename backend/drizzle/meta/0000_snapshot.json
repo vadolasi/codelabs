@@ -1,5 +1,5 @@
 {
-	"id": "685078e8-c46c-4f89-b446-e0c3a07fe9a3",
+	"id": "57bc0677-98c2-4bb5-9142-0307b87755f1",
 	"prevId": "00000000-0000-0000-0000-000000000000",
 	"version": "7",
 	"dialect": "postgresql",
@@ -523,6 +523,70 @@
 			"policies": {},
 			"checkConstraints": {},
 			"isRLSEnabled": false
+		},
+		"public.workspace_users": {
+			"name": "workspace_users",
+			"schema": "",
+			"columns": {
+				"id": {
+					"name": "id",
+					"type": "uuid",
+					"primaryKey": true,
+					"notNull": true
+				},
+				"workspace_id": {
+					"name": "workspace_id",
+					"type": "uuid",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"user_id": {
+					"name": "user_id",
+					"type": "uuid",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"created_at": {
+					"name": "created_at",
+					"type": "timestamp (0) with time zone",
+					"primaryKey": false,
+					"notNull": true,
+					"default": "now()"
+				},
+				"role": {
+					"name": "role",
+					"type": "workspace_role",
+					"typeSchema": "public",
+					"primaryKey": false,
+					"notNull": true
+				}
+			},
+			"indexes": {},
+			"foreignKeys": {
+				"workspace_users_workspace_id_workspaces_id_fk": {
+					"name": "workspace_users_workspace_id_workspaces_id_fk",
+					"tableFrom": "workspace_users",
+					"tableTo": "workspaces",
+					"columnsFrom": ["workspace_id"],
+					"columnsTo": ["id"],
+					"onDelete": "cascade",
+					"onUpdate": "no action"
+				},
+				"workspace_users_user_id_users_id_fk": {
+					"name": "workspace_users_user_id_users_id_fk",
+					"tableFrom": "workspace_users",
+					"tableTo": "users",
+					"columnsFrom": ["user_id"],
+					"columnsTo": ["id"],
+					"onDelete": "cascade",
+					"onUpdate": "no action"
+				}
+			},
+			"compositePrimaryKeys": {},
+			"uniqueConstraints": {},
+			"policies": {},
+			"checkConstraints": {},
+			"isRLSEnabled": false
 		}
 	},
 	"enums": {
@@ -535,6 +599,11 @@
 			"name": "database_driver",
 			"schema": "public",
 			"values": ["postgres", "sqlite"]
+		},
+		"public.workspace_role": {
+			"name": "workspace_role",
+			"schema": "public",
+			"values": ["owner", "admin", "editor", "viewer"]
 		}
 	},
 	"schemas": {},

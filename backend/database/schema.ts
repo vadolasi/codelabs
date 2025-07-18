@@ -86,7 +86,7 @@ export const workspacesRelations = relations(workspaces, ({ one, many }) => ({
 	databases: many(database__workspaces)
 }))
 
-const workspaceRoleEnum = pgEnum("workspace_role", [
+export const workspaceRoleEnum = pgEnum("workspace_role", [
 	"owner",
 	"admin",
 	"editor",

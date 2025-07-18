@@ -5,7 +5,10 @@
 	"private": true,
 	"scripts": {
 		"dev": "bun run --env-file ../.env --watch index.ts",
-		"start": "bun run index.ts"
+		"start": "bun run index.ts",
+		"database:generate": "bun --env-file ../.env drizzle-kit generate",
+		"database:migrate": "bun --env-file ../.env drizzle-kit push",
+		"database:studio": "bun --env-file ../.env drizzle-kit studio"
 	},
 	"devDependencies": {
 		"@types/bun": "latest",

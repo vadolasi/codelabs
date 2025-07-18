@@ -6,9 +6,6 @@
 		"dev": "turbo run dev",
 		"format-and-lint": "biome check .",
 		"format-and-lint:fix": "biome check . --write",
-		"database:generate": "drizzle-kit generate --config backend/drizzle.config.ts",
-		"database:migrate": "drizzle-kit push --config backend/drizzle.config.ts",
-		"database:studio": "drizzle-kit studio --config backend/drizzle.config.ts",
 		"postinstall": "if [ \"$CI\" != \"true\" ]; then lefthook install; fi"
 	},
 	"devDependencies": {
