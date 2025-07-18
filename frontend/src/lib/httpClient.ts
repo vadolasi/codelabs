@@ -6,7 +6,7 @@ const packr = new Packr({
 	bundleStrings: true
 })
 
-const { api: httpClient } = treaty<App>("localhost:3000", {
+const httpClient = treaty<App>("localhost:3000/api", {
 	/*
 	onRequest: (_path, options) => {
 		if (options.body !== undefined) {

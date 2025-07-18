@@ -9,7 +9,6 @@ import workspacesController from "./modules/workspaces/workspaces.controller"
 const packr = new Packr({ bundleStrings: true })
 
 const app = new Elysia({
-	prefix: "/api",
 	cookie: {
 		httpOnly: true,
 		secure: process.env.NODE_ENV === "production",
