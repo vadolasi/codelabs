@@ -1,6 +1,6 @@
 FROM node:24-slim AS base
 
-RUN curl -fsSL https://bun.sh/install | bash
+RUN npm install -g bun
 
 WORKDIR /app
 
