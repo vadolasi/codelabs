@@ -1,6 +1,4 @@
-FROM node:24-slim AS base
-
-RUN npm install -g bun
+FROM oven/bun:slim as base
 
 WORKDIR /app
 
@@ -12,6 +10,8 @@ WORKDIR /app/frontend
 
 RUN bun run build
 
+WORKDIR /app/frontend/build
+
 EXPOSE 3000
 
-CMD ["node", "build"]
+CMD ["bun", "run", "start"]
