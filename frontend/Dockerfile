@@ -12,6 +12,6 @@ WORKDIR /app/frontend
 
 RUN bun run build
 
-EXPOSE 4173
+EXPOSE 3000
 
-CMD ["bun", "run", "preview"]
+CMD ["node", "build"]

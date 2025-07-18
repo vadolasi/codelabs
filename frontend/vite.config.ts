@@ -5,7 +5,7 @@ import { SvelteKitPWA } from "@vite-pwa/sveltekit"
 import { visualizer } from "rollup-plugin-visualizer"
 import { defineConfig } from "vite"
 import devtoolsJson from "vite-plugin-devtools-json"
-import topLevelAwait from "vite-plugin-top-level-await"
+// import topLevelAwait from "vite-plugin-top-level-await"
 import wasm from "vite-plugin-wasm"
 
 export default defineConfig({
@@ -19,7 +19,7 @@ export default defineConfig({
 			}
 		}),
 		wasm(),
-		topLevelAwait(),
+		// topLevelAwait(),
 		visualizer(),
 		devtoolsJson()
 	],
@@ -33,5 +33,8 @@ export default defineConfig({
 				ws: true
 			}
 		}
+	},
+	build: {
+		target: "esnext"
 	}
 })
