@@ -23,6 +23,9 @@ services:
     depends_on:
       - postgres
       - redis
+    links:
+      - postgres
+      - redis
     environment:
       DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
