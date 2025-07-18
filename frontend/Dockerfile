@@ -1,4 +1,6 @@
-FROM oven/bun:slim AS base
+FROM node:24-slim AS base
+
+RUN curl -fsSL https://bun.sh/install | bash
 
 WORKDIR /app
 
