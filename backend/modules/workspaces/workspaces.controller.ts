@@ -2,7 +2,12 @@ import { eq } from "drizzle-orm"
 import Elysia, { t } from "elysia"
 import { LoroDoc } from "loro-crdt"
 import { Packr } from "msgpackr"
-import db, { workspaces, workspaces__users } from "../../database"
+import { nanoid } from "nanoid"
+import db, {
+	workspaceInvite,
+	workspaces,
+	workspaces__users
+} from "../../database"
 import redis from "../../lib/redis"
 import authMiddleware from "../auth/auth.middleware"
 
@@ -99,7 +104,7 @@ const workspacesController = new Elysia({
 				.values({
 					id,
 					name,
-					slug: `${name.toLowerCase().replace(/\s+/g, "-")}-${id.slice(-8)}`,
+					slug: `${name.toLowerCase().replace(/\s+/g, "-")}-${nanoid(8)}`,
 					content: Buffer.from(doc.export({ mode: "snapshot" }).buffer),
 					userId
 				})
@@ -124,24 +129,116 @@ const workspacesController = new Elysia({
 			})
 		}
 	)
-	.patch(
-		"/:slug",
-		async ({ body: { name }, params: { slug } }) => {
-			const data = await db
-				.update(workspaces)
-				.set({
-					name
-				})
-				.where(eq(workspaces.slug, slug))
-				.returning()
+	.post(
+		"/invite",
+		async ({ body: { users, role, workspaceId, ttl }, userId, status }) => {
+			const user = await db.query.workspaces__users.findFirst({
+				where: (workspaces__users, { eq }) =>
+					eq(workspaces__users.userId, userId) &&
+					eq(workspaces__users.workspaceId, workspaceId),
+				columns: {
+					role: true
+				}
+			})
 
-			return data[0]
+			if (!user) {
+				return status(404, { message: "Workspace not found" })
+			}
+
+			if (!["owner", "admin"].includes(user.role)) {
+				return status(403, { message: "You are not allowed to invite users" })
+			}
+
+			const token = nanoid(10)
+
+			const formatedUsers =
+				users?.map((user) => user.toLowerCase().trim()) ?? []
+
+			await db.insert(workspaceInvite).values({
+				id: Bun.randomUUIDv7(),
+				workspaceId,
+				role,
+				users: formatedUsers.length > 0 ? formatedUsers : null,
+				token,
+				expiresAt: ttl ? new Date(Date.now() + ttl * 1000) : null
+			})
+
+			return token
 		},
 		{
 			body: t.Object({
-				name: t.Optional(t.String())
+				users: t.Nullable(t.Array(t.String())),
+				role: t.Union([
+					t.Literal("owner"),
+					t.Literal("admin"),
+					t.Literal("editor"),
+					t.Literal("viewer")
+				]),
+				workspaceId: t.String(),
+				ttl: t.Nullable(t.Number())
 			})
 		}
+	)
+	.post(
+		"/join/:token",
+		async ({ params: { token }, user, status }) => {
+			const invite = await db.query.workspaceInvite.findFirst({
+				where: (workspaceInvite, { eq }) => eq(workspaceInvite.token, token),
+				columns: {
+					workspaceId: true,
+					expiresAt: true,
+					users: true,
+					role: true
+				},
+				with: {
+					workspace: {
+						columns: {
+							slug: true
+						}
+					}
+				}
+			})
+
+			if (!invite || (invite.expiresAt && invite.expiresAt < new Date())) {
+				return status(404, { message: "Invite invalid or expired" })
+			}
+
+			if (invite.users) {
+				if (
+					!invite.users.includes(user.email) &&
+					invite.users.includes(user.username)
+				) {
+					return status(404, { message: "Invite invalid or expired" })
+				}
+			}
+
+			const userAlreadyInWorkspace = await db.query.workspaces__users.findFirst(
+				{
+					where: (workspaces__users, { eq, and }) =>
+						and(
+							eq(workspaces__users.userId, user.id),
+							eq(workspaces__users.workspaceId, invite.workspaceId)
+						),
+					columns: {
+						id: true
+					}
+				}
+			)
+
+			if (userAlreadyInWorkspace) {
+				return status(400, { message: "You are already in this workspace" })
+			}
+
+			await db.insert(workspaces__users).values({
+				id: Bun.randomUUIDv7(),
+				userId: user.id,
+				workspaceId: invite.workspaceId,
+				role: invite.role
+			})
+
+			return { workspaceSlug: invite.workspace.slug }
+		},
+		{ user: true }
 	)
 	.ws("/:slug", {
 		open: async (ws) => {

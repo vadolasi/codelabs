@@ -83,7 +83,8 @@ export const workspacesRelations = relations(workspaces, ({ one, many }) => ({
 		fields: [workspaces.lessonId],
 		references: [lessons.id]
 	}),
-	databases: many(database__workspaces)
+	databases: many(database__workspaces),
+	invites: many(workspaceInvite)
 }))
 
 export const workspaceRoleEnum = pgEnum("workspace_role", [
@@ -121,6 +122,38 @@ export const workspaces__usersRelations = relations(
 		user: one(users, {
 			fields: [workspaces__users.userId],
 			references: [users.id]
+		})
+	})
+)
+
+export const workspaceInvite = pgTable("workspace_invites", {
+	id: uuid("id").primaryKey(),
+	workspaceId: uuid("workspace_id")
+		.notNull()
+		.references(() => workspaces.id, { onDelete: "cascade" }),
+	role: workspaceRoleEnum("role").notNull(),
+	users: json("emails").$type<string[]>(),
+	token: text("token").notNull().unique(),
+	createdAt: timestamp("created_at", {
+		mode: "date",
+		precision: 0,
+		withTimezone: true
+	})
+		.notNull()
+		.defaultNow(),
+	expiresAt: timestamp("expires_at", {
+		mode: "date",
+		precision: 0,
+		withTimezone: true
+	}).defaultNow()
+})
+
+export const workspaceInviteRelations = relations(
+	workspaceInvite,
+	({ one }) => ({
+		workspace: one(workspaces, {
+			fields: [workspaceInvite.workspaceId],
+			references: [workspaces.id]
 		})
 	})
 )

@@ -1,10 +1,13 @@
 import { logger } from "@bogeychan/elysia-logger"
 import serverTiming from "@elysiajs/server-timing"
+import { $ } from "bun"
 import { Elysia } from "elysia"
 import { Packr } from "msgpackr"
 import authController from "./modules/auth/auth.controller"
 import usersController from "./modules/users/users.controller"
 import workspacesController from "./modules/workspaces/workspaces.controller"
+
+console.log(await $`bun database:migrate`.text())
 
 const packr = new Packr({ bundleStrings: true })
 

@@ -5,7 +5,6 @@ import { Packr } from "msgpackr"
 export default function getHttpClient(fetchFn: typeof fetch) {
 	const packr = new Packr({ bundleStrings: true })
 	const httpClient = treaty<App>("localhost:3000/api", {
-		/*
 		onRequest: (_path, options) => {
 			if (options.body !== undefined) {
 				return {
@@ -16,7 +15,6 @@ export default function getHttpClient(fetchFn: typeof fetch) {
 				}
 			}
 		},
-    */
 		onResponse: async (response) => {
 			if (
 				response.headers
