@@ -4,7 +4,7 @@ WORKDIR /app
 
 COPY . .
 
-RUN CI=true bun install --frozen-lockfile
+RUN CI=true bun install --frozen-lockfile --production
 
 WORKDIR /app/backend
 
