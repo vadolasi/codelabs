@@ -15,6 +15,20 @@
 			"when": 1752902653679,
 			"tag": "0001_bright_bulldozer",
 			"breakpoints": true
+		},
+		{
+			"idx": 2,
+			"version": "7",
+			"when": 1752907994160,
+			"tag": "0002_rich_roxanne_simpson",
+			"breakpoints": true
+		},
+		{
+			"idx": 3,
+			"version": "7",
+			"when": 1752942712359,
+			"tag": "0003_workable_lady_vermin",
+			"breakpoints": true
 		}
 	]
 }

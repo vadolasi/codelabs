@@ -84,13 +84,13 @@ export async function validateSessionToken(
 
 export async function invalidateSession(
 	sessionId: string,
-	userId: number
+	userId: string
 ): Promise<void> {
 	await redis.del(`session:${sessionId}`)
 	await redis.sRem(`user_sessions:${userId}`, sessionId)
 }
 
-export async function invalidateAllSessions(userId: number): Promise<void> {
+export async function invalidateAllSessions(userId: string): Promise<void> {
 	const sessionIdsRaw = await redis.sMembers(`user_sessions:${userId}`)
 	const sessionIds = Array.isArray(sessionIdsRaw) ? sessionIdsRaw : []
 	if (sessionIds.length < 1) {

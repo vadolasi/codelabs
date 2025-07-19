@@ -1,8 +1,13 @@
 import Elysia, { t } from "elysia"
 import db from "../../database"
-import { createSession, generateSessionToken } from "./auth.service"
+import authMiddleware from "./auth.middleware"
+import {
+	createSession,
+	generateSessionToken,
+	invalidateSession
+} from "./auth.service"
 
-const authController = new Elysia({ name: "api.auth", prefix: "/auth" }).post(
+const unauthenticated = new Elysia().post(
 	"/login",
 	async ({
 		body: { emailOrUsername, password },
@@ -70,5 +75,27 @@ const authController = new Elysia({ name: "api.auth", prefix: "/auth" }).post(
 		})
 	}
 )
+
+const authenticated = new Elysia().use(authMiddleware).post(
+	"/logout",
+	async ({ userId, cookie: { session } }) => {
+		await invalidateSession(session.value, userId)
+		session.remove()
+
+		return {}
+	},
+	{
+		cookie: t.Cookie({
+			session: t.String()
+		})
+	}
+)
+
+const authController = new Elysia({
+	name: "api.auth",
+	prefix: "/auth"
+})
+	.use(unauthenticated)
+	.use(authenticated)
 
 export default authController

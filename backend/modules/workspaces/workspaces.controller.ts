@@ -9,6 +9,7 @@ import db, {
 	workspaces__users
 } from "../../database"
 import redis from "../../lib/redis"
+import s3 from "../../lib/s3"
 import authMiddleware from "../auth/auth.middleware"
 
 const packr = new Packr()
@@ -20,7 +21,14 @@ const workspacesController = new Elysia({
 	.use(authMiddleware)
 	.get("/", async ({ userId }) => {
 		return await db.query.workspaces.findMany({
-			where: (workspaces, { eq }) => eq(workspaces.userId, userId),
+			where: (workspaces, { inArray }) =>
+				inArray(
+					workspaces.id,
+					db
+						.select({ id: workspaces__users.workspaceId })
+						.from(workspaces__users)
+						.where(eq(workspaces__users.userId, userId))
+				),
 			columns: {
 				id: true,
 				name: true,
@@ -30,15 +38,6 @@ const workspacesController = new Elysia({
 		})
 	})
 	.get("/:slug", async ({ params: { slug }, userId, status }) => {
-		const userAlreadyInWorkspace = await redis.sIsMember(
-			`workspace:${slug}:users`,
-			userId
-		)
-
-		if (userAlreadyInWorkspace) {
-			return status(400, { message: "You are already in this workspace" })
-		}
-
 		const user = await db.query.workspaces__users.findFirst({
 			where: (workspaces__users, { eq, and, inArray }) =>
 				and(
@@ -59,8 +58,6 @@ const workspacesController = new Elysia({
 					columns: {
 						id: true,
 						name: true,
-						slug: true,
-						content: true,
 						updatedAt: true
 					}
 				}
@@ -73,23 +70,25 @@ const workspacesController = new Elysia({
 
 		const workspace = user.workspace
 
-		const workspaceUpdates = await redis.lRange(`workspace:${slug}:doc`, 0, -1)
+		const [snapshot, updates] = await Promise.all([
+			s3.file(`workspace/${workspace.id}/snapshot.bin`).bytes(),
+			redis.lRange(`workspace:${slug}:doc`, 0, -1)
+		])
 
-		if (workspaceUpdates.length > 0) {
-			const doc = new LoroDoc()
-			doc.detach()
-			doc.importBatch([workspace.content, ...workspaceUpdates])
+		const doc = new LoroDoc()
+		doc.detach()
+		doc.import(snapshot)
 
-			db.update(workspaces)
-				.set({ content: workspace.content })
-				.where(eq(workspaces.id, workspace.id))
+		if (updates.length > 0) {
+			doc.importBatch(updates)
 
-			redis.lTrim(`workspace:${slug}:doc`, workspaceUpdates.length, -1)
-
-			workspace.content = Buffer.from(doc.export({ mode: "snapshot" }).buffer)
+			redis.lTrim(`workspace:${slug}:doc`, updates.length, -1)
 		}
 
-		return workspace
+		return {
+			workspace,
+			doc: doc.export({ mode: "snapshot" })
+		}
 	})
 	.post(
 		"/",
@@ -104,9 +103,7 @@ const workspacesController = new Elysia({
 				.values({
 					id,
 					name,
-					slug: `${name.toLowerCase().replace(/\s+/g, "-")}-${nanoid(8)}`,
-					content: Buffer.from(doc.export({ mode: "snapshot" }).buffer),
-					userId
+					slug: `${name.toLowerCase().replace(/\s+/g, "-")}-${nanoid(8)}`
 				})
 				.returning()
 
@@ -114,12 +111,17 @@ const workspacesController = new Elysia({
 				return status(500, { message: "Failed to create workspace" })
 			}
 
-			await db.insert(workspaces__users).values({
-				id: Bun.randomUUIDv7(),
-				userId,
-				workspaceId: data.id,
-				role: "owner"
-			})
+			await Promise.all([
+				db.insert(workspaces__users).values({
+					id: Bun.randomUUIDv7(),
+					userId,
+					workspaceId: data.id,
+					role: "owner"
+				}),
+				s3
+					.file(`workspace/${data.id}/snapshot.bin`)
+					.write(doc.export({ mode: "snapshot" }))
+			])
 
 			return data
 		},
@@ -249,7 +251,7 @@ const workspacesController = new Elysia({
 				const workspace = await db.query.workspaces.findFirst({
 					where: (workspaces, { eq }) => eq(workspaces.slug, workspaceSlug),
 					columns: {
-						content: true
+						id: true
 					}
 				})
 

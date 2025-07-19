@@ -7,7 +7,7 @@ import authController from "./modules/auth/auth.controller"
 import usersController from "./modules/users/users.controller"
 import workspacesController from "./modules/workspaces/workspaces.controller"
 
-console.log(await $`bun database:migrate`.text())
+$`bun database:migrate`
 
 const packr = new Packr({ bundleStrings: true })
 
@@ -22,7 +22,7 @@ const app = new Elysia({
 	.use(serverTiming())
 	.use(logger())
 	.onParse(async ({ request }, contentType) => {
-		if (request.headers.get("upgrade") === "websocket") {
+		if (request.headers.get("upgrade") === "websocket" || !contentType) {
 			return request
 		}
 

@@ -1,16 +1,21 @@
 <script lang="ts">
+import { page } from "$app/state"
 import httpClient from "$lib/httpClient"
+import { Home } from "@lucide/svelte"
 import type { WebContainer } from "@webcontainer/api"
 import { Packr } from "msgpackr"
+import { WebSocket } from "partysocket"
 import { onMount } from "svelte"
 import { Pane, Splitpanes } from "svelte-splitpanes"
 import Editor from "./Editor.svelte"
 import FileTree from "./FileTree/index.svelte"
 import Previewers from "./Previewers/index.svelte"
 import Terminal from "./Terminal.svelte"
-import { Home } from "@lucide/svelte"
-import editorState, { ephemeralStore, loroDoc, webcontainer } from "./editorState.svelte"
-import { WebSocket } from "partysocket"
+import editorState, {
+	ephemeralStore,
+	loroDoc,
+	webcontainer
+} from "./editorState.svelte"
 
 const packr = new Packr({
 	bundleStrings: true
@@ -26,15 +31,12 @@ const {
 			ReturnType<ReturnType<typeof httpClient.workspaces>["get"]>
 		>["data"],
 		null | undefined
-	>
+	>["workspace"]
 } = $props()
 
 webcontainer.current = loadedWebContainer
 
-let currentWorkspace: Exclude<
-	Awaited<ReturnType<ReturnType<typeof httpClient.workspaces>["get"]>>["data"],
-	null | undefined
-> = $state(workspace)
+let currentWorkspace = $state(workspace)
 
 onMount(() => {
 	webcontainer.current.on("server-ready", async (port, url) => {
@@ -46,33 +48,32 @@ onMount(() => {
 		}
 	})
 	const websocketClient = new WebSocket(
-    `${import.meta.env.VITE_PUBLIC_SITE_URL.replace("https", "wss").replace("http", "ws")}/api/workspaces/${currentWorkspace.slug}`
-  )
+		`${import.meta.env.VITE_PUBLIC_SITE_URL.replace("https", "wss").replace("http", "ws")}/api/workspaces/${page.params.workspaceSlug}`
+	)
 	websocketClient.onmessage = (event) => {
-    const update = packr.unpack(new Uint8Array(event.data)) as {
-      type: string
-      update: ArrayBuffer
-    }
-    if (update.type === "loro-update") {
-      loroDoc.import(new Uint8Array(update.update))
-    } else if (update.type === "ephemeral-update") {
-      ephemeralStore.apply(new Uint8Array(update.update))
-    }
+		const update = packr.unpack(new Uint8Array(event.data)) as {
+			type: string
+			update: ArrayBuffer
+		}
+		if (update.type === "loro-update") {
+			loroDoc.import(new Uint8Array(update.update))
+		} else if (update.type === "ephemeral-update") {
+			ephemeralStore.apply(new Uint8Array(update.update))
+		}
 	}
 	loroDoc.subscribeLocalUpdates((update) => {
 		websocketClient.send(
 			packr.pack({ type: "loro-update", update: update.buffer })
 		)
 	})
-  ephemeralStore.subscribeLocalUpdates((update) => {
-    websocketClient.send(
-      packr.pack({ type: "ephemeral-update", update: update.buffer })
-    )
-  })
+	ephemeralStore.subscribeLocalUpdates((update) => {
+		websocketClient.send(
+			packr.pack({ type: "ephemeral-update", update: update.buffer })
+		)
+	})
 
-  return () => websocketClient.close()
+	return () => websocketClient.close()
 })
-
 
 const terminals: string[] = $state([])
 let currentTerminal: string | null = $state(null)

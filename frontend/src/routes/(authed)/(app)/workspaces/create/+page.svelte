@@ -6,8 +6,8 @@ import { createMutation } from "@tanstack/svelte-query"
 import { superForm } from "sveltekit-superforms"
 import { zodClient } from "sveltekit-superforms/adapters"
 import { z } from "zod"
-import Button from "../../../components/Button.svelte"
-import FormField from "../../../components/FormField.svelte"
+import Button from "../../../../../components/Button.svelte"
+import FormField from "../../../../../components/FormField.svelte"
 
 const schema = z.object({
 	name: z.string().min(1, "Este campo é obrigatório")

@@ -25,14 +25,17 @@ const {
 }: Props = $props()
 
 const { value, errors, constraints } = formFieldProxy(form, field)
+
+const isInvalid = !!$errors?.length
 </script>
 
 <label class={cn("floating-label", containerClass)}>
   <input
     placeholder={label}
-    class={cn("input validator", className)}
+    name={field}
+    class={cn("input", className, isInvalid && "input-error")}
     {...props}
-    aria-invalid={$errors?.length ? true : undefined}
+    aria-invalid={isInvalid}
     bind:value={$value}
     {...$constraints}
   />
@@ -41,7 +44,7 @@ const { value, errors, constraints } = formFieldProxy(form, field)
   {/if}
   {#if $errors?.length}
     {#each $errors as error}
-      <div class="validator-hint">{@html error}</div>
+      <p class="label text-sm text-error">{@html error}</p>
     {/each}
   {/if}
   <span>{label}</span>

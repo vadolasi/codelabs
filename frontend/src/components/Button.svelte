@@ -9,7 +9,7 @@ interface Props extends HTMLButtonAttributes {
 const { class: className, loading, children, ...props }: Props = $props()
 </script>
 
-<button class={cn("btn", loading && "cursor-progress pointer-events-none", className)} {...props}>
+<button class={cn("btn", loading && "cursor-progress pointer-events-none opacity-75", className)} {...props}>
   {#if loading}
     <span class="loading loading-spinner animate-fade-right"></span>
   {/if}

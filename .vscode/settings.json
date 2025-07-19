@@ -1,5 +1,9 @@
 {
 	"files.associations": {
 		"*.css": "postcss"
+	},
+	"editor.codeActionsOnSave": {
+		"source.fixAll.biome": "explicit",
+		"source.organizeImports.biome": "explicit"
 	}
 }

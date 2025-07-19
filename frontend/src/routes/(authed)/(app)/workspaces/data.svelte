@@ -6,7 +6,7 @@ import {
 	createColumnHelper,
 	renderComponent
 } from "@tanstack/svelte-table"
-import Table from "../../components/Table.svelte"
+import Table from "../../../../components/Table.svelte"
 import Actions from "./actions.svelte"
 
 type Data = Exclude<

@@ -17,7 +17,7 @@ services:
     volumes:
       - redisdata:/data
     command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
-  
+
   redis-commander:
     image: rediscommander/redis-commander:latest
     environment:

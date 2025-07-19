@@ -5,13 +5,13 @@ import { Packr } from "msgpackr"
 export default function getHttpClient(fetchFn: typeof fetch) {
 	const packr = new Packr({ bundleStrings: true })
 	const httpClient = treaty<App>("localhost:3000/api", {
-		onRequest: (_path, options) => {
-			if (options.body !== undefined) {
+		onRequest: (_path, { body }) => {
+			if (body !== undefined && typeof body !== "string") {
 				return {
 					headers: {
 						"content-type": "application/x-msgpack"
 					},
-					body: new Uint8Array(packr.pack(options.body))
+					body: new Uint8Array(packr.pack(body))
 				}
 			}
 		},

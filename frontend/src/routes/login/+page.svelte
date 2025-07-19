@@ -1,5 +1,6 @@
 <script lang="ts">
 import { goto } from "$app/navigation"
+import { page } from "$app/state"
 import httpClient from "$lib/httpClient"
 import { createMutation } from "@tanstack/svelte-query"
 import { defaults, superForm } from "sveltekit-superforms"
@@ -14,6 +15,8 @@ const schema = z.object({
 })
 
 type FormData = z.infer<typeof schema>
+
+let errorMessage: string | null = $state(null)
 
 const loginMutation = createMutation({
 	mutationFn: async ({ emailOrUsername, password }: FormData) => {
@@ -33,16 +36,21 @@ const loginMutation = createMutation({
 		return data
 	},
 	onSuccess: () => {
-		goto("/")
+		const redirectTo = page.url.searchParams.get("redirect")
+
+		if (redirectTo && !redirectTo.startsWith("/")) {
+			goto("/")
+		}
+
+		goto(redirectTo || "/")
 	},
-	onError: (error, { emailOrUsername }) => {
+	onError: (error) => {
 		if (error.message === "EMAIL_NOT_VERIFIED") {
 			const email = (error as { cause: { data: { email: string } } }).cause.data
 				.email
 			goto("/register/verify-email", { state: { email } })
 		} else {
-			// Handle other errors
-			console.error("Login error:", error)
+			errorMessage = error.message
 		}
 	}
 })
@@ -57,17 +65,25 @@ const form = superForm(defaults(zod(schema)), {
 	}
 })
 
-const { enhance, delayed } = form
+const { enhance } = form
 </script>
 
 <div class="flex w-full min-h-screen items-center justify-center">
+  {#if errorMessage}
+    <div role="alert" class="alert alert-error">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 shrink-0 stroke-current" fill="none" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+      <span>{errorMessage}</span>
+    </div>
+  {/if}
   <div class="card card-border card-lg bg-base-100 w-96 shadow-sm">
     <form class="card-body space-y-3" use:enhance>
       <h2 class="card-title">Entrar</h2>
       <FormField {form} field="emailOrUsername" label="Email" type="text" autocomplete="email" class="input-lg w-full" />
       <FormField {form} field="password" label="Senha" type="password" autocomplete="current-password" class="input-lg w-full" />
       <div class="card-actions">
-        <Button type="submit" class="btn-lg btn-primary btn-block" loading={$delayed}>Entrar</Button>
+        <Button type="submit" class="btn-lg btn-primary btn-block"  loading={$loginMutation.isPending}>Entrar</Button>
         <div class="flex flex-col items-center w-full gap-3">
           <span class="text-base-content/50">Não tem uma conta? <a href="/register" class="link">Registrar</a></span>
           <span class="text-base-content/50 -mt-2"><a href="/forgot-password" class="link">Esqueceu a senha?</a></span>

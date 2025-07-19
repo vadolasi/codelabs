@@ -1,7 +1,6 @@
 import { relations } from "drizzle-orm"
 import {
 	boolean,
-	customType,
 	json,
 	pgEnum,
 	pgTable,
@@ -9,15 +8,6 @@ import {
 	timestamp,
 	uuid
 } from "drizzle-orm/pg-core"
-
-const bytea = customType<{
-	data: Buffer
-	default: false
-}>({
-	dataType() {
-		return "bytea"
-	}
-})
 
 export const users = pgTable("users", {
 	id: uuid("id").primaryKey(),
@@ -49,14 +39,10 @@ export const workspaces = pgTable("workspaces", {
 	id: uuid("id").primaryKey(),
 	name: text("name").notNull(),
 	slug: text("slug").notNull().unique(),
-	content: bytea("content").notNull(),
 	config: json("config")
 		.$type<{ initialTerminals: { command: string }[]; exclude: string[] }>()
 		.default({ initialTerminals: [], exclude: [] })
 		.notNull(),
-	userId: uuid("user_id")
-		.notNull()
-		.references(() => users.id),
 	createdAt: timestamp("created_at", {
 		mode: "date",
 		precision: 0,
@@ -145,7 +131,7 @@ export const workspaceInvite = pgTable("workspace_invites", {
 		mode: "date",
 		precision: 0,
 		withTimezone: true
-	}).defaultNow()
+	})
 })
 
 export const workspaceInviteRelations = relations(
@@ -170,7 +156,6 @@ export const databases = pgTable("databases", {
 	userId: uuid("user_id")
 		.notNull()
 		.references(() => users.id, { onDelete: "cascade" }),
-	snapshot: bytea("snapshot").notNull(),
 	createdAt: timestamp("created_at", {
 		mode: "date",
 		precision: 0,

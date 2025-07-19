@@ -117,7 +117,7 @@ const form = superForm(defaults(zod(schema)), {
 	}
 })
 
-const { enhance, delayed, form: formData } = form
+const { enhance, form: formData } = form
 
 function acceptEmailSuggestion() {
 	if (emailSuggestion) {
@@ -144,7 +144,7 @@ function acceptEmailSuggestion() {
       </FormField>
       <FormField {form} field="passwordConfirmation" label="Confirme a senha" type="password" autocomplete="new-password" required class="input-lg w-full" />
       <div class="card-actions">
-        <Button type="submit" class="btn-primary btn-block btn-lg" loading={$delayed}>Registrar</Button>
+        <Button type="submit" class="btn-primary btn-block btn-lg" loading={$registerMutation.isPending}>Registrar</Button>
         <span class="text-center text-base-content/50 w-full">Já tem uma conta? <a href="/login" class="link">Entrar</a></span>
       </div>
     </form>
