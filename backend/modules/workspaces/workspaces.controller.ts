@@ -37,59 +37,72 @@ const workspacesController = new Elysia({
 			}
 		})
 	})
-	.get("/:slug", async ({ params: { slug }, userId, status }) => {
-		const user = await db.query.workspaces__users.findFirst({
-			where: (workspaces__users, { eq, and, inArray }) =>
-				and(
-					eq(workspaces__users.userId, userId),
-					inArray(
-						workspaces__users.workspaceId,
-						db
-							.select({ id: workspaces.id })
-							.from(workspaces)
-							.where(eq(workspaces.slug, slug))
-					)
-				),
-			columns: {
-				role: true
-			},
-			with: {
-				workspace: {
-					columns: {
-						id: true,
-						name: true,
-						updatedAt: true
+	.get(
+		"/:slug",
+		async ({
+			params: { slug },
+			userId,
+			status,
+			cookie: { realtimeAuthToken }
+		}) => {
+			const user = await db.query.workspaces__users.findFirst({
+				where: (workspaces__users, { eq, and, inArray }) =>
+					and(
+						eq(workspaces__users.userId, userId),
+						inArray(
+							workspaces__users.workspaceId,
+							db
+								.select({ id: workspaces.id })
+								.from(workspaces)
+								.where(eq(workspaces.slug, slug))
+						)
+					),
+				columns: {
+					role: true
+				},
+				with: {
+					workspace: {
+						columns: {
+							id: true,
+							name: true,
+							updatedAt: true
+						}
 					}
 				}
+			})
+
+			if (!user) {
+				return status(404, { message: "Workspace not found" })
 			}
-		})
 
-		if (!user) {
-			return status(404, { message: "Workspace not found" })
+			const workspace = user.workspace
+
+			const [snapshot, updates] = await Promise.all([
+				s3.file(`workspace/${workspace.id}/snapshot.bin`).bytes(),
+				redis.lRange(`workspace:${slug}:doc`, 0, -1)
+			])
+
+			const doc = new LoroDoc()
+			doc.detach()
+			doc.import(snapshot)
+
+			if (updates.length > 0) {
+				doc.importBatch(updates)
+
+				redis.lTrim(`workspace:${slug}:doc`, updates.length, -1)
+			}
+
+			return {
+				workspace,
+				doc: doc.export({ mode: "snapshot" })
+			}
+		},
+		{
+			cookie: t.Cookie({
+				realtimeAuthToken: t.Optional(t.String())
+			})
 		}
-
-		const workspace = user.workspace
-
-		const [snapshot, updates] = await Promise.all([
-			s3.file(`workspace/${workspace.id}/snapshot.bin`).bytes(),
-			redis.lRange(`workspace:${slug}:doc`, 0, -1)
-		])
-
-		const doc = new LoroDoc()
-		doc.detach()
-		doc.import(snapshot)
-
-		if (updates.length > 0) {
-			doc.importBatch(updates)
-
-			redis.lTrim(`workspace:${slug}:doc`, updates.length, -1)
-		}
-
-		return {
-			workspace,
-			doc: doc.export({ mode: "snapshot" })
-		}
-	})
+	)
 	.post(
 		"/",
 		async ({ body: { name }, userId, status }) => {

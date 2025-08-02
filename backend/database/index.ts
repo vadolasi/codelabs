@@ -1,12 +1,12 @@
 import { drizzle } from "drizzle-orm/bun-sql"
+import { Resource } from "sst"
 import * as schema from "./schema"
 
-const db = drizzle(
-	`postgres://${process.env.POSTGRES_USER}:${process.env.POSTGRES_PASSWORD}@${process.env.POSTGRES_HOST}:5432/${process.env.POSTGRES_DB}`,
-	{
-		schema
-	}
-)
+const connectionString = `postgres://${Resource.CodelabsDatabase.username}:${Resource.CodelabsDatabase.password}@${Resource.CodelabsDatabase.host}:${Resource.CodelabsDatabase.port}/${Resource.CodelabsDatabase.database}`
+
+const db = drizzle(connectionString, {
+	schema
+})
 
 export default db
 export * from "./schema"

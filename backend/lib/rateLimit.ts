@@ -1,5 +1,5 @@
 import path from "node:path"
-import Elysia, { t } from "elysia"
+import Elysia from "elysia"
 import redis from "./redis"
 
 const SCRIPT_SHA = await redis.scriptLoad(
@@ -36,9 +36,9 @@ class TokenBucketRateLimit {
 }
 
 const rateLimiters = {
-	high: new TokenBucketRateLimit("rate_limit:high", 5, 60 * 60),
+	high: new TokenBucketRateLimit("rate_limit:high", 10, 60 * 60),
 	medium: new TokenBucketRateLimit("rate_limit:medium", 10, 60),
-	low: new TokenBucketRateLimit("rate_limit:low", 20, 60)
+	low: new TokenBucketRateLimit("rate_limit:low", 100, 60)
 }
 
 const rateLimitMiddleware = new Elysia().macro({
@@ -54,7 +54,12 @@ const rateLimitMiddleware = new Elysia().macro({
 			const valid = await rateLimiter.consume(identifier, 1)
 
 			if (!valid) {
-				throw new Error("RATE_LIMIT_EXCEEDED")
+				return new Response("Rate limit exceeded", {
+					status: 429,
+					headers: {
+						"Retry-After": rateLimiter.refillIntervalSeconds.toString()
+					}
+				})
 			}
 		}
 	})

@@ -1,4 +1,3 @@
--- Returns 1 if allowed, 0 if not
 local key                   = KEYS[1]
 local max                   = tonumber(ARGV[1])
 local refillIntervalSeconds = tonumber(ARGV[2])

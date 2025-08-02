@@ -1,9 +1,9 @@
 {
 	"name": "codelabs",
 	"private": true,
-	"packageManager": "bun@1.2.14",
+	"packageManager": "bun@1.2.19",
 	"scripts": {
-		"dev": "turbo run dev",
+		"dev": "sst dev",
 		"format-and-lint": "biome check .",
 		"format-and-lint:fix": "biome check . --write",
 		"postinstall": "if [ \"$CI\" != \"true\" ]; then lefthook install; fi"
@@ -12,6 +12,7 @@
 		"@biomejs/biome": "^1.9.4",
 		"@commitlint/cli": "^19.8.1",
 		"@commitlint/config-conventional": "^19.8.1",
+		"@types/aws-lambda": "8.10.152",
 		"@types/bun": "^1.2.19",
 		"commitizen": "^4.3.1",
 		"cz-conventional-changelog": "^3.3.0",
@@ -26,7 +27,7 @@
 			"path": "./node_modules/cz-conventional-changelog"
 		}
 	},
-	"workspaces": ["frontend", "backend"],
+	"workspaces": ["web", "backend", "realtime-server"],
 	"trustedDependencies": [
 		"@biomejs/biome",
 		"@swc/core",
@@ -38,11 +39,6 @@
 		"sharp"
 	],
 	"dependencies": {
-		"@codemirror/lang-cpp": "^6.0.3",
-		"@codemirror/lang-markdown": "^6.3.3",
-		"@codemirror/lang-python": "^6.2.1",
-		"@codemirror/lang-sass": "^6.0.2",
-		"@codemirror/lang-wast": "^6.0.2",
-		"@electric-sql/pglite": "^0.3.5"
+		"sst": "^3.17.10"
 	}
 }

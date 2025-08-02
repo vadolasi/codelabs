@@ -1,22 +1,24 @@
 import { logger } from "@bogeychan/elysia-logger"
 import serverTiming from "@elysiajs/server-timing"
-import { $ } from "bun"
 import { Elysia } from "elysia"
 import { Packr } from "msgpackr"
 import authController from "./modules/auth/auth.controller"
 import usersController from "./modules/users/users.controller"
 import workspacesController from "./modules/workspaces/workspaces.controller"
 
-$`bun database:migrate`
-
 const packr = new Packr({ bundleStrings: true })
 
 const app = new Elysia({
+	prefix: "/api",
 	cookie: {
 		httpOnly: true,
 		secure: process.env.NODE_ENV === "production",
 		path: "/",
-		sameSite: "lax"
+		sameSite: "lax",
+		domain:
+			process.env.NODE_ENV === "production"
+				? ".codelabs.unova.tech"
+				: "localhost"
 	}
 })
 	.use(serverTiming())
@@ -42,10 +44,7 @@ const app = new Elysia({
 	.use(authController)
 	.use(usersController)
 	.use(workspacesController)
-	.listen(8000)
+
+export default app
 
 export type App = typeof app
-
-console.log(
-	`🦊 Elysia is running at ${app.server?.hostname}:${app.server?.port}`
-)
