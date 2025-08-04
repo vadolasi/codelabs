@@ -5,14 +5,6 @@
 
 declare module "sst" {
 	export interface Resource {
-		AwsAccessKeyId: {
-			type: "sst.sst.Secret"
-			value: string
-		}
-		AwsSecretAccessKey: {
-			type: "sst.sst.Secret"
-			value: string
-		}
 		CodelabsBucket: {
 			name: string
 			type: "sst.aws.Bucket"

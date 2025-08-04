@@ -1,3 +1,4 @@
+import { PUBLIC_SITE_URL } from "$env/static/public"
 import { treaty } from "@elysiajs/eden"
 import type { App } from "backend"
 import { Packr } from "msgpackr"
@@ -6,33 +7,28 @@ const packr = new Packr({
 	bundleStrings: true
 })
 
-const { api: httpClient } = treaty<App>(
-	new URL(import.meta.env.VITE_PUBLIC_SITE_URL).host,
-	{
-		onRequest: (_path, { body }) => {
-			if (body !== undefined && typeof body !== "string") {
-				return {
-					headers: {
-						"content-type": "application/x-msgpack"
-					},
-					body: new Uint8Array(packr.pack(body))
-				}
+const { api: httpClient } = treaty<App>(new URL(PUBLIC_SITE_URL).host, {
+	onRequest: (_path, { body }) => {
+		if (body !== undefined && typeof body !== "string") {
+			return {
+				headers: {
+					"content-type": "application/x-msgpack"
+				},
+				body: new Uint8Array(packr.pack(body))
 			}
-		},
-		onResponse: async (response) => {
-			if (
-				response.headers
-					.get("Content-Type")
-					?.startsWith("application/x-msgpack")
-			) {
-				return packr.unpack(new Uint8Array(await response.arrayBuffer()))
-			}
-		},
-		headers: {
-			accept: "application/x-msgpack"
 		}
+	},
+	onResponse: async (response) => {
+		if (
+			response.headers.get("Content-Type")?.startsWith("application/x-msgpack")
+		) {
+			return packr.unpack(new Uint8Array(await response.arrayBuffer()))
+		}
+	},
+	headers: {
+		accept: "application/x-msgpack"
 	}
-)
+})
 
 type GeneratePaths<T> = {
 	[K in keyof T]-?: K extends string

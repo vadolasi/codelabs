@@ -18,14 +18,6 @@ services:
       - valkeydata:/data
     command: redis-server --appendonly yes --requirepass codelabs
 
-  redis-commander:
-    image: rediscommander/redis-commander:latest
-    environment:
-      REDIS_HOST: valkey
-      REDIS_PASSWORD: codelabs
-    ports:
-      - "8081:8081"
-
 volumes:
   pgdata:
   valkeydata:

@@ -1,11 +1,13 @@
 import db from "backend/database"
-import redis from "backend/lib/redis"
+import { getRedisClient } from "backend/lib/redis"
 import { validateSessionToken } from "backend/modules/auth/auth.service"
 import { Packr } from "msgpackr"
 
 const packr = new Packr({
 	bundleStrings: true
 })
+
+const redis = await getRedisClient()
 
 Bun.serve<{ userId: string; workspaceId: string }, object>({
 	port: 8080,

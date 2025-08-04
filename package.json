@@ -16,11 +16,9 @@
 		"@types/bun": "^1.2.19",
 		"commitizen": "^4.3.1",
 		"cz-conventional-changelog": "^3.3.0",
-		"express": "^5.1.0",
-		"http-proxy-middleware": "^3.0.5",
 		"lefthook": "^1.12.2",
 		"turbo": "^2.5.5",
-		"typescript": "^5.8.3"
+		"typescript": "^5.9.2"
 	},
 	"config": {
 		"commitizen": {
@@ -32,6 +30,7 @@
 		"@biomejs/biome",
 		"@swc/core",
 		"@tailwindcss/oxide",
+		"aws-sdk",
 		"esbuild",
 		"frontend",
 		"lefthook",
@@ -40,5 +39,8 @@
 	],
 	"dependencies": {
 		"sst": "^3.17.10"
+	},
+	"patchedDependencies": {
+		"drizzle-orm@0.44.4": "patches/drizzle-orm@0.44.4.patch"
 	}
 }

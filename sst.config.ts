@@ -24,8 +24,6 @@ export default $config({
 		}
 
 		const resendApiKeySecret = new sst.Secret("ResendApiKey")
-		const awsAccessKeyIdSecret = new sst.Secret("AwsAccessKeyId")
-		const awsSecretAccessKeySecret = new sst.Secret("AwsSecretAccessKey")
 
 		const vpc = new sst.aws.Vpc("CodelabsVPC")
 
@@ -80,20 +78,22 @@ export default $config({
 				name: "codelabs.unova.tech",
 				dns: sst.aws.dns()
 			},
-			link: [
-				bucket,
-				database,
-				redis,
-				resendApiKeySecret,
-				awsAccessKeyIdSecret,
-				awsSecretAccessKeySecret
-			],
+			link: [bucket, database, redis, resendApiKeySecret],
 			vpc,
+			buildCommand: "bun run build",
+			server: {
+				architecture: "arm64",
+				runtime: "nodejs22.x",
+				loader: {
+					".wasm": "binary"
+				},
+				layers: ["arn:aws:lambda:sa-east-1:858293832988:layer:bun:1"]
+			},
 			environment: {
-				VITE_PUBLIC_SITE_URL: $dev
+				PUBLIC_SITE_URL: $dev
 					? "http://localhost:5173"
 					: "https://codelabs.unova.tech",
-				VITE_PUBLIC_WEBSOCKET_URL: $dev
+				PUBLIC_WEBSOCKET_URL: $dev
 					? "ws://localhost:8080"
 					: "wss://realtime.codelabs.unova.tech",
 				NODE_ENV: $dev ? "development" : "production"

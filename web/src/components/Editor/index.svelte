@@ -1,5 +1,5 @@
 <script lang="ts">
-import { page } from "$app/state"
+import { PUBLIC_WEBSOCKET_URL } from "$env/static/public"
 import httpClient from "$lib/httpClient"
 import { Home } from "@lucide/svelte"
 import type { WebContainer } from "@webcontainer/api"
@@ -47,7 +47,9 @@ onMount(() => {
 			editorState.removePreviewer(port)
 		}
 	})
-	const websocketClient = new WebSocket(`${import.meta.env.VITE_PUBLIC_WEBSOCKET_URL}/${currentWorkspace.id}`)
+	const websocketClient = new WebSocket(
+		`${PUBLIC_WEBSOCKET_URL}/${currentWorkspace.id}`
+	)
 	websocketClient.onmessage = (event) => {
 		const update = packr.unpack(new Uint8Array(event.data)) as {
 			type: string

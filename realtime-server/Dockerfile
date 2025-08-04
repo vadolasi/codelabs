@@ -4,7 +4,7 @@ WORKDIR /app
 
 COPY . .
 
-RUN bun install --frozen-lockfile
+RUN CI=true bun install --frozen-lockfile
 
 WORKDIR /app/realtime-server
 
