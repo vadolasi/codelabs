@@ -27,7 +27,7 @@ services:
       context: ./
       dockerfile: backend/Dockerfile
     ports:
-      - "8080:8080"
+      - "8000:8000"
     environment:
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
       POSTGRES_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
