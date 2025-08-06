@@ -1,8 +1,6 @@
 import path from "node:path"
 import Elysia from "elysia"
-import { getRedisClient } from "./redis"
-
-const redis = await getRedisClient()
+import redis from "../redis"
 
 const SCRIPT_SHA = await redis.scriptLoad(
 	await Bun.file(path.join(import.meta.dirname, "rateLimit.lua")).text()

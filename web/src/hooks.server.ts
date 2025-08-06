@@ -1,8 +1,7 @@
-import getServerHttpClient from "$lib/serverHttpClient"
+import httpClient from "$lib/httpClient"
 import type { Handle } from "@sveltejs/kit"
 
 export const handle: Handle = async ({ event, resolve }) => {
-	const httpClient = getServerHttpClient(event.request.headers)
 	const { data } = await httpClient.users.me.get()
 
 	event.locals.user = data

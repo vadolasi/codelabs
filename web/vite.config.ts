@@ -15,12 +15,16 @@ export default defineConfig({
 		visualizer(),
 		devtoolsJson()
 	],
-	define: {
-		"process.env": {
-			NODE_ENV: process.env.NODE_ENV || "development"
-		}
-	},
 	build: {
 		target: "esnext"
+	},
+	server: {
+		proxy: {
+			"/api": {
+				target: "http://localhost:8000",
+				changeOrigin: true,
+				ws: true
+			}
+		}
 	}
 })

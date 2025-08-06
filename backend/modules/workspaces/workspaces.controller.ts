@@ -8,7 +8,7 @@ import db, {
 	workspaces,
 	workspaces__users
 } from "../../database"
-import { getRedisClient } from "../../lib/redis"
+import redis from "../../lib/redis"
 import s3 from "../../lib/s3"
 import authMiddleware from "../auth/auth.middleware"
 
@@ -40,8 +40,6 @@ const workspacesController = new Elysia({
 	.get(
 		"/:slug",
 		async ({ params: { slug }, userId, status }) => {
-			const redis = await getRedisClient()
-
 			const user = await db.query.workspaces__users.findFirst({
 				where: (workspaces__users, { eq, and, inArray }) =>
 					and(
@@ -254,8 +252,6 @@ const workspacesController = new Elysia({
 	)
 	.ws("/:slug", {
 		open: async (ws) => {
-			const redis = await getRedisClient()
-
 			const userId = ws.data.userId
 			const workspaceSlug = ws.data.params.slug
 			ws.subscribe(`workspace:${workspaceSlug}`)
@@ -275,8 +271,6 @@ const workspacesController = new Elysia({
 			await redis.sAdd(`workspace:${workspaceSlug}:users`, userId)
 		},
 		message: async (ws, message) => {
-			const redis = await getRedisClient()
-
 			const workspaceSlug = ws.data.params.slug
 
 			ws.publish(`workspace:${workspaceSlug}`, message as Buffer)
@@ -291,8 +285,6 @@ const workspacesController = new Elysia({
 			}
 		},
 		close: async (ws) => {
-			const redis = await getRedisClient()
-
 			const workspaceSlug = ws.data.params.slug
 			const userId = ws.data.userId
 			await redis.sRem(`workspace:${workspaceSlug}:users`, userId)

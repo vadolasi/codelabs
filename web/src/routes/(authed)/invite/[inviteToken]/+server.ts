@@ -1,10 +1,8 @@
-import getServerHttpClient from "$lib/serverHttpClient"
+import httpClient from "$lib/httpClient"
 import { redirect } from "@sveltejs/kit"
 import type { RequestHandler } from "./$types"
 
 export const GET: RequestHandler = async ({ params, request }) => {
-	const httpClient = getServerHttpClient(request.headers)
-
 	const { data, error } = await httpClient.workspaces
 		.join({
 			token: params.inviteToken

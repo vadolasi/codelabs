@@ -2,6 +2,7 @@ import { logger } from "@bogeychan/elysia-logger"
 import serverTiming from "@elysiajs/server-timing"
 import { Elysia } from "elysia"
 import { Packr } from "msgpackr"
+import config from "./lib/config"
 import authController from "./modules/auth/auth.controller"
 import usersController from "./modules/users/users.controller"
 import workspacesController from "./modules/workspaces/workspaces.controller"
@@ -12,12 +13,13 @@ const app = new Elysia({
 	prefix: "/api",
 	cookie: {
 		httpOnly: true,
-		secure: process.env.NODE_ENV === "production",
+
+		secure: config.NODE_ENV === "production",
 		path: "/",
 		sameSite: "lax",
 		domain:
-			process.env.NODE_ENV === "production"
-				? ".codelabs.unova.tech"
+			config.NODE_ENV === "production"
+				? `.${config.PUBLIC_DOMAIN}`
 				: "localhost"
 	}
 })
@@ -44,6 +46,7 @@ const app = new Elysia({
 	.use(authController)
 	.use(usersController)
 	.use(workspacesController)
+	.listen(8000)
 
 export default app
 

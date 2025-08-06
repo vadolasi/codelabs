@@ -1,5 +1,5 @@
 <script lang="ts">
-import { PUBLIC_WEBSOCKET_URL } from "$env/static/public"
+import { PUBLIC_DOMAIN } from "$env/static/public"
 import httpClient from "$lib/httpClient"
 import { Home } from "@lucide/svelte"
 import type { WebContainer } from "@webcontainer/api"
@@ -48,7 +48,7 @@ onMount(() => {
 		}
 	})
 	const websocketClient = new WebSocket(
-		`${PUBLIC_WEBSOCKET_URL}/${currentWorkspace.id}`
+		`wss://${PUBLIC_DOMAIN}/api/workspaces/${currentWorkspace.id}`
 	)
 	websocketClient.onmessage = (event) => {
 		const update = packr.unpack(new Uint8Array(event.data)) as {

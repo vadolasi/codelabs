@@ -6,7 +6,7 @@ COPY . .
 
 RUN CI=true bun install --frozen-lockfile
 
-WORKDIR /app/realtime-server
+WORKDIR /app/backend
 
 EXPOSE 8080
 

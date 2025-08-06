@@ -1,5 +1,1 @@
-<script>
-import BackgroundLights from "./components/BackgroundLights.svelte"
-</script>
-
-<BackgroundLights />
+<h1>Codelabs</h1>

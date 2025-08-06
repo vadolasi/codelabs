@@ -4,9 +4,11 @@
 	"type": "module",
 	"private": true,
 	"scripts": {
-		"database:generate": "drizzle-kit generate",
-		"database:migrate": "drizzle-kit push",
-		"database:studio": "drizzle-kit studio"
+		"dev": "bun --env-file ../.env --bun --watch index.ts",
+		"start": "bun index.ts",
+		"database:generate": "bun --bun drizzle-kit generate",
+		"database:migrate": "bun --bun drizzle-kit push",
+		"database:studio": "bun --bun drizzle-kit studio"
 	},
 	"devDependencies": {
 		"@types/bun": "latest",
@@ -35,6 +37,6 @@
 		"nanoid": "^5.1.5",
 		"redis": "^5.7.0",
 		"resend": "^4.7.0",
-		"sst": "^3.17.10"
+		"zod": "^4.0.15"
 	}
 }

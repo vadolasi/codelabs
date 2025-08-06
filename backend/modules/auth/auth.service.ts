@@ -2,7 +2,7 @@ import {
 	encodeBase32LowerCaseNoPadding,
 	encodeHexLowerCase
 } from "@oslojs/encoding"
-import { getRedisClient } from "../../lib/redis"
+import redis from "../../lib/redis"
 
 export function generateSessionToken(): string {
 	const bytes = new Uint8Array(20)
@@ -15,8 +15,6 @@ export async function createSession(
 	token: string,
 	userId: string
 ): Promise<Session> {
-	const redis = await getRedisClient()
-
 	const sessionId = encodeHexLowerCase(
 		new Bun.CryptoHasher("sha256").update(token).digest()
 	)
@@ -44,8 +42,6 @@ export async function createSession(
 export async function validateSessionToken(
 	token: string
 ): Promise<Session | null> {
-	const redis = await getRedisClient()
-
 	const sessionId = encodeHexLowerCase(
 		new Bun.CryptoHasher("sha256").update(token).digest()
 	)
@@ -90,15 +86,11 @@ export async function invalidateSession(
 	sessionId: string,
 	userId: string
 ): Promise<void> {
-	const redis = await getRedisClient()
-
 	await redis.del(`session:${sessionId}`)
 	await redis.sRem(`user_sessions:${userId}`, sessionId)
 }
 
 export async function invalidateAllSessions(userId: string): Promise<void> {
-	const redis = await getRedisClient()
-
 	const sessionIdsRaw = await redis.sMembers(`user_sessions:${userId}`)
 	const sessionIds = Array.isArray(sessionIdsRaw) ? sessionIdsRaw : []
 	if (sessionIds.length < 1) {

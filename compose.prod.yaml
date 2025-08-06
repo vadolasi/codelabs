@@ -1,0 +1,59 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - backend_network
+
+  redis:
+    image: redis:8-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis:/data
+    networks:
+      - backend_network
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
+
+  backend:
+    build:
+      context: ./
+      dockerfile: backend/Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
+      POSTGRES_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      S3_BUCKET: ${S3_BUCKET}
+      RESEND_API_KEY: ${RESEND_API_KEY}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      NODE_ENV: production
+    networks:
+      - backend_network
+    depends_on:
+      - postgres
+      - redis
+
+  web:
+    build:
+      context: ./
+      dockerfile: web/Dockerfile
+      args:
+        PUBLIC_DOMAIN: ${PUBLIC_DOMAIN}
+    ports:
+      - "3000:3000"
+  
+networks:
+  backend_network:
+
+volumes:
+  pgdata:
+  redis:

@@ -38,6 +38,7 @@ const unauthenticated = new Elysia().post(
 		}
 
 		const sessionToken = generateSessionToken()
+		console.log("Session token generated:", sessionToken)
 		const session = await createSession(sessionToken, user.id)
 
 		sessionCookie.value = sessionToken

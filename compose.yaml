@@ -10,14 +10,14 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
 
-  valkey:
-    image: valkey/valkey:8-alpine
+  redis:
+    image: redis:8-alpine
     ports:
       - "6379:6379"
     volumes:
-      - valkeydata:/data
+      - redis:/data
     command: redis-server --appendonly yes --requirepass codelabs
 
 volumes:
   pgdata:
-  valkeydata:
+  redis:

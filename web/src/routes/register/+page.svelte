@@ -46,7 +46,7 @@ const schema = z
 				data.password !== data.passwordConfirmation
 			) {
 				ctx.addIssue({
-					code: z.ZodIssueCode.custom,
+					code: "custom",
 					message: "As senhas não coincidem",
 					fatal: true,
 					path: ["passwordConfirmation"]
@@ -63,7 +63,7 @@ const schema = z
 			}
 			if (result.score < 3) {
 				ctx.addIssue({
-					code: z.ZodIssueCode.custom,
+					code: "custom",
 					message: message || "Senha muito fraca",
 					fatal: true,
 					path: ["password"]

@@ -1,4 +1,4 @@
-import { PUBLIC_SITE_URL } from "$env/static/public"
+import { PUBLIC_DOMAIN } from "$env/static/public"
 import { treaty } from "@elysiajs/eden"
 import type { App } from "backend"
 import { Packr } from "msgpackr"
@@ -7,7 +7,7 @@ const packr = new Packr({
 	bundleStrings: true
 })
 
-const { api: httpClient } = treaty<App>(new URL(PUBLIC_SITE_URL).host, {
+const { api: httpClient } = treaty<App>(PUBLIC_DOMAIN, {
 	onRequest: (_path, { body }) => {
 		if (body !== undefined && typeof body !== "string") {
 			return {

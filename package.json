@@ -1,12 +1,9 @@
 {
 	"name": "codelabs",
-	"private": true,
-	"packageManager": "bun@1.2.19",
-	"scripts": {
-		"dev": "sst dev",
-		"format-and-lint": "biome check .",
-		"format-and-lint:fix": "biome check . --write",
-		"postinstall": "if [ \"$CI\" != \"true\" ]; then lefthook install; fi"
+	"config": {
+		"commitizen": {
+			"path": "./node_modules/cz-conventional-changelog"
+		}
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^1.9.4",
@@ -20,12 +17,17 @@
 		"turbo": "^2.5.5",
 		"typescript": "^5.9.2"
 	},
-	"config": {
-		"commitizen": {
-			"path": "./node_modules/cz-conventional-changelog"
-		}
+	"packageManager": "bun@1.2.19",
+	"patchedDependencies": {
+		"drizzle-orm@0.44.4": "patches/drizzle-orm@0.44.4.patch"
 	},
-	"workspaces": ["web", "backend", "realtime-server"],
+	"private": true,
+	"scripts": {
+		"dev": "turbo run dev",
+		"format-and-lint": "biome check .",
+		"format-and-lint:fix": "biome check . --write",
+		"postinstall": "if [ \"$CI\" != \"true\" ]; then lefthook install; fi"
+	},
 	"trustedDependencies": [
 		"@biomejs/biome",
 		"@swc/core",
@@ -37,10 +39,5 @@
 		"msgpackr-extract",
 		"sharp"
 	],
-	"dependencies": {
-		"sst": "^3.17.10"
-	},
-	"patchedDependencies": {
-		"drizzle-orm@0.44.4": "patches/drizzle-orm@0.44.4.patch"
-	}
+	"workspaces": ["web", "backend"]
 }

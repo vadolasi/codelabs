@@ -1,13 +1,13 @@
 import { Eta } from "eta"
 import { Engine } from "mrml"
 import { Resend } from "resend"
-import { Resource } from "sst"
+import config from "../lib/config"
 
 const mrml = new Engine()
 
 const eta = new Eta({ views: import.meta.dirname })
 
-const resend = new Resend(Resource.ResendApiKey.value)
+const resend = new Resend(config.RESEND_API_KEY)
 
 interface EmailTemplates {
 	emailVerification: { code: string }
