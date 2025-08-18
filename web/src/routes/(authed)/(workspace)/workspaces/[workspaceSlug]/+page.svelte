@@ -47,7 +47,7 @@ const query = createQuery({
 	queryKey: ["workspaces", workspaceSlug],
 	queryFn: async () => {
 		const { data, error } = await httpClient
-			.workspaces({ slug: workspaceSlug })
+			.workspaces({ slug: workspaceSlug! })
 			.get()
 
 		if (error) {

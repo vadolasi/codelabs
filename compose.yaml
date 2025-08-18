@@ -2,9 +2,9 @@ services:
   postgres:
     image: postgres:17-alpine
     environment:
-      POSTGRES_USER: codelabs
-      POSTGRES_PASSWORD: codelabs
-      POSTGRES_DB: codelabs
+      POSTGRES_USER: ${POSTGRES_USER:-codelabs}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-codelabs}
+      POSTGRES_DB: ${POSTGRES_DB:-codelabs}
     ports:
       - "5432:5432"
     volumes:
@@ -16,7 +16,7 @@ services:
       - "6379:6379"
     volumes:
       - redis:/data
-    command: redis-server --appendonly yes --requirepass codelabs
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-codelabs}
 
 volumes:
   pgdata:
