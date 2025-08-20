@@ -2,7 +2,7 @@ import httpClient from "$lib/httpClient"
 import { redirect } from "@sveltejs/kit"
 import type { RequestHandler } from "./$types"
 
-export const GET: RequestHandler = async ({ params, request }) => {
+export const GET: RequestHandler = async ({ params }) => {
 	const { data, error } = await httpClient.workspaces
 		.join({
 			token: params.inviteToken

@@ -19,7 +19,7 @@ const app = new Elysia({
 		sameSite: "lax",
 		domain:
 			config.NODE_ENV === "production"
-				? `.${config.PUBLIC_DOMAIN}`
+				? `.${config.PUBLIC_BACKEND_DOMAIN}`
 				: "localhost"
 	}
 })

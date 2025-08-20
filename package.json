@@ -32,12 +32,12 @@
 		"@biomejs/biome",
 		"@swc/core",
 		"@tailwindcss/oxide",
-		"aws-sdk",
 		"esbuild",
 		"frontend",
 		"lefthook",
 		"msgpackr-extract",
-		"sharp"
+		"sharp",
+		"web"
 	],
 	"workspaces": ["web", "backend"]
 }

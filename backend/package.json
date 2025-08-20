@@ -5,7 +5,7 @@
 	"private": true,
 	"scripts": {
 		"dev": "bun --env-file ../.env --bun --watch index.ts",
-		"start": "bun index.ts",
+		"start": "pm2 start pm2.config.js",
 		"database:generate": "bun --bun drizzle-kit generate",
 		"database:migrate": "bun --bun drizzle-kit push",
 		"database:studio": "bun --bun drizzle-kit studio"
@@ -35,6 +35,7 @@
 		"mrml": "^1.5.0",
 		"msgpackr": "^1.11.5",
 		"nanoid": "^5.1.5",
+		"pm2": "^6.0.8",
 		"redis": "^5.7.0",
 		"resend": "^4.7.0",
 		"zod": "^4.0.15"

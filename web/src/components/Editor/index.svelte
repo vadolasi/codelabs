@@ -1,5 +1,5 @@
 <script lang="ts">
-import { PUBLIC_DOMAIN } from "$env/static/public"
+import { PUBLIC_BACKEND_DOMAIN } from "$env/static/public"
 import httpClient from "$lib/httpClient"
 import { Home } from "@lucide/svelte"
 import type { WebContainer } from "@webcontainer/api"
@@ -47,9 +47,9 @@ onMount(() => {
 			editorState.removePreviewer(port)
 		}
 	})
-	const websocketClient = new WebSocket(
-		`wss://${PUBLIC_DOMAIN}/api/workspaces/${currentWorkspace.id}`
-	)
+  const preWs = httpClient.workspaces({ slug: currentWorkspace.id }).subscribe().ws
+	const websocketClient = new WebSocket(preWs.url)
+  preWs.close()
 	websocketClient.onmessage = (event) => {
 		const update = packr.unpack(new Uint8Array(event.data)) as {
 			type: string

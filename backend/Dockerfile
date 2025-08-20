@@ -10,4 +10,4 @@ WORKDIR /app/backend
 
 EXPOSE 8080
 
-CMD ["bun", "run", "start"]
+CMD ["pm2-runtime", "start", "pm2.config.js"]
