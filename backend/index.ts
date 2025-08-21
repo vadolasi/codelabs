@@ -17,10 +17,7 @@ const app = new Elysia({
 		secure: config.NODE_ENV === "production",
 		path: "/",
 		sameSite: "lax",
-		domain:
-			config.NODE_ENV === "production"
-				? `.${config.PUBLIC_BACKEND_DOMAIN}`
-				: "localhost"
+		domain: config.NODE_ENV === "production" ? `.${config.DOMAIN}` : "localhost"
 	}
 })
 	.use(serverTiming())
