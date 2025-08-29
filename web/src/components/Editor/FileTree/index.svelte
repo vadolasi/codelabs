@@ -73,7 +73,6 @@ onMount(() => {
 					update.diff.updated.editableContent === undefined
 				) {
 					const data = update.diff.updated.data as Item
-					console.log(update.diff.updated)
 
 					if (data.type === "file") {
 						webcontainer.current.fs

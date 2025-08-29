@@ -13,7 +13,6 @@ const app = new Elysia({
 	prefix: "/api",
 	cookie: {
 		httpOnly: true,
-
 		secure: config.NODE_ENV === "production",
 		path: "/",
 		sameSite: "lax",
