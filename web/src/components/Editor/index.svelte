@@ -47,9 +47,11 @@ onMount(() => {
 			editorState.removePreviewer(port)
 		}
 	})
-  const preWs = httpClient.workspaces({ slug: currentWorkspace.id }).subscribe().ws
+	const preWs = httpClient
+		.workspaces({ slug: currentWorkspace.id })
+		.subscribe().ws
 	const websocketClient = new WebSocket(preWs.url)
-  preWs.close()
+	preWs.close()
 	websocketClient.onmessage = (event) => {
 		const update = packr.unpack(new Uint8Array(event.data)) as {
 			type: string
