@@ -22,12 +22,11 @@ const app = new Elysia({
 })
 	.use(
 		cors({
-			origin: [
+			origin:
 				config.NODE_ENV === "production"
 					? `https://${config.DOMAIN}`
-					: "http://localhost:3000"
-			],
-			credentials: true,
+					: "http://localhost:3000",
+			allowedHeaders: ["Content-Type", "Accept"],
 			methods: ["GET", "POST", "PUT", "PATCH", "DELETE"]
 		})
 	)
