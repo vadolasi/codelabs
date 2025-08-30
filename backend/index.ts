@@ -21,14 +21,16 @@ const app = new Elysia({
 	}
 })
 	.use(
-		cors({
+		cors(
+			/*{
 			origin:
 				config.NODE_ENV === "production"
 					? `https://${config.DOMAIN}`
 					: "http://localhost:3000",
 			allowedHeaders: ["Content-Type", "Accept"],
 			methods: ["GET", "POST", "PUT", "PATCH", "DELETE"]
-		})
+		}*/
+		)
 	)
 	.use(serverTiming())
 	.use(logger())
