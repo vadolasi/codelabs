@@ -6,5 +6,6 @@ const redis = Redis.createClient({
 }).withTypeMapping({
 	[RESP_TYPES.BLOB_STRING]: Buffer
 })
+await redis.connect()
 
 export default redis
