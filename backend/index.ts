@@ -26,9 +26,8 @@ const app = new Elysia({
 	.use(
 		cors({
 			origin:
-				config.NODE_ENV === "production"
-					? `https://${config.PUBLIC_BACKEND_DOMAIN}`
-					: true,
+				config.NODE_ENV === "production" ? config.PUBLIC_BACKEND_DOMAIN : true,
+			credentials: true,
 			methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
 			allowedHeaders: ["Content-Type", "Accept"],
 			exposeHeaders: ["Content-Type"]
