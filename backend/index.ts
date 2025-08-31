@@ -25,8 +25,10 @@ const app = new Elysia({
 	.use(serverTiming())
 	.use(logger())
 	.onRequest(({ set }) => {
-		set.headers.origin =
-			config.NODE_ENV === "production" ? config.PUBLIC_BACKEND_DOMAIN : "*"
+		set.headers["Access-Control-Allow-Origin"] =
+			process.env.NODE_ENV === "production"
+				? `https://${config.PUBLIC_BACKEND_DOMAIN}`
+				: "*"
 		set.headers["Access-Control-Allow-Credentials"] = "true"
 		set.headers["Access-Control-Allow-Headers"] = "Content-Type, Accept"
 		set.headers["Access-Control-Allow-Methods"] =
