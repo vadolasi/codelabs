@@ -1,9 +1,4 @@
 {
 	"$schema": "https://openapi.vercel.sh/vercel.json",
-	"rewrites": [
-		{
-			"source": "/source-path",
-			"destination": "/destination-path"
-		}
-	]
+	"regions": ["gru1"]
 }

@@ -1,5 +1,4 @@
 import { logger } from "@bogeychan/elysia-logger"
-import cors from "@elysiajs/cors"
 import serverTiming from "@elysiajs/server-timing"
 import { Elysia } from "elysia"
 import { Packr } from "msgpackr"
@@ -23,18 +22,17 @@ const app = new Elysia({
 				: "localhost"
 	}
 })
-	.use(
-		cors({
-			origin:
-				config.NODE_ENV === "production" ? config.PUBLIC_BACKEND_DOMAIN : true,
-			credentials: true,
-			methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
-			allowedHeaders: ["Content-Type", "Accept"],
-			exposeHeaders: ["Content-Type"]
-		})
-	)
 	.use(serverTiming())
 	.use(logger())
+	.onRequest(({ set }) => {
+		set.headers.origin =
+			config.NODE_ENV === "production" ? config.PUBLIC_BACKEND_DOMAIN : "*"
+		set.headers["Access-Control-Allow-Credentials"] = "true"
+		set.headers["Access-Control-Allow-Headers"] = "Content-Type, Accept"
+		set.headers["Access-Control-Allow-Methods"] =
+			"GET, POST, PUT, PATCH, DELETE"
+		set.headers["Access-Control-Expose-Headers"] = "Content-Type"
+	})
 	.onParse(async ({ request }, contentType) => {
 		if (request.headers.get("upgrade") === "websocket" || !contentType) {
 			return request

@@ -10,10 +10,10 @@
 		"@commitlint/cli": "^19.8.1",
 		"@commitlint/config-conventional": "^19.8.1",
 		"@types/aws-lambda": "8.10.152",
-		"@types/bun": "^1.2.19",
+		"@types/bun": "^1.2.21",
 		"commitizen": "^4.3.1",
 		"cz-conventional-changelog": "^3.3.0",
-		"lefthook": "^1.12.2",
+		"lefthook": "^1.12.3",
 		"turbo": "^2.5.6",
 		"typescript": "^5.9.2"
 	},
