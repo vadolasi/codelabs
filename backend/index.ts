@@ -35,6 +35,7 @@ const app = new Elysia({
 			"GET, POST, PUT, PATCH, DELETE"
 		set.headers["Access-Control-Expose-Headers"] = "Content-Type"
 	})
+	.options("*", () => "OK")
 	.onParse(async ({ request }, contentType) => {
 		if (request.headers.get("upgrade") === "websocket" || !contentType) {
 			return request
