@@ -1,5 +1,4 @@
 <script lang="ts">
-import { PUBLIC_BACKEND_DOMAIN } from "$env/static/public"
 import httpClient from "$lib/httpClient"
 import { Home } from "@lucide/svelte"
 import type { WebContainer } from "@webcontainer/api"

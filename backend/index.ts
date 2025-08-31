@@ -1,5 +1,5 @@
 import { logger } from "@bogeychan/elysia-logger"
-import { cors } from "@elysiajs/cors"
+import cors from "@elysiajs/cors"
 import serverTiming from "@elysiajs/server-timing"
 import { Elysia } from "elysia"
 import { Packr } from "msgpackr"
@@ -17,17 +17,21 @@ const app = new Elysia({
 		secure: config.NODE_ENV === "production",
 		path: "/",
 		sameSite: "lax",
-		domain: config.NODE_ENV === "production" ? `.${config.DOMAIN}` : "localhost"
+		domain:
+			config.NODE_ENV === "production"
+				? config.PUBLIC_BACKEND_DOMAIN
+				: "localhost"
 	}
 })
 	.use(
 		cors({
 			origin:
 				config.NODE_ENV === "production"
-					? `https://${config.DOMAIN}`
-					: "http://localhost:3000",
+					? `https://${config.PUBLIC_BACKEND_DOMAIN}`
+					: true,
+			methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
 			allowedHeaders: ["Content-Type", "Accept"],
-			methods: ["GET", "POST", "PUT", "PATCH", "DELETE"]
+			exposeHeaders: ["Content-Type"]
 		})
 	)
 	.use(serverTiming())
