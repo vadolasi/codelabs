@@ -15,11 +15,13 @@ const app = new Elysia({
 		httpOnly: true,
 		secure: config.NODE_ENV === "production",
 		path: "/",
-		sameSite: "lax",
+		sameSite: "lax"
+		/*
 		domain:
 			config.NODE_ENV === "production"
 				? config.PUBLIC_BACKEND_DOMAIN
 				: "localhost"
+        */
 	}
 })
 	.use(serverTiming())
