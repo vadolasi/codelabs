@@ -9,6 +9,7 @@ import MailChecker from "mailchecker"
 import db, { users } from "../../database"
 import sendEmail from "../../emails"
 import authMiddleware from "../auth/auth.middleware"
+import { generateToken } from "../auth/auth.service"
 import { generateOTPCode } from "./users.service"
 
 const matcherPwned = matcherPwnedFactory(fetch, zxcvbnOptions)
@@ -159,6 +160,118 @@ const unauthenticated = new Elysia()
 			query: t.Object({
 				username: t.String()
 			})
+		}
+	)
+	.post(
+		"/reset-password",
+		async ({ body: { email }, status }) => {
+			const [user] = await db
+				.select()
+				.from(users)
+				.where(eq(users.email, email))
+				.limit(1)
+
+			if (!user) {
+				return status(400, { message: "USER_NOT_FOUND" })
+			}
+
+			const emailOTP = generateToken()
+
+			await db
+				.update(users)
+				.set({
+					emailOTP,
+					emailOTPExpiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24)
+				})
+				.where(eq(users.id, user.id))
+
+			await sendEmail("resetPassword", {
+				subject: "Redefinição de senha",
+				data: { code: emailOTP },
+				to: email
+			})
+
+			return {}
+		},
+		{
+			body: t.Object({
+				email: t.String({ maxLength: 255, minLength: 5 })
+			}),
+			rateLimit: {
+				level: "medium",
+				useIP: true
+			}
+		}
+	)
+	.get(
+		"reset-password/check-code/:emailToken",
+		async ({ params: { emailToken }, status }) => {
+			const [user] = await db
+				.select()
+				.from(users)
+				.where(
+					and(
+						eq(users.emailOTP, emailToken),
+						gt(users.emailOTPExpiresAt, new Date())
+					)
+				)
+				.limit(1)
+
+			if (!user) {
+				return { isValid: false }
+			}
+
+			return { isValid: true, email: user.email, username: user.username }
+		},
+		{
+			params: t.Object({
+				emailToken: t.String()
+			}),
+			rateLimit: {
+				level: "medium",
+				useIP: true
+			}
+		}
+	)
+	.post(
+		"/reset-password/confirm",
+		async ({ body: { code, newPassword }, status }) => {
+			const [user] = await db
+				.select()
+				.from(users)
+				.where(
+					and(eq(users.emailOTP, code), gt(users.emailOTPExpiresAt, new Date()))
+				)
+				.limit(1)
+
+			if (!user) {
+				return status(400, { message: "INVALID_VERIFICATION_CODE" })
+			}
+
+			if ((await zxcvbnAsync(newPassword)).score < 3) {
+				return status(400, { message: "WEAK_PASSWORD" })
+			}
+
+			await db
+				.update(users)
+				.set({
+					password: await Bun.password.hash(newPassword),
+					emailOTP: null,
+					emailOTPExpiresAt: null
+				})
+				.where(eq(users.id, user.id))
+
+			return {}
+		},
+		{
+			body: t.Object({
+				code: t.String(),
+				newPassword: t.String()
+			}),
+			rateLimit: {
+				level: "medium",
+				useIP: true
+			}
 		}
 	)
 

@@ -141,10 +141,10 @@ function acceptEmailSuggestion() {
         {#if score !== null}
           <p class="text-xs mt-1">
             Segurança:
-            {#if score >= 8}
-              <span class="text-success">Segura</span>
-            {:else if score >= 5}
-              <span class="text-warning">Moderada</span>
+            {#if score == 4}
+              <span class="text-success">Alta</span>
+            {:else if score == 3}
+              <span class="text-warning">Média</span>
             {:else}
               <span class="text-error">Fraca</span>
             {/if}

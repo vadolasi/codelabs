@@ -4,20 +4,19 @@ import {
 } from "@oslojs/encoding"
 import redis from "../../lib/redis"
 
-export function generateSessionToken(): string {
+export function generateToken(): string {
 	const bytes = new Uint8Array(20)
 	crypto.getRandomValues(bytes)
 	const token = encodeBase32LowerCaseNoPadding(bytes)
-	return token
+	return encodeHexLowerCase(
+		new Bun.CryptoHasher("sha256").update(token).digest()
+	)
 }
 
 export async function createSession(
-	token: string,
+	sessionId: string,
 	userId: string
 ): Promise<Session> {
-	const sessionId = encodeHexLowerCase(
-		new Bun.CryptoHasher("sha256").update(token).digest()
-	)
 	const session: Session = {
 		id: sessionId,
 		userId,

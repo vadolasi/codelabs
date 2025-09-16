@@ -5,8 +5,8 @@ const configSchema = z.object({
 	POSTGRES_URL: z.url(),
 	REDIS_URL: z.url(),
 	S3_BUCKET: z.string().min(1),
-	PUBLIC_BACKEND_DOMAIN: z.string().min(1),
-	RESEND_API_KEY: z.string().min(1)
+	RESEND_API_KEY: z.string().min(1),
+	VERCEL_URL: z.url().default("http://localhost:5173")
 })
 
 const result = configSchema.safeParse(process.env)

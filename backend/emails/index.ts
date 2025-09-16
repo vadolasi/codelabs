@@ -1,3 +1,4 @@
+import path from "node:path"
 import { Eta } from "eta"
 import { Engine } from "mrml"
 import { Resend } from "resend"
@@ -5,13 +6,17 @@ import config from "../lib/config"
 
 const mrml = new Engine()
 
-const eta = new Eta({ views: import.meta.dirname })
+const eta = new Eta({
+	views: import.meta.dirname,
+	cache: true,
+	functionHeader: `const config = ${JSON.stringify(config)};`
+})
 
 const resend = new Resend(config.RESEND_API_KEY)
 
 interface EmailTemplates {
 	emailVerification: { code: string }
-	forgotPassword: { code: string }
+	resetPassword: { code: string }
 }
 
 export default async function sendEmail(

@@ -1,8 +1,10 @@
-import httpClient from "$lib/httpClient"
+import { getHttpClient } from "$lib/httpClient"
 import type { PageLoad } from "./$types"
 
-export const load: PageLoad = async ({ parent }) => {
+export const load: PageLoad = async ({ parent, fetch }) => {
 	const { queryClient } = await parent()
+
+	const httpClient = getHttpClient(fetch)
 
 	await queryClient.prefetchQuery({
 		queryKey: ["workspaces"],

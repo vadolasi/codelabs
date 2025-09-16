@@ -15,29 +15,22 @@ const app = new Elysia({
 		httpOnly: true,
 		secure: config.NODE_ENV === "production",
 		path: "/",
-		sameSite: "lax"
-		/*
-		domain:
-			config.NODE_ENV === "production"
-				? config.PUBLIC_BACKEND_DOMAIN
-				: "localhost"
-        */
+		sameSite: "lax",
+		domain: config.NODE_ENV === "production" ? config.VERCEL_URL : "localhost"
 	}
 })
 	.use(serverTiming())
 	.use(logger())
 	.onRequest(({ set }) => {
 		set.headers["Access-Control-Allow-Origin"] =
-			process.env.NODE_ENV === "production"
-				? `https://${config.PUBLIC_BACKEND_DOMAIN}`
-				: "*"
+			process.env.NODE_ENV === "production" ? config.VERCEL_URL : "*"
 		set.headers["Access-Control-Allow-Credentials"] = "true"
 		set.headers["Access-Control-Allow-Headers"] = "Content-Type, Accept"
 		set.headers["Access-Control-Allow-Methods"] =
 			"GET, POST, PUT, PATCH, DELETE"
 		set.headers["Access-Control-Expose-Headers"] = "Content-Type"
 	})
-	.options("*", () => "OK")
+	.options("*", () => {})
 	.onParse(async ({ request }, contentType) => {
 		if (request.headers.get("upgrade") === "websocket" || !contentType) {
 			return request

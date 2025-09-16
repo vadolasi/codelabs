@@ -1,11 +1,7 @@
 import Elysia, { t } from "elysia"
-import db from "../../database"
+import db, { users } from "../../database"
 import authMiddleware from "./auth.middleware"
-import {
-	createSession,
-	generateSessionToken,
-	invalidateSession
-} from "./auth.service"
+import { createSession, generateToken, invalidateSession } from "./auth.service"
 
 const unauthenticated = new Elysia().post(
 	"/login",
@@ -37,7 +33,9 @@ const unauthenticated = new Elysia().post(
 			})
 		}
 
-		const sessionToken = generateSessionToken()
+		await db.update(users).set({ emailOTP: null, emailOTPExpiresAt: null })
+
+		const sessionToken = generateToken()
 		const session = await createSession(sessionToken, user.id)
 
 		sessionCookie.value = sessionToken
