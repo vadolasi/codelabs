@@ -1,3 +1,4 @@
+import { getDownloadUrl, put } from "@vercel/blob"
 import { eq } from "drizzle-orm"
 import Elysia, { t } from "elysia"
 import { LoroDoc } from "loro-crdt"
@@ -9,7 +10,6 @@ import db, {
 	workspaces__users
 } from "../../database"
 import redis from "../../lib/redis"
-import s3 from "../../lib/s3"
 import authMiddleware from "../auth/auth.middleware"
 
 const packr = new Packr()
@@ -73,13 +73,15 @@ const workspacesController = new Elysia({
 			const workspace = user.workspace
 
 			const [snapshot, updates] = await Promise.all([
-				s3.file(`workspace/${workspace.id}/snapshot.bin`).bytes(),
+				fetch(getDownloadUrl(`workspace/${workspace.id}/snapshot.bin`)).then(
+					(res) => res.arrayBuffer()
+				),
 				redis.lRange(`workspace:${slug}:doc`, 0, -1)
 			])
 
 			const doc = new LoroDoc()
 			doc.detach()
-			doc.import(snapshot)
+			doc.import(new Uint8Array(snapshot))
 
 			if (updates.length > 0) {
 				doc.importBatch(updates)
@@ -126,9 +128,11 @@ const workspacesController = new Elysia({
 					workspaceId: data.id,
 					role: "owner"
 				}),
-				s3
-					.file(`workspace/${data.id}/snapshot.bin`)
-					.write(doc.export({ mode: "snapshot" }))
+				put(
+					`workspace/${data.id}/snapshot.bin`,
+					Buffer.from(doc.export({ mode: "snapshot" })),
+					{ access: "public" }
+				)
 			])
 
 			return data

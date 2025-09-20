@@ -5,7 +5,7 @@ const configSchema = z.object({
 	NODE_ENV: z.enum(["development", "production"]).default("development"),
 	POSTGRES_URL: z.url(),
 	REDIS_URL: z.url(),
-	S3_BUCKET: z.string().min(1),
+	BLOB_READ_WRITE_TOKEN: z.string().min(1),
 	RESEND_API_KEY: z.string().min(1),
 	VERCEL_URL: z.url().default("http://localhost:5173")
 })
