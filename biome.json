@@ -40,6 +40,9 @@
 					"style": {
 						"useConst": "off",
 						"useImportType": "off"
+					},
+					"suspicious": {
+						"noExplicitAny": "off"
 					}
 				}
 			}
