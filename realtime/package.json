@@ -4,7 +4,8 @@
 	"type": "module",
 	"private": true,
 	"scripts": {
-		"dev": "bun --env-file ../.env --bun --watch index.ts"
+		"dev": "bun --env-file ../.env --bun --watch index.ts",
+		"build": "bun build ./index.ts --compile --outfile realtime"
 	},
 	"devDependencies": {
 		"@types/bun": "latest"
