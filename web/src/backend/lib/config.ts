@@ -7,7 +7,7 @@ const configSchema = z.object({
 	REDIS_URL: z.url(),
 	BLOB_READ_WRITE_TOKEN: z.string().min(1),
 	RESEND_API_KEY: z.string().min(1),
-	DOMAIN: z.url(),
+	DOMAIN: z.hostname(),
 	MAIL_FROM: z.email()
 })
 
