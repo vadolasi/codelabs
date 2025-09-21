@@ -1,13 +1,32 @@
-import path from "node:path"
-import { Eta } from "eta"
+import { Eta, type Options } from "eta"
 import { Engine } from "mrml"
 import { Resend } from "resend"
 import config from "../lib/config"
+import emailVerificationTemplate from "./emailVerification.mjml.eta?raw"
+import layout from "./layout.mjml.eta?raw"
+import resetPasswordTemplate from "./resetPassword.mjml.eta?raw"
+import workspaceInvitationTemplate from "./workspaceInvite.mjml.eta?raw"
+
+const templates = {
+	layout,
+	emailVerification: emailVerificationTemplate,
+	resetPassword: resetPasswordTemplate,
+	workspaceInvitation: workspaceInvitationTemplate
+}
+
+class CustomEta extends Eta {
+	readFile = (filePath: string) => {
+		return templates[filePath as keyof typeof templates]
+	}
+
+	resolvePath = (templatePath: string, _options?: Partial<Options>) => {
+		return templatePath.replace("./", "").replace(".mjml.eta", "")
+	}
+}
 
 const mrml = new Engine()
 
-const eta = new Eta({
-	views: import.meta.dirname,
+const eta = new CustomEta({
 	cache: true,
 	functionHeader: `const config = ${JSON.stringify(config)};`
 })
@@ -32,7 +51,7 @@ export default async function sendEmail(
 	}
 ): Promise<void> {
 	const renderedTemplate = await mrml.toHtmlAsync(
-		await eta.renderAsync(`./${template}.mjml.eta`, data)
+		await eta.renderAsync(template, data)
 	)
 	if (renderedTemplate.type === "success") {
 		await resend.emails.send({

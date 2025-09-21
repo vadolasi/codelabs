@@ -23,7 +23,7 @@ const unauthenticated = new Elysia().post(
 			return status(401, { code: "USER_NOT_FOUND" })
 		}
 
-		if (!(await verify(password, user.password))) {
+		if (!(await verify(user.password, password))) {
 			return status(401, { code: "INVALID_PASSWORD" })
 		}
 
