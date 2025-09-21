@@ -4,6 +4,8 @@ export default defineConfig({
 	dialect: "postgresql",
 	schema: "database/schema.ts",
 	dbCredentials: {
-		url: "postgres://codelabs:codelabs@localhost:5432/codelabs"
+		url:
+			process.env.POSTGRES_URL ??
+			"postgres://codelabs:codelabs@localhost:5432/codelabs"
 	}
 })
