@@ -35,5 +35,8 @@
 		"sharp",
 		"web"
 	],
-	"workspaces": ["web", "realtime"]
+	"workspaces": ["web", "realtime"],
+	"patchedDependencies": {
+		"drizzle-orm@0.44.5": "patches/drizzle-orm@0.44.5.patch"
+	}
 }

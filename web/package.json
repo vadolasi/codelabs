@@ -133,8 +133,5 @@
 		"typescript": "^5.9.2",
 		"vite": "^7.1.6",
 		"vite-plugin-wasm": "^3.5.0"
-	},
-	"patchedDependencies": {
-		"drizzle-orm@0.44.4": "patches/drizzle-orm@0.44.4.patch"
 	}
 }
