@@ -1,9 +1,10 @@
+import { readFile } from "node:fs/promises"
 import path from "node:path"
 import Elysia from "elysia"
 import redis from "../redis"
 
 const SCRIPT_SHA = await redis.scriptLoad(
-	await Bun.file(path.join(import.meta.dirname, "rateLimit.lua")).text()
+	await readFile(path.join(import.meta.dirname, "rateLimit.lua"), "utf-8")
 )
 
 class TokenBucketRateLimit {

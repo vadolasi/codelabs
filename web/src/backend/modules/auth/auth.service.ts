@@ -1,16 +1,11 @@
-import {
-	encodeBase32LowerCaseNoPadding,
-	encodeHexLowerCase
-} from "@oslojs/encoding"
+import { createHash } from "node:crypto"
 import redis from "../../lib/redis"
 
 export function generateToken(): string {
 	const bytes = new Uint8Array(20)
 	crypto.getRandomValues(bytes)
-	const token = encodeBase32LowerCaseNoPadding(bytes)
-	return encodeHexLowerCase(
-		new Bun.CryptoHasher("sha256").update(token).digest()
-	)
+	const token = Buffer.from(bytes).toString("hex")
+	return createHash("sha256").update(token).digest("hex")
 }
 
 export async function createSession(

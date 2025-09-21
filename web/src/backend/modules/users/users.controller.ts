@@ -1,3 +1,4 @@
+import { hash } from "@node-rs/argon2"
 import { zxcvbnAsync, zxcvbnOptions } from "@zxcvbn-ts/core"
 import * as zxcvbnCommonPackage from "@zxcvbn-ts/language-common"
 import * as zxcvbnPtBrPackage from "@zxcvbn-ts/language-pt-br"
@@ -6,6 +7,7 @@ import { and, eq, gt } from "drizzle-orm"
 import Elysia, { t } from "elysia"
 import { normalizeEmail } from "email-normalizer"
 import MailChecker from "mailchecker"
+import { v7 as randomUUIDv7 } from "uuid"
 import db, { users } from "../../database"
 import sendEmail from "../../emails"
 import authMiddleware from "../auth/auth.middleware"
@@ -53,10 +55,10 @@ const unauthenticated = new Elysia()
 			const emailOTP = generateOTPCode()
 
 			await db.insert(users).values({
-				id: Bun.randomUUIDv7(),
+				id: randomUUIDv7(),
 				email,
 				username,
-				password: await Bun.password.hash(password),
+				password: await hash(password),
 				emailOTP,
 				emailOTPExpiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24)
 			})
@@ -255,7 +257,7 @@ const unauthenticated = new Elysia()
 			await db
 				.update(users)
 				.set({
-					password: await Bun.password.hash(newPassword),
+					password: await hash(newPassword),
 					emailOTP: null,
 					emailOTPExpiresAt: null
 				})

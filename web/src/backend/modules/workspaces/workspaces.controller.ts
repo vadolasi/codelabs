@@ -4,6 +4,7 @@ import Elysia, { t } from "elysia"
 import { LoroDoc } from "loro-crdt"
 import { Packr } from "msgpackr"
 import { nanoid } from "nanoid"
+import { v7 as randomUUIDv7 } from "uuid"
 import db, {
 	workspaceInvite,
 	workspaces,
@@ -107,7 +108,7 @@ const workspacesController = new Elysia({
 			const doc = new LoroDoc()
 			doc.detach()
 
-			const id = Bun.randomUUIDv7()
+			const id = randomUUIDv7()
 
 			const [data] = await db
 				.insert(workspaces)
@@ -124,7 +125,7 @@ const workspacesController = new Elysia({
 
 			await Promise.all([
 				db.insert(workspaces__users).values({
-					id: Bun.randomUUIDv7(),
+					id: randomUUIDv7(),
 					userId,
 					workspaceId: data.id,
 					role: "owner"
@@ -170,7 +171,7 @@ const workspacesController = new Elysia({
 				users?.map((user) => user.toLowerCase().trim()) ?? []
 
 			await db.insert(workspaceInvite).values({
-				id: Bun.randomUUIDv7(),
+				id: randomUUIDv7(),
 				workspaceId,
 				role,
 				users: formatedUsers.length > 0 ? formatedUsers : null,
@@ -245,7 +246,7 @@ const workspacesController = new Elysia({
 			}
 
 			await db.insert(workspaces__users).values({
-				id: Bun.randomUUIDv7(),
+				id: randomUUIDv7(),
 				userId: user.id,
 				workspaceId: invite.workspaceId,
 				role: invite.role

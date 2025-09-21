@@ -1,3 +1,4 @@
+import { verify } from "@node-rs/argon2"
 import Elysia, { t } from "elysia"
 import db, { users } from "../../database"
 import authMiddleware from "./auth.middleware"
@@ -22,7 +23,7 @@ const unauthenticated = new Elysia().post(
 			return status(401, { code: "USER_NOT_FOUND" })
 		}
 
-		if (!(await Bun.password.verify(password, user.password))) {
+		if (!(await verify(password, user.password))) {
 			return status(401, { code: "INVALID_PASSWORD" })
 		}
 
