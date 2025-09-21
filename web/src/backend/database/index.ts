@@ -1,4 +1,4 @@
-import { drizzle } from "drizzle-orm/bun-sql"
+import { drizzle } from "drizzle-orm/node-postgres"
 import config from "../lib/config"
 import * as schema from "./schema"
 
