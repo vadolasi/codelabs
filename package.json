@@ -37,7 +37,6 @@
 	],
 	"workspaces": ["web", "realtime"],
 	"patchedDependencies": {
-		"drizzle-orm@0.44.5": "patches/drizzle-orm@0.44.5.patch",
 		"@vercel/blob@2.0.0": "patches/@vercel%2Fblob@2.0.0.patch"
 	}
 }
