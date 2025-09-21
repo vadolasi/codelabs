@@ -13,9 +13,6 @@
 		"format-and-lint:fix": "biome check . --write",
 		"postinstall": "if [ \"$CI\" != \"true\" ]; then lefthook install; fi"
 	},
-	"dependencies": {
-		"bun": "^1.2.22"
-	},
 	"devDependencies": {
 		"@biomejs/biome": "^1.9.4",
 		"@commitlint/cli": "^19.8.1",
@@ -25,9 +22,6 @@
 		"lefthook": "^1.13.1",
 		"turbo": "^2.5.6",
 		"typescript": "^5.9.2"
-	},
-	"patchedDependencies": {
-		"drizzle-orm@0.44.4": "patches/drizzle-orm@0.44.4.patch"
 	},
 	"trustedDependencies": [
 		"@biomejs/biome",
