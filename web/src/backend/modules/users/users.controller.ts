@@ -80,6 +80,51 @@ const unauthenticated = new Elysia()
 		}
 	)
 	.post(
+		"/resend-verification",
+		async ({ body: { email }, status }) => {
+			const emailNormalized = normalizeEmail({ email })
+
+			const [user] = await db
+				.select()
+				.from(users)
+				.where(
+					and(eq(users.email, emailNormalized), eq(users.emailVerified, false))
+				)
+				.limit(1)
+
+			if (!user) {
+				return status(400, { message: "USER_NOT_FOUND_OR_ALREADY_VERIFIED" })
+			}
+
+			const emailOTP = generateOTPCode()
+
+			await db
+				.update(users)
+				.set({
+					emailOTP,
+					emailOTPExpiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24)
+				})
+				.where(eq(users.id, user.id))
+
+			await sendEmail("emailVerification", {
+				subject: "Verifique o seu email",
+				data: { code: emailOTP },
+				to: email
+			})
+
+			return {}
+		},
+		{
+			body: t.Object({
+				email: t.String({ maxLength: 255, minLength: 5 })
+			}),
+			rateLimit: {
+				level: "medium",
+				useIP: true
+			}
+		}
+	)
+	.post(
 		"/verify-user",
 		async ({ body: { email, code }, status }) => {
 			const [user] = await db

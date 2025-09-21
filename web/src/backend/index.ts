@@ -30,6 +30,22 @@ const app = new Elysia({
 			"GET, POST, PUT, PATCH, DELETE"
 		set.headers["Access-Control-Expose-Headers"] = "Content-Type"
 	})
+	.onRequest(async ({ request }) => {
+		if (
+			config.NODE_ENV === "production" &&
+			!["GET", "HEAD", "OPTIONS"].includes(request.method)
+		) {
+			const origin = request.headers.get("Origin")
+			const referer = request.headers.get("Referer")
+
+			const validOrigin = origin === `https://${config.DOMAIN}`
+			const validReferer = referer?.startsWith(`https://${config.DOMAIN}`)
+
+			if (!validOrigin || !validReferer) {
+				return new Response("CSRF validation failed", { status: 403 })
+			}
+		}
+	})
 	.options("*", () => {})
 	.onParse(async ({ request }, contentType) => {
 		if (request.headers.get("upgrade") === "websocket" || !contentType) {

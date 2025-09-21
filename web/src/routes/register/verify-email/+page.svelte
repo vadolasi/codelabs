@@ -7,6 +7,7 @@ import * as pinInput from "@zag-js/pin-input"
 import { normalizeProps, useMachine } from "@zag-js/svelte"
 import { onMount } from "svelte"
 import Button from "../../../components/Button.svelte"
+import toaster from "../../../components/Toaster/store"
 
 const { email } = page.state as { email: string }
 
@@ -32,8 +33,42 @@ const verifyEmailMutation = createMutation({
 		return data
 	},
 	onSuccess: () => {
+    toaster.success({
+      title: "E-mail verificado com sucesso"
+    })
 		goto("/login")
-	}
+	},
+  onError: (error) => {
+    toaster.error({
+      title: "Erro ao verificar e-mail",
+      description: error.message
+    })
+  }
+})
+
+const resendCodeMutation = createMutation({
+  mutationFn: async () => {
+    const { error } = await httpClient.users["resend-verification"].post({
+      email
+    })
+
+    if (error) {
+      throw new Error(error.value.message ?? "Erro ao reenviar código", {
+        cause: error.value
+      })
+    }
+  },
+  onSuccess: () => {
+    toaster.success({
+      title: "Código reenviado"
+    })
+  },
+  onError: (error) => {
+    toaster.error({
+      title: "Erro ao reenviar código",
+      description: error.message
+    })
+  }
 })
 
 const service = useMachine(pinInput.machine, {
@@ -49,7 +84,7 @@ const service = useMachine(pinInput.machine, {
 const api = $derived(pinInput.connect(service, normalizeProps))
 </script>
 
-<div class="flex w-fulll min-h-screen items-center justify-center">
+<div class="flex w-full min-h-screen items-center justify-center">
   <div class="card card-border bg-base-300 shadow-sm w-full m-10 md:m-0 md:w-2/3 lg:w-1/3 xl:w-1/4">
     <div class="card-body space-y-3">
       <h2 class="card-title">Informe o código de verificação</h2>
@@ -60,7 +95,13 @@ const api = $derived(pinInput.connect(service, normalizeProps))
       </div>
       <div class="card-actions">
         <Button class="btn-primary btn-block" loading={$verifyEmailMutation.isPending}>Continuar</Button>
-        <Button class="btn-ghost btn-block" disabled={$verifyEmailMutation.isPending}>Reenviar código</Button>
+        <Button
+          class="btn-ghost btn-block"
+          disabled={$verifyEmailMutation.isPending || $resendCodeMutation.isPending}
+          onclick={() => $resendCodeMutation.mutate()}
+        >
+          Reenviar código
+        </Button>
       </div>
     </div>
   </div>
