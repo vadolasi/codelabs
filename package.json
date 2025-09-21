@@ -9,6 +9,7 @@
 	"packageManager": "bun@1.2.22",
 	"scripts": {
 		"dev": "turbo run dev",
+		"build": "turbo run build",
 		"format-and-lint": "biome check .",
 		"format-and-lint:fix": "biome check . --write",
 		"postinstall": "if [ \"$CI\" != \"true\" ]; then lefthook install; fi"
