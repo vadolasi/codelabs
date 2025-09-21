@@ -16,14 +16,14 @@ const app = new Elysia({
 		secure: config.NODE_ENV === "production",
 		path: "/",
 		sameSite: "lax",
-		domain: config.NODE_ENV === "production" ? config.VERCEL_URL : "localhost"
+		domain: config.NODE_ENV === "production" ? config.DOMAIN : "localhost"
 	}
 })
 	.use(serverTiming())
 	.use(logger())
 	.onRequest(({ set }) => {
 		set.headers["Access-Control-Allow-Origin"] =
-			process.env.NODE_ENV === "production" ? config.VERCEL_URL : "*"
+			process.env.NODE_ENV === "production" ? `https://${config.DOMAIN}` : "*"
 		set.headers["Access-Control-Allow-Credentials"] = "true"
 		set.headers["Access-Control-Allow-Headers"] = "Content-Type, Accept"
 		set.headers["Access-Control-Allow-Methods"] =
