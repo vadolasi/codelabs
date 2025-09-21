@@ -55,13 +55,13 @@ const loginMutation = createMutation({
 })
 
 const form = createForm(() => ({
-  defaultValues: {
-    emailOrUsername: "",
-    password: ""
-  },
-  onSubmit: async ({ value }) => {
+	defaultValues: {
+		emailOrUsername: "",
+		password: ""
+	},
+	onSubmit: async ({ value }) => {
 		await $loginMutation.mutateAsync(value)
-  }
+	}
 }))
 </script>
 

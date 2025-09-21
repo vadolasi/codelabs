@@ -1,6 +1,6 @@
 {
-	"id": "1dab37cf-25e1-4d94-ae2d-85187a1e2c70",
-	"prevId": "57bc0677-98c2-4bb5-9142-0307b87755f1",
+	"id": "72faf854-e599-4bd1-8b89-2afcf2e3d1ea",
+	"prevId": "00000000-0000-0000-0000-000000000000",
 	"version": "7",
 	"dialect": "postgresql",
 	"tables": {
@@ -268,12 +268,6 @@
 					"primaryKey": false,
 					"notNull": true
 				},
-				"snapshot": {
-					"name": "snapshot",
-					"type": "bytea",
-					"primaryKey": false,
-					"notNull": true
-				},
 				"created_at": {
 					"name": "created_at",
 					"type": "timestamp (0) with time zone",
@@ -475,8 +469,7 @@
 					"name": "expires_at",
 					"type": "timestamp (0) with time zone",
 					"primaryKey": false,
-					"notNull": false,
-					"default": "now()"
+					"notNull": false
 				}
 			},
 			"indexes": {},
@@ -525,24 +518,12 @@
 					"primaryKey": false,
 					"notNull": true
 				},
-				"content": {
-					"name": "content",
-					"type": "bytea",
-					"primaryKey": false,
-					"notNull": true
-				},
 				"config": {
 					"name": "config",
 					"type": "json",
 					"primaryKey": false,
 					"notNull": true,
 					"default": "'{\"initialTerminals\":[],\"exclude\":[]}'::json"
-				},
-				"user_id": {
-					"name": "user_id",
-					"type": "uuid",
-					"primaryKey": false,
-					"notNull": true
 				},
 				"created_at": {
 					"name": "created_at",
@@ -567,15 +548,6 @@
 			},
 			"indexes": {},
 			"foreignKeys": {
-				"workspaces_user_id_users_id_fk": {
-					"name": "workspaces_user_id_users_id_fk",
-					"tableFrom": "workspaces",
-					"tableTo": "users",
-					"columnsFrom": ["user_id"],
-					"columnsTo": ["id"],
-					"onDelete": "no action",
-					"onUpdate": "no action"
-				},
 				"workspaces_lesson_id_lessons_id_fk": {
 					"name": "workspaces_lesson_id_lessons_id_fk",
 					"tableFrom": "workspaces",

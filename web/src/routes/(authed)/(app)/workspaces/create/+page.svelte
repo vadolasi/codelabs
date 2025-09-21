@@ -2,7 +2,7 @@
 import { goto } from "$app/navigation"
 import httpClient from "$lib/httpClient"
 import randomName from "@scaleway/random-name"
-  import { createForm } from "@tanstack/svelte-form";
+import { createForm } from "@tanstack/svelte-form"
 import { createMutation } from "@tanstack/svelte-query"
 import { z } from "zod"
 import Button from "../../../../../components/Button.svelte"
@@ -33,12 +33,12 @@ const createWorkspaceMutation = createMutation({
 })
 
 const form = createForm(() => ({
-  defaultValues: {
-    name: randomName("", " ")
-  },
-  onSubmit: async ({ value }) => {
-	  await $createWorkspaceMutation.mutateAsync(value)
-  }
+	defaultValues: {
+		name: randomName("", " ")
+	},
+	onSubmit: async ({ value }) => {
+		await $createWorkspaceMutation.mutateAsync(value)
+	}
 }))
 </script>
 

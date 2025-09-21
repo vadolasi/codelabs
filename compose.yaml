@@ -1,22 +1,34 @@
 services:
   postgres:
-    image: postgres:17-alpine
+    image: postgres:17
+    command: -d 1
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-codelabs}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-codelabs}
-      POSTGRES_DB: ${POSTGRES_DB:-codelabs}
-    ports:
-      - "5432:5432"
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: codelabs
     volumes:
       - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  neon-proxy:
+    image: ghcr.io/neondatabase/wsproxy:latest
+    environment:
+      APPEND_PORT: "postgres:5432"
+      ALLOW_ADDR_REGEX: ".*"
+      LOG_TRAFFIC: "true"
+    ports:
+      - "5433:80"
+    depends_on:
+      - postgres
 
   redis:
-    image: redis:8-alpine
+    image: redis:8
     ports:
       - "6379:6379"
     volumes:
       - redis:/data
-    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-codelabs}
+    command: redis-server --appendonly yes --requirepass codelabs
 
 volumes:
   pgdata:

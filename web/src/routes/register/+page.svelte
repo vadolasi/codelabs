@@ -1,7 +1,7 @@
 <script lang="ts">
 import { goto } from "$app/navigation"
 import httpClient from "$lib/httpClient"
-import { createForm } from "@tanstack/svelte-form";
+import { createForm } from "@tanstack/svelte-form"
 import { createMutation } from "@tanstack/svelte-query"
 import emailSpellChecker from "@zootools/email-spell-checker"
 import { zxcvbnAsync, zxcvbnOptions } from "@zxcvbn-ts/core"
@@ -10,7 +10,7 @@ import * as zxcvbnPtBrPackage from "@zxcvbn-ts/language-pt-br"
 import { matcherPwnedFactory } from "@zxcvbn-ts/matcher-pwned"
 import { z } from "zod"
 import Button from "../../components/Button.svelte"
-import FormField from "../../components/FormField.svelte";
+import FormField from "../../components/FormField.svelte"
 
 const matcherPwned = matcherPwnedFactory(fetch, zxcvbnOptions)
 zxcvbnOptions.addMatcher("pwned", matcherPwned)
@@ -27,13 +27,12 @@ zxcvbnOptions.setOptions({
 
 let score: number | null = $state(null)
 
-const schema = z
-	.object({
-		email: z.string().min(1, "Este campo é obrigatório"),
-		username: z.string().min(1, "Este campo é obrigatório"),
-		password: z.string().min(1, "Este campo é obrigatório"),
-		passwordConfirmation: z.string().min(1, "Este campo é obrigatório")
-	})
+const schema = z.object({
+	email: z.string().min(1, "Este campo é obrigatório"),
+	username: z.string().min(1, "Este campo é obrigatório"),
+	password: z.string().min(1, "Este campo é obrigatório"),
+	passwordConfirmation: z.string().min(1, "Este campo é obrigatório")
+})
 
 type FormData = z.infer<typeof schema>
 
@@ -59,12 +58,12 @@ const registerMutation = createMutation({
 })
 
 const form = createForm(() => ({
-  defaultValues: {
-    email: "",
-    username: "",
-    password: "",
-    passwordConfirmation: ""
-  },
+	defaultValues: {
+		email: "",
+		username: "",
+		password: "",
+		passwordConfirmation: ""
+	},
 	onSubmit: async ({ value }) => {
 		await $registerMutation.mutateAsync(value)
 	}

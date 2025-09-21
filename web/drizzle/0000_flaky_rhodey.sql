@@ -38,7 +38,6 @@ CREATE TABLE "databases" (
 	"name" text NOT NULL,
 	"driver" "database_driver" NOT NULL,
 	"user_id" uuid NOT NULL,
-	"snapshot" "bytea" NOT NULL,
 	"created_at" timestamp (0) with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp (0) with time zone DEFAULT now() NOT NULL
 );
@@ -63,13 +62,22 @@ CREATE TABLE "users" (
 	CONSTRAINT "users_username_unique" UNIQUE("username")
 );
 --> statement-breakpoint
+CREATE TABLE "workspace_invites" (
+	"id" uuid PRIMARY KEY NOT NULL,
+	"workspace_id" uuid NOT NULL,
+	"role" "workspace_role" NOT NULL,
+	"emails" json,
+	"token" text NOT NULL,
+	"created_at" timestamp (0) with time zone DEFAULT now() NOT NULL,
+	"expires_at" timestamp (0) with time zone,
+	CONSTRAINT "workspace_invites_token_unique" UNIQUE("token")
+);
+--> statement-breakpoint
 CREATE TABLE "workspaces" (
 	"id" uuid PRIMARY KEY NOT NULL,
 	"name" text NOT NULL,
 	"slug" text NOT NULL,
-	"content" "bytea" NOT NULL,
 	"config" json DEFAULT '{"initialTerminals":[],"exclude":[]}'::json NOT NULL,
-	"user_id" uuid NOT NULL,
 	"created_at" timestamp (0) with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp (0) with time zone DEFAULT now() NOT NULL,
 	"lesson_id" uuid,
@@ -92,7 +100,7 @@ ALTER TABLE "database_workspaces" ADD CONSTRAINT "database_workspaces_database_i
 ALTER TABLE "database_workspaces" ADD CONSTRAINT "database_workspaces_workspace_id_workspaces_id_fk" FOREIGN KEY ("workspace_id") REFERENCES "public"."workspaces"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "databases" ADD CONSTRAINT "databases_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "lessons" ADD CONSTRAINT "lessons_course_id_courses_id_fk" FOREIGN KEY ("course_id") REFERENCES "public"."courses"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "workspaces" ADD CONSTRAINT "workspaces_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "workspace_invites" ADD CONSTRAINT "workspace_invites_workspace_id_workspaces_id_fk" FOREIGN KEY ("workspace_id") REFERENCES "public"."workspaces"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "workspaces" ADD CONSTRAINT "workspaces_lesson_id_lessons_id_fk" FOREIGN KEY ("lesson_id") REFERENCES "public"."lessons"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "workspace_users" ADD CONSTRAINT "workspace_users_workspace_id_workspaces_id_fk" FOREIGN KEY ("workspace_id") REFERENCES "public"."workspaces"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "workspace_users" ADD CONSTRAINT "workspace_users_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;
