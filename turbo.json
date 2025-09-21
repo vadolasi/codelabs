@@ -1,0 +1,16 @@
+{
+	"$schema": "https://turborepo.com/schema.json",
+	"tasks": {
+		"build": {
+			"outputs": [".svelte-kit/**", ".vercel/**"]
+		},
+		"dev": {
+			"persistent": true,
+			"cache": false
+		},
+		"//#format-and-lint": {},
+		"//#format-and-lint:fix": {
+			"cache": false
+		}
+	}
+}
