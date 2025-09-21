@@ -103,7 +103,6 @@
 		"svelte-motion": "^0.12.2",
 		"svelte-splitpanes": "^8.0.9",
 		"tailwind-merge": "^3.3.1",
-		"undici": "^7.16.0",
 		"unified": "^11.0.5",
 		"vite-plugin-devtools-json": "^1.0.0",
 		"volar-service-typescript": "^0.0.65",

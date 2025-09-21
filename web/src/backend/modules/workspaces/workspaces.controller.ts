@@ -9,6 +9,7 @@ import db, {
 	workspaces,
 	workspaces__users
 } from "../../database"
+import config from "../../lib/config"
 import redis from "../../lib/redis"
 import authMiddleware from "../auth/auth.middleware"
 
@@ -131,7 +132,7 @@ const workspacesController = new Elysia({
 				put(
 					`workspace/${data.id}/snapshot.bin`,
 					Buffer.from(doc.export({ mode: "snapshot" })),
-					{ access: "public" }
+					{ access: "public", token: config.BLOB_READ_WRITE_TOKEN }
 				)
 			])
 
