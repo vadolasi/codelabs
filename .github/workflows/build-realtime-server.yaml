@@ -19,7 +19,7 @@ jobs:
         run: bun install
 
       - name: Build executable
-        run: turbo run build --filter=realtime
+        run: bun exec turbo run build --filter=realtime
 
       - name: Upload to server
         uses: appleboy/scp-action@v0.1.7
