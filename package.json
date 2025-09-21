@@ -26,6 +26,9 @@
 		"turbo": "^2.5.6",
 		"typescript": "^5.9.2"
 	},
+	"patchedDependencies": {
+		"drizzle-orm@0.44.4": "patches/drizzle-orm@0.44.4.patch"
+	},
 	"trustedDependencies": [
 		"@biomejs/biome",
 		"@swc/core",
