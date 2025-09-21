@@ -14,9 +14,7 @@ const configSchema = z.object({
 const result = configSchema.safeParse(env)
 
 if (!result.success) {
-	throw new Error(
-		`Invalid configuration: ${z.treeifyError(result.error).errors.join(", ")}`
-	)
+	throw new Error(`Invalid configuration: ${result.error.message}`)
 }
 
 const config = result.data
