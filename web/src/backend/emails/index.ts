@@ -27,7 +27,6 @@ class CustomEta extends Eta {
 const mrml = new Engine()
 
 const eta = new CustomEta({
-	cache: true,
 	functionHeader: `const config = ${JSON.stringify(config)};`
 })
 
@@ -55,7 +54,7 @@ export default async function sendEmail(
 	)
 	if (renderedTemplate.type === "success") {
 		await resend.emails.send({
-			from: "Codelabs <codelabs@vitordaniel.com>",
+			from: `Codelabs <${config.MAIL_FROM}>`,
 			subject,
 			to,
 			html: renderedTemplate.content
