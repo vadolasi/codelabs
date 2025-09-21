@@ -11,7 +11,10 @@
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"test:e2e": "playwright test",
-		"test": "npm run test:e2e"
+		"test": "npm run test:e2e",
+		"database:generate": "bun --bun drizzle-kit generate",
+		"database:migrate": "bun --bun drizzle-kit push",
+		"database:studio": "bun --bun drizzle-kit studio"
 	},
 	"dependencies": {
 		"@bogeychan/elysia-logger": "^0.1.10",

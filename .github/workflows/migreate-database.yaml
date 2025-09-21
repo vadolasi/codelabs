@@ -1,0 +1,25 @@
+name: Migrate Database
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Run migrations
+        run: bun run --filter "web" database:migrate
+        env:
+          POSTGRES_URL: ${{ secrets.POSTGRES_URL }}
+          NODE_ENV: production
