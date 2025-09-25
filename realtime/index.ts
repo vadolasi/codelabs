@@ -16,7 +16,6 @@ export type SocketData = {
 }
 
 const redis = new RedisClient(process.env.REDIS_URL!)
-await redis.connect()
 
 const io = new Server<
 	ClientToServerEvents,
