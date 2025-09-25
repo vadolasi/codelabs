@@ -5,7 +5,7 @@
 	"private": true,
 	"scripts": {
 		"dev": "bun --env-file ../.env --bun --watch index.ts",
-		"build": "bun build ./index.ts --compile --outfile realtime"
+		"build": "bun build ./index.ts --compile --minify --sourcemap --bytecode --target=bun-linux-x64-modern --outfile=realtime"
 	},
 	"devDependencies": {
 		"@types/bun": "latest"
@@ -15,8 +15,10 @@
 	},
 	"dependencies": {
 		"@socket.io/bun-engine": "^0.0.2",
-		"msgpackr": "^1.11.5",
+		"@vercel/blob": "^2.0.0",
+		"loro-crdt": "^1.7.3",
 		"socket.io": "^4.8.1",
+		"socketio-msgpack-parser": "workspace:*",
 		"web": "workspace:*"
 	}
 }

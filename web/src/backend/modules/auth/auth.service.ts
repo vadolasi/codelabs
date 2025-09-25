@@ -70,6 +70,7 @@ export async function validateSessionToken(
 			}
 		)
 	}
+
 	return session
 }
 

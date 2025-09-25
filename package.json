@@ -21,7 +21,7 @@
 		"commitizen": "^4.3.1",
 		"cz-conventional-changelog": "^3.3.0",
 		"lefthook": "^1.13.1",
-		"turbo": "^2.5.6",
+		"turbo": "^2.5.8",
 		"typescript": "^5.9.2"
 	},
 	"trustedDependencies": [
@@ -36,7 +36,7 @@
 		"sharp",
 		"web"
 	],
-	"workspaces": ["web", "realtime"],
+	"workspaces": ["web", "realtime", "socketio-msgpack-parser"],
 	"patchedDependencies": {
 		"@vercel/blob@2.0.0": "patches/@vercel%2Fblob@2.0.0.patch"
 	}

@@ -6,6 +6,7 @@ import {
 	pgTable,
 	text,
 	timestamp,
+	uniqueIndex,
 	uuid
 } from "drizzle-orm/pg-core"
 
@@ -35,39 +36,45 @@ export const usersRelations = relations(users, ({ many }) => ({
 	courses: many(coursesMembers)
 }))
 
-export const workspaces = pgTable("workspaces", {
-	id: uuid("id").primaryKey(),
-	name: text("name").notNull(),
-	slug: text("slug").notNull().unique(),
-	config: json("config")
-		.$type<{ initialTerminals: { command: string }[]; exclude: string[] }>()
-		.default({ initialTerminals: [], exclude: [] })
-		.notNull(),
-	createdAt: timestamp("created_at", {
-		mode: "date",
-		precision: 0,
-		withTimezone: true
-	})
-		.notNull()
-		.defaultNow(),
-	updatedAt: timestamp("updated_at", {
-		mode: "date",
-		precision: 0,
-		withTimezone: true
-	})
-		.notNull()
-		.defaultNow()
-		.$onUpdateFn(() => new Date()),
-	lessonId: uuid("lesson_id").references(() => lessons.id, {
-		onDelete: "set null"
-	})
-})
+export const workspaces = pgTable(
+	"workspaces",
+	{
+		id: uuid("id").primaryKey(),
+		name: text("name").notNull(),
+		slug: text("slug").notNull(),
+		config: json("config")
+			.$type<{ initialTerminals: { command: string }[]; exclude: string[] }>()
+			.default({ initialTerminals: [], exclude: [] })
+			.notNull(),
+		createdAt: timestamp("created_at", {
+			mode: "date",
+			precision: 0,
+			withTimezone: true
+		})
+			.notNull()
+			.defaultNow(),
+		updatedAt: timestamp("updated_at", {
+			mode: "date",
+			precision: 0,
+			withTimezone: true
+		})
+			.notNull()
+			.defaultNow()
+			.$onUpdateFn(() => new Date()),
+		conferenceId: uuid("lesson_id").references(() => conferences.id, {
+			onDelete: "set null"
+		})
+	},
+	(table) => {
+		return [uniqueIndex("workspaces_slug_idx").on(table.slug)]
+	}
+)
 
 export const workspacesRelations = relations(workspaces, ({ one, many }) => ({
 	users: many(workspaces__users),
-	lesson: one(lessons, {
-		fields: [workspaces.lessonId],
-		references: [lessons.id]
+	lesson: one(conferences, {
+		fields: [workspaces.conferenceId],
+		references: [conferences.id]
 	}),
 	databases: many(database__workspaces),
 	invites: many(workspaceInvite)
@@ -235,7 +242,7 @@ export const courses = pgTable("courses", {
 
 export const coursesRelations = relations(courses, ({ many }) => ({
 	members: many(coursesMembers),
-	lessons: many(lessons),
+	lessons: many(conferences),
 	classes: many(classes)
 }))
 
@@ -299,7 +306,7 @@ export const coursesMembersRelations = relations(coursesMembers, ({ one }) => ({
 	})
 }))
 
-export const lessons = pgTable("lessons", {
+export const conferences = pgTable("conferences", {
 	id: uuid("id").primaryKey(),
 	courseId: uuid("course_id")
 		.notNull()
@@ -314,9 +321,9 @@ export const lessons = pgTable("lessons", {
 		.defaultNow()
 })
 
-export const lessonsRelations = relations(lessons, ({ one, many }) => ({
+export const conferencesRelations = relations(conferences, ({ one, many }) => ({
 	course: one(courses, {
-		fields: [lessons.courseId],
+		fields: [conferences.courseId],
 		references: [courses.id]
 	}),
 	workspaces: many(workspaces)

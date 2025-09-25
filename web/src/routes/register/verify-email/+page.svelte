@@ -33,42 +33,42 @@ const verifyEmailMutation = createMutation({
 		return data
 	},
 	onSuccess: () => {
-    toaster.success({
-      title: "E-mail verificado com sucesso"
-    })
+		toaster.success({
+			title: "E-mail verificado com sucesso"
+		})
 		goto("/login")
 	},
-  onError: (error) => {
-    toaster.error({
-      title: "Erro ao verificar e-mail",
-      description: error.message
-    })
-  }
+	onError: (error) => {
+		toaster.error({
+			title: "Erro ao verificar e-mail",
+			description: error.message
+		})
+	}
 })
 
 const resendCodeMutation = createMutation({
-  mutationFn: async () => {
-    const { error } = await httpClient.users["resend-verification"].post({
-      email
-    })
+	mutationFn: async () => {
+		const { error } = await httpClient.users["resend-verification"].post({
+			email
+		})
 
-    if (error) {
-      throw new Error(error.value.message ?? "Erro ao reenviar código", {
-        cause: error.value
-      })
-    }
-  },
-  onSuccess: () => {
-    toaster.success({
-      title: "Código reenviado"
-    })
-  },
-  onError: (error) => {
-    toaster.error({
-      title: "Erro ao reenviar código",
-      description: error.message
-    })
-  }
+		if (error) {
+			throw new Error(error.value.message ?? "Erro ao reenviar código", {
+				cause: error.value
+			})
+		}
+	},
+	onSuccess: () => {
+		toaster.success({
+			title: "Código reenviado"
+		})
+	},
+	onError: (error) => {
+		toaster.error({
+			title: "Erro ao reenviar código",
+			description: error.message
+		})
+	}
 })
 
 const service = useMachine(pinInput.machine, {

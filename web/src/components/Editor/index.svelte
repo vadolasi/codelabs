@@ -1,9 +1,10 @@
 <script lang="ts">
+import { PUBLIC_REALTIME_URL } from "$env/static/public"
 import httpClient from "$lib/httpClient"
 import { Home } from "@lucide/svelte"
 import type { WebContainer } from "@webcontainer/api"
-import { Packr } from "msgpackr"
-import { WebSocket } from "partysocket"
+import { type Socket, io } from "socket.io-client"
+import parser from "socketio-msgpack-parser"
 import { onMount } from "svelte"
 import { Pane, Splitpanes } from "svelte-splitpanes"
 import Editor from "./Editor.svelte"
@@ -15,10 +16,7 @@ import editorState, {
 	loroDoc,
 	webcontainer
 } from "./editorState.svelte"
-
-const packr = new Packr({
-	bundleStrings: true
-})
+import type { ClientToServerEvents, ServerToClientEvents } from "./socket-io-types"
 
 const {
 	webcontainer: loadedWebContainer,
@@ -46,34 +44,29 @@ onMount(() => {
 			editorState.removePreviewer(port)
 		}
 	})
-	const preWs = httpClient
-		.workspaces({ slug: currentWorkspace.id })
-		.subscribe().ws
-	const websocketClient = new WebSocket(preWs.url)
-	preWs.close()
-	websocketClient.onmessage = (event) => {
-		const update = packr.unpack(new Uint8Array(event.data)) as {
-			type: string
-			update: ArrayBuffer
-		}
-		if (update.type === "loro-update") {
-			loroDoc.import(new Uint8Array(update.update))
-		} else if (update.type === "ephemeral-update") {
-			ephemeralStore.apply(new Uint8Array(update.update))
-		}
-	}
+	const socket: Socket<ServerToClientEvents, ClientToServerEvents> = io(PUBLIC_REALTIME_URL, {
+    parser,
+    query: {
+      workspaceId: currentWorkspace.id
+    },
+    withCredentials: true
+  })
+	socket.on("loro-update", (update) => {
+		loroDoc.import(update)
+	})
+  socket.on("ephemeral-update", (update) => {
+    ephemeralStore.apply(update)
+  })
 	loroDoc.subscribeLocalUpdates((update) => {
-		websocketClient.send(
-			packr.pack({ type: "loro-update", update: update.buffer })
-		)
+    socket.emit("loro-update", currentWorkspace.id, new Uint8Array(update.buffer))
 	})
 	ephemeralStore.subscribeLocalUpdates((update) => {
-		websocketClient.send(
-			packr.pack({ type: "ephemeral-update", update: update.buffer })
-		)
+    socket.emit("ephemeral-update", currentWorkspace.id, new Uint8Array(update.buffer))
 	})
 
-	return () => websocketClient.close()
+	return () => {
+    socket.disconnect()
+  }
 })
 
 const terminals: string[] = $state([])

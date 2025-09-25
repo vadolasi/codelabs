@@ -1,8 +1,7 @@
-import { getDownloadUrl, put } from "@vercel/blob"
+import { head, put } from "@vercel/blob"
 import { eq } from "drizzle-orm"
 import Elysia, { t } from "elysia"
 import { LoroDoc } from "loro-crdt"
-import { Packr } from "msgpackr"
 import { nanoid } from "nanoid"
 import { v7 as randomUUIDv7 } from "uuid"
 import db, {
@@ -13,8 +12,6 @@ import db, {
 import config from "../../lib/config"
 import redis from "../../lib/redis"
 import authMiddleware from "../auth/auth.middleware"
-
-const packr = new Packr()
 
 const workspacesController = new Elysia({
 	name: "api.workspaces",
@@ -39,69 +36,79 @@ const workspacesController = new Elysia({
 			}
 		})
 	})
-	.get(
-		"/:slug",
-		async ({ params: { slug }, userId, status }) => {
-			const user = await db.query.workspaces__users.findFirst({
-				where: (workspaces__users, { eq, and, inArray }) =>
-					and(
-						eq(workspaces__users.userId, userId),
-						inArray(
-							workspaces__users.workspaceId,
-							db
-								.select({ id: workspaces.id })
-								.from(workspaces)
-								.where(eq(workspaces.slug, slug))
-						)
-					),
-				columns: {
-					role: true
-				},
-				with: {
-					workspace: {
-						columns: {
-							id: true,
-							name: true,
-							updatedAt: true
-						}
+	.get("/:slug", async ({ params: { slug }, userId, status }) => {
+		const user = await db.query.workspaces__users.findFirst({
+			where: (workspaces__users, { eq, and, inArray }) =>
+				and(
+					eq(workspaces__users.userId, userId),
+					inArray(
+						workspaces__users.workspaceId,
+						db
+							.select({ id: workspaces.id })
+							.from(workspaces)
+							.where(eq(workspaces.slug, slug))
+					)
+				),
+			columns: {
+				role: true
+			},
+			with: {
+				workspace: {
+					columns: {
+						id: true,
+						name: true,
+						updatedAt: true
 					}
 				}
-			})
-
-			if (!user) {
-				return status(404, { message: "Workspace not found" })
 			}
+		})
 
-			const workspace = user.workspace
+		if (!user) {
+			return status(404, { message: "Workspace not found" })
+		}
 
-			const [snapshot, updates] = await Promise.all([
-				fetch(getDownloadUrl(`workspace/${workspace.id}/snapshot.bin`)).then(
-					(res) => res.arrayBuffer()
-				),
-				redis.lRange(`workspace:${slug}:doc`, 0, -1)
-			])
+		const workspace = user.workspace
 
+		const { downloadUrl } = await head(`workspace/${workspace.id}/snapshot.bin`)
+
+		let snapshot: Uint8Array | null = null
+
+		const [savedSnapshot, updates] = await Promise.all([
+			fetch(downloadUrl).then((res) => res.arrayBuffer()),
+			redis.lRange(`workspace:${workspace.id}:doc`, 0, -1)
+		])
+
+		snapshot = new Uint8Array(savedSnapshot)
+
+		if (updates.length > 0) {
 			const doc = new LoroDoc()
 			doc.detach()
-			doc.import(new Uint8Array(snapshot))
+			doc.import(snapshot)
 
 			if (updates.length > 0) {
 				doc.importBatch(updates)
 
-				redis.lTrim(`workspace:${slug}:doc`, updates.length, -1)
+				redis.lTrim(`workspace:${workspace.id}:doc`, updates.length, -1)
 			}
 
-			return {
-				workspace,
-				doc: doc.export({ mode: "snapshot" })
-			}
-		},
-		{
-			cookie: t.Cookie({
-				realtimeAuthToken: t.Optional(t.String())
-			})
+			snapshot = doc.export({ mode: "snapshot" })
+
+			await put(
+				`workspace/${workspace.id}/snapshot.bin`,
+				Buffer.from(snapshot),
+				{
+					access: "public",
+					token: config.BLOB_READ_WRITE_TOKEN,
+					allowOverwrite: true
+				}
+			)
 		}
-	)
+
+		return {
+			workspace,
+			doc: Buffer.from(snapshot)
+		}
+	})
 	.post(
 		"/",
 		async ({ body: { name }, userId, status }) => {
@@ -256,46 +263,5 @@ const workspacesController = new Elysia({
 		},
 		{ user: true }
 	)
-	.ws("/:slug", {
-		open: async (ws) => {
-			const userId = ws.data.userId
-			const workspaceSlug = ws.data.params.slug
-			ws.subscribe(`workspace:${workspaceSlug}`)
-			if ((await redis.lLen(`workspace:${workspaceSlug}:doc`)) < 1) {
-				const workspace = await db.query.workspaces.findFirst({
-					where: (workspaces, { eq }) => eq(workspaces.slug, workspaceSlug),
-					columns: {
-						id: true
-					}
-				})
-
-				if (!workspace) {
-					ws.close(1008, "Workspace not found")
-					return
-				}
-			}
-			await redis.sAdd(`workspace:${workspaceSlug}:users`, userId)
-		},
-		message: async (ws, message) => {
-			const workspaceSlug = ws.data.params.slug
-
-			ws.publish(`workspace:${workspaceSlug}`, message as Buffer)
-
-			const { type, update } = packr.unpack(message as Buffer) as {
-				type: "loro-update"
-				update: ArrayBufferLike
-			}
-
-			if (type === "loro-update") {
-				await redis.lPush(`workspace:${workspaceSlug}:doc`, Buffer.from(update))
-			}
-		},
-		close: async (ws) => {
-			const workspaceSlug = ws.data.params.slug
-			const userId = ws.data.userId
-			await redis.sRem(`workspace:${workspaceSlug}:users`, userId)
-			ws.unsubscribe(`workspace:${workspaceSlug}`)
-		}
-	})
 
 export default workspacesController

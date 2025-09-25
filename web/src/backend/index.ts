@@ -23,7 +23,9 @@ const app = new Elysia({
 	.use(logger())
 	.onRequest(({ set }) => {
 		set.headers["Access-Control-Allow-Origin"] =
-			process.env.NODE_ENV === "production" ? `https://${config.DOMAIN}` : "*"
+			process.env.NODE_ENV === "production"
+				? `https://${config.DOMAIN}`
+				: "http://localhost:5173"
 		set.headers["Access-Control-Allow-Credentials"] = "true"
 		set.headers["Access-Control-Allow-Headers"] = "Content-Type, Accept"
 		set.headers["Access-Control-Allow-Methods"] =
@@ -56,7 +58,7 @@ const app = new Elysia({
 			return packr.unpack(Buffer.from(await request.arrayBuffer()))
 		}
 	})
-	.mapResponse(({ headers, responseValue }) => {
+	.onAfterHandle(({ headers, responseValue }) => {
 		if (responseValue && headers?.accept?.includes("application/x-msgpack")) {
 			return new Response(Uint8Array.from(packr.pack(responseValue)), {
 				headers: {

@@ -18,5 +18,14 @@ export default defineConfig({
 	build: {
 		target: "esnext"
 	},
-	assetsInclude: ["**/*.mjml.eta"]
+	assetsInclude: ["**/*.mjml.eta"],
+	server: {
+		proxy: {
+			"/socket.io": {
+				target: "ws://localhost:3000",
+				ws: true,
+				changeOrigin: true
+			}
+		}
+	}
 })

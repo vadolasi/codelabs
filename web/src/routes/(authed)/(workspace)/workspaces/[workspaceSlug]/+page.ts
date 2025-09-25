@@ -1,6 +1,8 @@
 import { getHttpClient } from "$lib/httpClient"
 import type { PageLoad } from "./$types"
 
+export const ssr = false
+
 export const load: PageLoad = async ({ params, parent, fetch, url }) => {
 	const { queryClient } = await parent()
 

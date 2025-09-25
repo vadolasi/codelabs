@@ -13,7 +13,8 @@ export function getHttpClient(url: string, fetch: typeof window.fetch) {
 			if (body !== undefined && typeof body !== "string") {
 				return {
 					headers: {
-						"content-type": "application/x-msgpack"
+						"content-type": "application/x-msgpack",
+						accept: "application/x-msgpack"
 					},
 					body: new Uint8Array(packr.pack(body))
 				}
