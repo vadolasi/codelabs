@@ -1,6 +1,6 @@
 {
 	"files.associations": {
-		"*.css": "postcss"
+		"*.css": "tailwindcss"
 	},
 	"editor.codeActionsOnSave": {
 		"source.fixAll.biome": "explicit",

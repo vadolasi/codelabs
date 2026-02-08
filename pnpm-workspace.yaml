@@ -1,0 +1,12 @@
+packages:
+  - web
+  - realtime
+  - socketio-msgpack-parser
+
+onlyBuiltDependencies:
+  - '@biomejs/biome'
+  - bufferutil
+  - esbuild
+  - lefthook
+  - msgpackr-extract
+  - sharp

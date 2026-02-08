@@ -1,12 +1,11 @@
 import { generateManifest } from "material-icon-theme"
 
-const icons: Record<string, { default: string }> = import.meta.glob(
-	"../../../node_modules/material-icon-theme/icons/*.svg",
+const icons: Record<string, string> = import.meta.glob(
+	"../../node_modules/material-icon-theme/icons/*.svg",
 	{
 		eager: true,
-		query: {
-			enhanced: true
-		}
+		query: "?url",
+		import: "default"
 	}
 )
 
@@ -62,8 +61,11 @@ export default function getIcon(
 	type: "file" | "folder-open" | "folder-closed"
 ) {
 	const icon = getIconName(filename, type)
-
-	return icons[
-		`../../../node_modules/material-icon-theme/icons/${icon}${type === "folder-open" ? "-open" : ""}.svg`
-	].default
+	const suffix = type === "folder-open" ? "-open" : ""
+	const key = `../../node_modules/material-icon-theme/icons/${icon}${suffix}.svg`
+	const fallbackKey =
+		type === "file"
+			? "../../node_modules/material-icon-theme/icons/file.svg"
+			: "../../node_modules/material-icon-theme/icons/folder.svg"
+	return icons[key] ?? icons[fallbackKey] ?? ""
 }

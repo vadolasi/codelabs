@@ -1,5 +1,6 @@
 <script lang="ts">
 import { page } from "$app/state"
+import { startFsWatcher } from "$lib/fswatcher/start"
 import httpClient from "$lib/httpClient"
 import { createQuery } from "@tanstack/svelte-query"
 import { type FileSystemTree, WebContainer } from "@webcontainer/api"
@@ -59,6 +60,7 @@ const query = createQuery({
 })
 
 let webcontainer: WebContainer | null = null
+let stopFsWatcher: (() => void) | null = null
 
 $: if ($query.data !== undefined && webcontainer === null) {
 	loroDoc.import($query.data.doc)
@@ -66,15 +68,18 @@ $: if ($query.data !== undefined && webcontainer === null) {
 	WebContainer.boot({
 		workdirName: "codelabs"
 	}).then(async (loadedWebcontainer) => {
-		loadedWebcontainer.mount(getFileTree()).then(() => {
-			webcontainer = loadedWebcontainer
+		await loadedWebcontainer.mount(getFileTree())
+		stopFsWatcher = await startFsWatcher(loadedWebcontainer, {
+			rootPath: "."
 		})
+		webcontainer = loadedWebcontainer
 	})
 }
 
 onMount(() => {
 	return () => {
 		if (webcontainer) {
+			stopFsWatcher?.()
 			webcontainer.teardown()
 		}
 	}

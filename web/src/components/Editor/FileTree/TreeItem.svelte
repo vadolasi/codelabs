@@ -3,20 +3,21 @@ import getIcon from "$lib/icons"
 import type { ItemInstance } from "@headless-tree/core"
 import * as menu from "@zag-js/menu"
 import { normalizeProps, useMachine } from "@zag-js/svelte"
-import editorState from "../editorState.svelte"
-
 const { item }: { item: ItemInstance<Item> } = $props()
 
 const itemId = item.getId()
 const itemName = item.getItemName()
 const itemData = item.getItemData()
 
-function handleFolderClick(item: ItemInstance<Item>) {
-	if (item.isExpanded()) {
-		item.collapse()
-	} else {
-		item.expand()
-	}
+const { onClick, ...itemProps } = item.getProps()
+
+function registerItem(node: HTMLElement) {
+  item.registerElement(node)
+  return {
+    destroy() {
+      item.registerElement(null)
+    }
+  }
 }
 
 const contextMenuService = useMachine(menu.machine, {
@@ -36,11 +37,12 @@ const renameProps = item.getRenameInputProps()
 </script>
 
 <button
-  {...item.getProps()}
+  {...itemProps}
   {...contextMenuApi.getContextTriggerProps()}
+  use:registerItem
   style:padding-left={`${item.getItemMeta().level * 10}px`}
   class="w-full cursor-pointer hover:text-primary flex items-center gap-1 text-sm text-ellipsis select-none"
-  onclick={itemData.type === "directory" ? () => handleFolderClick(item) : () => editorState.setCurrentTab(item)}
+  onclick={onClick}
 >
   <img
     src={

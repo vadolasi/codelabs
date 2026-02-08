@@ -7,7 +7,7 @@
 	},
 	"files": {
 		"ignoreUnknown": false,
-		"ignore": []
+		"ignore": ["web/src/lib/fswatcher/fswatcher.bundle.cjs"]
 	},
 	"formatter": {
 		"enabled": true,

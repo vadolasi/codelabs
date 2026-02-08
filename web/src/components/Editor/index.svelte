@@ -36,35 +36,35 @@ webcontainer.current = loadedWebContainer
 let currentWorkspace = $state(workspace)
 
 onMount(() => {
-	webcontainer.current.on("server-ready", async (port, url) => {
-		editorState.addPreviewer(port, url)
-	})
-	webcontainer.current.on("port", (port, event) => {
-		if (event === "close") {
-			editorState.removePreviewer(port)
-		}
-	})
-	const socket: Socket<ServerToClientEvents, ClientToServerEvents> = io(PUBLIC_REALTIME_URL, {
+  webcontainer.current.on("server-ready", async (port, url) => {
+    editorState.addPreviewer(port, url)
+  })
+  webcontainer.current.on("port", (port, event) => {
+    if (event === "close") {
+      editorState.removePreviewer(port)
+    }
+  })
+  const socket: Socket<ServerToClientEvents, ClientToServerEvents> = io(PUBLIC_REALTIME_URL, {
     parser,
     query: {
       workspaceId: currentWorkspace.id
     },
     withCredentials: true
   })
-	socket.on("loro-update", (update) => {
-		loroDoc.import(update)
-	})
+  socket.on("loro-update", (update) => {
+    loroDoc.import(update)
+  })
   socket.on("ephemeral-update", (update) => {
     ephemeralStore.apply(update)
   })
-	loroDoc.subscribeLocalUpdates((update) => {
+  loroDoc.subscribeLocalUpdates((update) => {
     socket.emit("loro-update", currentWorkspace.id, new Uint8Array(update.buffer))
-	})
-	ephemeralStore.subscribeLocalUpdates((update) => {
+  })
+  ephemeralStore.subscribeLocalUpdates((update) => {
     socket.emit("ephemeral-update", currentWorkspace.id, new Uint8Array(update.buffer))
-	})
+  })
 
-	return () => {
+  return () => {
     socket.disconnect()
   }
 })
@@ -73,22 +73,22 @@ const terminals: string[] = $state([])
 let currentTerminal: string | null = $state(null)
 
 function newTerminal() {
-	currentTerminal = Math.random().toString(36).substring(2, 15)
-	terminals.push(currentTerminal)
+  currentTerminal = Math.random().toString(36).substring(2, 15)
+  terminals.push(currentTerminal)
 }
 
 function setCurrentTerminal(terminal: string) {
-	currentTerminal = terminal
+  currentTerminal = terminal
 }
 
 function closeTerminal(terminal: string) {
-	const index = terminals.indexOf(terminal)
-	if (index > -1) {
-		terminals.splice(index, 1)
-	}
-	if (currentTerminal === terminal) {
-		currentTerminal = terminals[0] || null
-	}
+  const index = terminals.indexOf(terminal)
+  if (index > -1) {
+    terminals.splice(index, 1)
+  }
+  if (currentTerminal === terminal) {
+    currentTerminal = terminals[0] || null
+  }
 }
 </script>
 

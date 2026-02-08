@@ -3,8 +3,6 @@
 		"oven.bun-vscode",
 		"biomejs.biome",
 		"bradlc.vscode-tailwindcss",
-		"vercel.turbo-vsc",
-		"svelte.svelte-vscode",
-		"csstools.postcss"
+		"svelte.svelte-vscode"
 	]
 }
