@@ -1,6 +1,5 @@
 import { eq } from "drizzle-orm"
 import Elysia, { t } from "elysia"
-import { LoroDoc } from "loro-crdt"
 import { nanoid } from "nanoid"
 import { S3mini } from "s3mini"
 import { v7 as randomUUIDv7 } from "uuid"
@@ -86,57 +85,22 @@ const workspacesController = new Elysia({
 
 		const snapshotKey = `workspace/${workspace.id}/snapshot.bin`
 
-		let snapshot: Uint8Array | null = null
-
 		const [savedSnapshot, updates] = await Promise.all([
 			s3.getObjectArrayBuffer(snapshotKey),
 			redis.lRange(`workspace:${workspace.id}:doc`, 0, -1)
 		])
 
-		if (!savedSnapshot) {
-			const doc = new LoroDoc()
-			doc.detach()
-			snapshot = doc.export({ mode: "snapshot" })
-			await s3.putAnyObject(
-				snapshotKey,
-				Buffer.from(snapshot),
-				"application/octet-stream"
-			)
-		} else {
-			snapshot = new Uint8Array(savedSnapshot)
-		}
-
-		if (updates.length > 0) {
-			const doc = new LoroDoc()
-			doc.detach()
-			doc.import(snapshot)
-
-			if (updates.length > 0) {
-				doc.importBatch(updates)
-
-				redis.lTrim(`workspace:${workspace.id}:doc`, updates.length, -1)
-			}
-
-			snapshot = doc.export({ mode: "snapshot" })
-
-			await s3.putAnyObject(
-				snapshotKey,
-				Buffer.from(snapshot),
-				"application/octet-stream"
-			)
-		}
+		const snapshot = savedSnapshot ? new Uint8Array(savedSnapshot) : null
 
 		return {
 			workspace,
-			doc: Buffer.from(snapshot)
+			doc: snapshot ? Buffer.from(snapshot) : null,
+			updates
 		}
 	})
 	.post(
 		"/",
 		async ({ body: { name }, userId, status, platform }) => {
-			const doc = new LoroDoc()
-			doc.detach()
-
 			const id = randomUUIDv7()
 
 			const db = getDb(platform.env)
@@ -154,19 +118,12 @@ const workspacesController = new Elysia({
 				return status(500, { message: "Failed to create workspace" })
 			}
 
-			await Promise.all([
-				db.insert(workspaces__users).values({
-					id: randomUUIDv7(),
-					userId,
-					workspaceId: data.id,
-					role: "owner"
-				}),
-				s3.putAnyObject(
-					`workspace/${data.id}/snapshot.bin`,
-					Buffer.from(doc.export({ mode: "snapshot" })),
-					"application/octet-stream"
-				)
-			])
+			await db.insert(workspaces__users).values({
+				id: randomUUIDv7(),
+				userId,
+				workspaceId: data.id,
+				role: "owner"
+			})
 
 			return data
 		},

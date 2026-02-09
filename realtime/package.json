@@ -4,8 +4,7 @@
 	"type": "module",
 	"private": true,
 	"scripts": {
-		"dev": "bun --env-file ../.env --bun --watch index.ts",
-		"build": "bun build ./index.ts --compile --minify --sourcemap --bytecode --target=bun-linux-x64-modern --outfile=realtime"
+		"dev": "bun --env-file ../.env --bun --watch index.ts"
 	},
 	"devDependencies": {
 		"@types/bun": "latest"
@@ -14,7 +13,8 @@
 		"typescript": "^5"
 	},
 	"dependencies": {
-		"@socket.io/bun-engine": "^0.0.2",
+		"@socket.io/bun-engine": "^0.1.0",
+		"bunqueue": "^2.4.0",
 		"loro-crdt": "^1.7.3",
 		"socket.io": "^4.8.1",
 		"socketio-msgpack-parser": "workspace:*",

@@ -1,4 +1,3 @@
-import { logger } from "@bogeychan/elysia-logger"
 import serverTiming from "@elysiajs/server-timing"
 import { Elysia } from "elysia"
 import { Packr } from "msgpackr"
@@ -23,7 +22,6 @@ const app = new Elysia({
 	}
 })
 	.use(serverTiming())
-	.use(logger())
 	.onRequest(({ set, request }) => {
 		const originHeader = request.headers.get("Origin")
 		const hostHeader = request.headers.get("Host")

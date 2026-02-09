@@ -6,6 +6,7 @@ packages:
 onlyBuiltDependencies:
   - '@biomejs/biome'
   - bufferutil
+  - bun
   - esbuild
   - lefthook
   - msgpackr-extract

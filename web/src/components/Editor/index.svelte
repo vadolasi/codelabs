@@ -63,6 +63,11 @@ onMount(() => {
 	socket.on("ephemeral-update", (update) => {
 		ephemeralStore.apply(update)
 	})
+  socket.emit(
+    "persist-snapshot",
+    currentWorkspace.id,
+    loroDoc.export({ mode: "snapshot" })
+  )
 	loroDoc.subscribeLocalUpdates((update) => {
 		socket.emit(
 			"loro-update",

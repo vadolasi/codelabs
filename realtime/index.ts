@@ -1,5 +1,7 @@
 import { Server as Engine } from "@socket.io/bun-engine"
 import { CookieMap, RedisClient, S3Client, serve } from "bun"
+import { Queue, Worker } from "bunqueue/client"
+import { LoroDoc } from "loro-crdt"
 import { Server } from "socket.io"
 import parser from "socketio-msgpack-parser"
 import type { Session } from "web/src/backend/modules/auth/auth.service"
@@ -14,6 +16,12 @@ export type SocketData = {
 	userId: string
 	conferenceId?: string
 }
+
+type SnapshotJob = {
+	workspaceId: string
+}
+
+const SNAPSHOT_INTERVAL_MS = 60_000
 
 const s3Config =
 	process.env.S3_BUCKET &&
@@ -33,6 +41,116 @@ const s3Config =
 const s3 = s3Config ? new S3Client(s3Config) : null
 
 const redis = new RedisClient(process.env.REDIS_URL!)
+
+const snapshotQueue = new Queue<SnapshotJob>("workspace-snapshots", {
+	embedded: true
+})
+
+const snapshotWorker = new Worker<SnapshotJob>(
+	"workspace-snapshots",
+	async (job) => {
+		await refreshSnapshot(job.data.workspaceId)
+	},
+	{
+		embedded: true,
+		concurrency: 1
+	}
+)
+
+snapshotWorker.on("failed", (job, err) => {
+	console.error("Snapshot job failed", job?.id, err)
+})
+
+const activeWorkspaceCounts = new Map<string, number>()
+const scheduledWorkspaces = new Set<string>()
+
+async function refreshSnapshot(workspaceId: string) {
+	if (!s3) {
+		return
+	}
+
+	const snapshotKey = `workspace/${workspaceId}/snapshot.bin`
+	const [savedSnapshot, updates] = await Promise.all([
+		s3
+			.file(snapshotKey)
+			.arrayBuffer()
+			.catch(() => null),
+		redis.lrange(`workspace:${workspaceId}:doc`, 0, -1)
+	])
+
+	if (!savedSnapshot && updates.length === 0) {
+		return
+	}
+
+	const doc = new LoroDoc()
+	doc.detach()
+
+	if (savedSnapshot) {
+		doc.import(new Uint8Array(savedSnapshot))
+	}
+
+	if (updates.length > 0) {
+		doc.importBatch(
+			updates.map((update: string | Uint8Array) => Buffer.from(update))
+		)
+	}
+
+	const snapshot = doc.export({ mode: "snapshot" })
+	await s3.write(snapshotKey, Buffer.from(snapshot))
+
+	if (updates.length > 0) {
+		await redis.ltrim(`workspace:${workspaceId}:doc`, updates.length, -1)
+	}
+}
+
+function getSchedulerId(workspaceId: string) {
+	return `workspace-snapshot:${workspaceId}`
+}
+
+async function ensureScheduler(workspaceId: string) {
+	if (scheduledWorkspaces.has(workspaceId)) {
+		return
+	}
+
+	await snapshotQueue.upsertJobScheduler(
+		getSchedulerId(workspaceId),
+		{ every: SNAPSHOT_INTERVAL_MS },
+		{
+			name: "snapshot",
+			data: { workspaceId }
+		}
+	)
+
+	scheduledWorkspaces.add(workspaceId)
+}
+
+async function removeScheduler(workspaceId: string) {
+	if (!scheduledWorkspaces.has(workspaceId)) {
+		return
+	}
+
+	await snapshotQueue.removeJobScheduler(getSchedulerId(workspaceId))
+	scheduledWorkspaces.delete(workspaceId)
+}
+
+async function markWorkspaceActive(workspaceId: string) {
+	const count = (activeWorkspaceCounts.get(workspaceId) ?? 0) + 1
+	activeWorkspaceCounts.set(workspaceId, count)
+	if (count === 1) {
+		await ensureScheduler(workspaceId)
+	}
+}
+
+async function markWorkspaceInactive(workspaceId: string) {
+	const nextCount = (activeWorkspaceCounts.get(workspaceId) ?? 0) - 1
+	if (nextCount <= 0) {
+		activeWorkspaceCounts.delete(workspaceId)
+		await removeScheduler(workspaceId)
+		return
+	}
+
+	activeWorkspaceCounts.set(workspaceId, nextCount)
+}
 
 const io = new Server<
 	ClientToServerEvents,
@@ -99,17 +217,35 @@ io.use(async (socket, next) => {
 
 io.on("connection", async (socket) => {
 	const workspaceId = socket.handshake.query.workspaceId
+	const joinedWorkspaces = new Set<string>()
 
 	if (typeof workspaceId === "string" && workspaceId) {
 		socket.join(`workspace-${workspaceId}`)
+		joinedWorkspaces.add(workspaceId)
+		await markWorkspaceActive(workspaceId)
 	}
 
 	socket.on("connect-to-workspace", async (workspaceId) => {
 		socket.join(`workspace-${workspaceId}`)
+		joinedWorkspaces.add(workspaceId)
+		await markWorkspaceActive(workspaceId)
 	})
 
 	socket.on("disconnect-from-workspace", async (workspaceId) => {
 		socket.leave(`workspace-${workspaceId}`)
+		if (joinedWorkspaces.has(workspaceId)) {
+			joinedWorkspaces.delete(workspaceId)
+			await markWorkspaceInactive(workspaceId)
+		}
+	})
+
+	socket.on("disconnect", async () => {
+		await Promise.all(
+			Array.from(joinedWorkspaces).map((workspaceId) =>
+				markWorkspaceInactive(workspaceId)
+			)
+		)
+		joinedWorkspaces.clear()
 	})
 
 	socket.on("loro-update", async (workspaceId, update) => {

@@ -63,7 +63,13 @@ let webcontainer: WebContainer | null = null
 let stopFsWatcher: (() => void) | null = null
 
 $: if ($query.data !== undefined && webcontainer === null) {
-	loroDoc.import($query.data.doc)
+	if ($query.data.doc) {
+		loroDoc.import($query.data.doc)
+	}
+
+	if ($query.data.updates?.length) {
+		loroDoc.importBatch($query.data.updates)
+	}
 
 	WebContainer.boot({
 		workdirName: "codelabs"
