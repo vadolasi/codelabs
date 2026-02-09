@@ -1,0 +1,10 @@
+{
+	"servers": {
+		"cloudflare-docs": {
+			"url": "https://docs.mcp.cloudflare.com/mcp"
+		},
+		"svelte": {
+			"url": "https://mcp.svelte.dev/mcp"
+		}
+	}
+}

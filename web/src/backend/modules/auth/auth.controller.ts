@@ -1,17 +1,23 @@
-import { verify } from "@node-rs/argon2"
 import Elysia, { t } from "elysia"
-import db, { users } from "../../database"
+import { getDb, users } from "../../database"
+import exposePlatform from "../../lib/expose-platform"
 import authMiddleware from "./auth.middleware"
-import { createSession, generateToken, invalidateSession } from "./auth.service"
+import {
+	createSession,
+	generateToken,
+	invalidateSession,
+	verifyPassword
+} from "./auth.service"
 
-const unauthenticated = new Elysia().post(
+const unauthenticated = new Elysia().use(exposePlatform).post(
 	"/login",
 	async ({
 		body: { emailOrUsername, password },
 		cookie: { session: sessionCookie },
-		status
+		status,
+		platform
 	}) => {
-		const user = await db.query.users.findFirst({
+		const user = await getDb(platform.env).query.users.findFirst({
 			where: (users, { eq, or }) =>
 				or(
 					eq(users.email, emailOrUsername),
@@ -23,7 +29,7 @@ const unauthenticated = new Elysia().post(
 			return status(401, { code: "USER_NOT_FOUND" })
 		}
 
-		if (!(await verify(user.password, password))) {
+		if (!(await verifyPassword(user.password, password))) {
 			return status(401, { code: "INVALID_PASSWORD" })
 		}
 
@@ -34,7 +40,10 @@ const unauthenticated = new Elysia().post(
 			})
 		}
 
-		await db.update(users).set({ emailOTP: null, emailOTPExpiresAt: null })
+		await getDb(platform.env).update(users).set({
+			emailOTP: null,
+			emailOTPExpiresAt: null
+		})
 
 		const sessionToken = generateToken()
 		const session = await createSession(sessionToken, user.id)

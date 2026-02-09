@@ -3,9 +3,12 @@ import { z } from "zod"
 
 const configSchema = z.object({
 	NODE_ENV: z.enum(["development", "production"]).default("development"),
-	POSTGRES_URL: z.url(),
 	REDIS_URL: z.url(),
-	BLOB_READ_WRITE_TOKEN: z.string().min(1),
+	S3_ENDPOINT: z.url(),
+	S3_BUCKET: z.string().min(1),
+	S3_ACCESS_KEY: z.string().min(1),
+	S3_SECRET_KEY: z.string().min(1),
+	S3_REGION: z.string().min(1).optional(),
 	RESEND_API_KEY: z.string().min(1),
 	DOMAIN: z.hostname(),
 	MAIL_FROM: z.email()

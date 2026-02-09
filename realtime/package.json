@@ -15,7 +15,6 @@
 	},
 	"dependencies": {
 		"@socket.io/bun-engine": "^0.0.2",
-		"@vercel/blob": "^2.0.0",
 		"loro-crdt": "^1.7.3",
 		"socket.io": "^4.8.1",
 		"socketio-msgpack-parser": "workspace:*",

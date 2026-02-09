@@ -1,0 +1,21 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "codelabs-web",
+	"main": ".svelte-kit/cloudflare/worker.js",
+	"compatibility_date": "2026-02-07",
+	"compatibility_flags": ["nodejs_als", "nodejs_compat"],
+	"observability": {
+		"enabled": true
+	},
+	"assets": {
+		"directory": "build",
+		"binding": "ASSETS"
+	},
+	"hyperdrive": [
+		{
+			"binding": "HYPERDRIVE",
+			"id": "7e059a8897eb4f42a3c0d060b1e5306e",
+			"localConnectionString": "postgresql://postgres:postgres@localhost:5432/codelabs"
+		}
+	]
+}

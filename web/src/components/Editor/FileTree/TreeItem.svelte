@@ -12,12 +12,12 @@ const itemData = item.getItemData()
 const { onClick, ...itemProps } = item.getProps()
 
 function registerItem(node: HTMLElement) {
-  item.registerElement(node)
-  return {
-    destroy() {
-      item.registerElement(null)
-    }
-  }
+	item.registerElement(node)
+	return {
+		destroy() {
+			item.registerElement(null)
+		}
+	}
 }
 
 const contextMenuService = useMachine(menu.machine, {

@@ -16,7 +16,10 @@ import editorState, {
 	loroDoc,
 	webcontainer
 } from "./editorState.svelte"
-import type { ClientToServerEvents, ServerToClientEvents } from "./socket-io-types"
+import type {
+	ClientToServerEvents,
+	ServerToClientEvents
+} from "./socket-io-types"
 
 const {
 	webcontainer: loadedWebContainer,
@@ -36,95 +39,128 @@ webcontainer.current = loadedWebContainer
 let currentWorkspace = $state(workspace)
 
 onMount(() => {
-  webcontainer.current.on("server-ready", async (port, url) => {
-    editorState.addPreviewer(port, url)
-  })
-  webcontainer.current.on("port", (port, event) => {
-    if (event === "close") {
-      editorState.removePreviewer(port)
-    }
-  })
-  const socket: Socket<ServerToClientEvents, ClientToServerEvents> = io(PUBLIC_REALTIME_URL, {
-    parser,
-    query: {
-      workspaceId: currentWorkspace.id
-    },
-    withCredentials: true
-  })
-  socket.on("loro-update", (update) => {
-    loroDoc.import(update)
-  })
-  socket.on("ephemeral-update", (update) => {
-    ephemeralStore.apply(update)
-  })
-  loroDoc.subscribeLocalUpdates((update) => {
-    socket.emit("loro-update", currentWorkspace.id, new Uint8Array(update.buffer))
-  })
-  ephemeralStore.subscribeLocalUpdates((update) => {
-    socket.emit("ephemeral-update", currentWorkspace.id, new Uint8Array(update.buffer))
-  })
+	webcontainer.current.on("server-ready", async (port, url) => {
+		editorState.addPreviewer(port, url)
+	})
+	webcontainer.current.on("port", (port, event) => {
+		if (event === "close") {
+			editorState.removePreviewer(port)
+		}
+	})
+	const socket: Socket<ServerToClientEvents, ClientToServerEvents> = io(
+		PUBLIC_REALTIME_URL,
+		{
+			parser,
+			query: {
+				workspaceId: currentWorkspace.id
+			},
+			withCredentials: true
+		}
+	)
+	socket.on("loro-update", (update) => {
+		loroDoc.import(update)
+	})
+	socket.on("ephemeral-update", (update) => {
+		ephemeralStore.apply(update)
+	})
+	loroDoc.subscribeLocalUpdates((update) => {
+		socket.emit(
+			"loro-update",
+			currentWorkspace.id,
+			new Uint8Array(update.buffer)
+		)
+	})
+	ephemeralStore.subscribeLocalUpdates((update) => {
+		socket.emit(
+			"ephemeral-update",
+			currentWorkspace.id,
+			new Uint8Array(update.buffer)
+		)
+	})
 
-  return () => {
-    socket.disconnect()
-  }
+	return () => {
+		socket.disconnect()
+	}
 })
 
 const terminals: string[] = $state([])
 let currentTerminal: string | null = $state(null)
 
 function newTerminal() {
-  currentTerminal = Math.random().toString(36).substring(2, 15)
-  terminals.push(currentTerminal)
+	currentTerminal = Math.random().toString(36).substring(2, 15)
+	terminals.push(currentTerminal)
 }
 
 function setCurrentTerminal(terminal: string) {
-  currentTerminal = terminal
+	currentTerminal = terminal
 }
 
 function closeTerminal(terminal: string) {
-  const index = terminals.indexOf(terminal)
-  if (index > -1) {
-    terminals.splice(index, 1)
-  }
-  if (currentTerminal === terminal) {
-    currentTerminal = terminals[0] || null
-  }
+	const index = terminals.indexOf(terminal)
+	if (index > -1) {
+		terminals.splice(index, 1)
+	}
+	if (currentTerminal === terminal) {
+		currentTerminal = terminals[0] || null
+	}
 }
 </script>
 
-<div class="h-screen w-screen flex flex-col">
-  <div class="w-full bg-base-200 p-2 flex justify-between items-center shrink-0">
-    <div>
-      <a href="/"><Home /></a>
+<div class="h-screen w-screen flex flex-col bg-base-300 text-base-content">
+  <div class="w-full border-b border-base-200/60 bg-base-200/80 backdrop-blur-md">
+    <div class="px-3 py-2 flex items-center gap-3">
+      <a href="/" class="btn btn-ghost btn-sm">
+        <Home class="h-4 w-4" />
+      </a>
+      <div class="flex items-center gap-2">
+        <div class="badge badge-primary badge-outline">Workspace</div>
+        <div class="text-sm font-medium text-base-content/90">{currentWorkspace.name}</div>
+      </div>
+      <div class="ml-auto flex items-center gap-2">
+        <button class="btn btn-ghost btn-xs" onclick={newTerminal}>Novo terminal</button>
+      </div>
     </div>
-    <div class="text-sm text-secondary-content">{currentWorkspace.name}</div>
-    <div></div>
   </div>
   <Splitpanes theme="modern-theme" class="w-full h-full flex-1 overflow-hidden">
     <Pane maxSize={70} size={20}>
-      <FileTree />
+      <div class="h-full flex flex-col border-r border-base-200/60 bg-base-300">
+        <div class="px-3 py-2 text-xs uppercase tracking-widest text-base-content/60 border-b border-base-200/60">
+          Arquivos
+        </div>
+        <div class="flex-1 min-h-0">
+          <FileTree />
+        </div>
+      </div>
     </Pane>
     <Pane>
       <Splitpanes theme="modern-theme" horizontal={true}>
         <Pane>
-          <Editor />
+          <div class="h-full border-b border-base-200/60 bg-base-300">
+            <Editor />
+          </div>
         </Pane>
         <Pane class="flex flex-col">
-          <div class="shrink-0 flex">
+          <div class="shrink-0 flex items-center gap-2 px-2 py-1 bg-base-200/70 border-b border-base-200/60">
             {#if terminals.length > 0}
-              <div class="flex">
+              <div class="flex flex-wrap gap-1">
                 {#each terminals as terminal, index (terminal)}
                   <!-- svelte-ignore a11y_click_events_have_key_events -->
-                  <div role="button" tabindex="0" class="py-1 px-3 flex gap-1 items-center justify-center hover:bg-base-200 text-sm group border-primery select-none" class:bg-base-200={terminal === currentTerminal} onclick={() => setCurrentTerminal(terminal)}>
+                  <div
+                    role="button"
+                    tabindex="0"
+                    class="btn btn-xs gap-2 normal-case"
+                    class:btn-primary={terminal === currentTerminal}
+                    class:btn-ghost={terminal !== currentTerminal}
+                    onclick={() => setCurrentTerminal(terminal)}
+                  >
                     <span>Terminal {index + 1}</span>
                     <button
                       type="button"
                       aria-label="Close tab"
-                      class="invisible group-hover:visible p-1 rounded-sm hover:bg-base-200 group-hover:hover:bg-base-300"
-                      class:visible={currentTerminal === terminal}
+                      class="btn btn-ghost btn-xs p-0 h-4 min-h-0"
                       onclick={() => closeTerminal(terminal)}
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-3 h-3">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
                       </svg>
                     </button>
@@ -132,12 +168,12 @@ function closeTerminal(terminal: string) {
                 {/each}
               </div>
             {/if}
-            <button class="py-1 px-3 flex gap-1 items-center justify-center hover:bg-base-300 text-sm border-primery select-none" onclick={newTerminal}>
-            {#if terminals.length > 0}
-              +
-            {:else}
-              Novo terminal
-            {/if}
+            <button class="btn btn-ghost btn-xs" onclick={newTerminal}>
+              {#if terminals.length > 0}
+                +
+              {:else}
+                Novo terminal
+              {/if}
             </button>
           </div>
           {#each terminals as terminal (terminal)}
@@ -150,7 +186,9 @@ function closeTerminal(terminal: string) {
     </Pane>
     {#if editorState.hasPreviewers }
       <Pane size={20}>
-        <Previewers />
+        <div class="h-full border-l border-base-200/60 bg-base-300">
+          <Previewers />
+        </div>
       </Pane>
     {/if}
   </Splitpanes>

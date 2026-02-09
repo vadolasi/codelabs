@@ -1,24 +1,37 @@
-import { head, put } from "@vercel/blob"
 import { eq } from "drizzle-orm"
 import Elysia, { t } from "elysia"
 import { LoroDoc } from "loro-crdt"
 import { nanoid } from "nanoid"
+import { S3mini } from "s3mini"
 import { v7 as randomUUIDv7 } from "uuid"
-import db, {
+import {
+	getDb,
 	workspaceInvite,
 	workspaces,
 	workspaces__users
 } from "../../database"
 import config from "../../lib/config"
+import exposePlatform from "../../lib/expose-platform"
 import redis from "../../lib/redis"
 import authMiddleware from "../auth/auth.middleware"
+
+const s3Endpoint = `${config.S3_ENDPOINT.replace(/\/$/, "")}/${config.S3_BUCKET}`
+const s3 = new S3mini({
+	accessKeyId: config.S3_ACCESS_KEY,
+	secretAccessKey: config.S3_SECRET_KEY,
+	endpoint: s3Endpoint,
+	region: config.S3_REGION ?? "auto"
+})
 
 const workspacesController = new Elysia({
 	name: "api.workspaces",
 	prefix: "/workspaces"
 })
+	.use(exposePlatform)
 	.use(authMiddleware)
-	.get("/", async ({ userId }) => {
+	.get("/", async ({ userId, platform }) => {
+		const db = getDb(platform.env)
+
 		return await db.query.workspaces.findMany({
 			where: (workspaces, { inArray }) =>
 				inArray(
@@ -36,7 +49,9 @@ const workspacesController = new Elysia({
 			}
 		})
 	})
-	.get("/:slug", async ({ params: { slug }, userId, status }) => {
+	.get("/:slug", async ({ params: { slug }, userId, status, platform }) => {
+		const db = getDb(platform.env)
+
 		const user = await db.query.workspaces__users.findFirst({
 			where: (workspaces__users, { eq, and, inArray }) =>
 				and(
@@ -69,16 +84,27 @@ const workspacesController = new Elysia({
 
 		const workspace = user.workspace
 
-		const { downloadUrl } = await head(`workspace/${workspace.id}/snapshot.bin`)
+		const snapshotKey = `workspace/${workspace.id}/snapshot.bin`
 
 		let snapshot: Uint8Array | null = null
 
 		const [savedSnapshot, updates] = await Promise.all([
-			fetch(downloadUrl).then((res) => res.arrayBuffer()),
+			s3.getObjectArrayBuffer(snapshotKey),
 			redis.lRange(`workspace:${workspace.id}:doc`, 0, -1)
 		])
 
-		snapshot = new Uint8Array(savedSnapshot)
+		if (!savedSnapshot) {
+			const doc = new LoroDoc()
+			doc.detach()
+			snapshot = doc.export({ mode: "snapshot" })
+			await s3.putAnyObject(
+				snapshotKey,
+				Buffer.from(snapshot),
+				"application/octet-stream"
+			)
+		} else {
+			snapshot = new Uint8Array(savedSnapshot)
+		}
 
 		if (updates.length > 0) {
 			const doc = new LoroDoc()
@@ -93,14 +119,10 @@ const workspacesController = new Elysia({
 
 			snapshot = doc.export({ mode: "snapshot" })
 
-			await put(
-				`workspace/${workspace.id}/snapshot.bin`,
+			await s3.putAnyObject(
+				snapshotKey,
 				Buffer.from(snapshot),
-				{
-					access: "public",
-					token: config.BLOB_READ_WRITE_TOKEN,
-					allowOverwrite: true
-				}
+				"application/octet-stream"
 			)
 		}
 
@@ -111,11 +133,13 @@ const workspacesController = new Elysia({
 	})
 	.post(
 		"/",
-		async ({ body: { name }, userId, status }) => {
+		async ({ body: { name }, userId, status, platform }) => {
 			const doc = new LoroDoc()
 			doc.detach()
 
 			const id = randomUUIDv7()
+
+			const db = getDb(platform.env)
 
 			const [data] = await db
 				.insert(workspaces)
@@ -137,10 +161,10 @@ const workspacesController = new Elysia({
 					workspaceId: data.id,
 					role: "owner"
 				}),
-				put(
+				s3.putAnyObject(
 					`workspace/${data.id}/snapshot.bin`,
 					Buffer.from(doc.export({ mode: "snapshot" })),
-					{ access: "public", token: config.BLOB_READ_WRITE_TOKEN }
+					"application/octet-stream"
 				)
 			])
 
@@ -154,7 +178,14 @@ const workspacesController = new Elysia({
 	)
 	.post(
 		"/invite",
-		async ({ body: { users, role, workspaceId, ttl }, userId, status }) => {
+		async ({
+			body: { users, role, workspaceId, ttl },
+			userId,
+			status,
+			platform
+		}) => {
+			const db = getDb(platform.env)
+
 			const user = await db.query.workspaces__users.findFirst({
 				where: (workspaces__users, { eq }) =>
 					eq(workspaces__users.userId, userId) &&
@@ -204,7 +235,9 @@ const workspacesController = new Elysia({
 	)
 	.post(
 		"/join/:token",
-		async ({ params: { token }, user, status }) => {
+		async ({ params: { token }, user, status, platform }) => {
+			const db = getDb(platform.env)
+
 			const invite = await db.query.workspaceInvite.findFirst({
 				where: (workspaceInvite, { eq }) => eq(workspaceInvite.token, token),
 				columns: {

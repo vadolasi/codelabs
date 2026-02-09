@@ -1,13 +1,17 @@
 {
 	"$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
 	"vcs": {
-		"enabled": false,
+		"enabled": true,
 		"clientKind": "git",
-		"useIgnoreFile": false
+		"useIgnoreFile": true
 	},
 	"files": {
-		"ignoreUnknown": false,
-		"ignore": ["web/src/lib/fswatcher/fswatcher.bundle.cjs"]
+		"ignoreUnknown": true,
+		"ignore": [
+			"web/src/lib/fswatcher/fswatcher.bundle.cjs",
+			"web/src/backend/emails/templates.generated.ts",
+			"web/src/worker-configuration.d.ts"
+		]
 	},
 	"formatter": {
 		"enabled": true,

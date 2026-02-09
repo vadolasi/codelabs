@@ -1,11 +1,86 @@
-import { createHash } from "node:crypto"
+import { createHash, randomBytes, scrypt, timingSafeEqual } from "node:crypto"
 import redis from "../../lib/redis"
+
+const SCRYPT_KEYLEN = 64
+const SCRYPT_SALT_BYTES = 16
+const SCRYPT_N = 16384
+const SCRYPT_R = 8
+const SCRYPT_P = 1
 
 export function generateToken(): string {
 	const bytes = new Uint8Array(20)
 	crypto.getRandomValues(bytes)
 	const token = Buffer.from(bytes).toString("hex")
 	return createHash("sha256").update(token).digest("hex")
+}
+
+export async function hashPassword(password: string): Promise<string> {
+	const salt = randomBytes(SCRYPT_SALT_BYTES)
+	const derivedKey = await new Promise<Buffer>((resolve, reject) => {
+		scrypt(
+			password,
+			salt,
+			SCRYPT_KEYLEN,
+			{
+				N: SCRYPT_N,
+				r: SCRYPT_R,
+				p: SCRYPT_P,
+				maxmem: 64 * 1024 * 1024
+			},
+			(err, derivedKey) => {
+				if (err) reject(err)
+				else resolve(derivedKey as Buffer)
+			}
+		)
+	})
+
+	return [
+		"scrypt",
+		SCRYPT_N,
+		SCRYPT_R,
+		SCRYPT_P,
+		SCRYPT_KEYLEN,
+		salt.toString("base64"),
+		derivedKey.toString("base64")
+	].join("$")
+}
+
+export async function verifyPassword(
+	stored: string,
+	password: string
+): Promise<boolean> {
+	const parts = stored.split("$")
+	if (parts.length !== 7 || parts[0] !== "scrypt") {
+		return false
+	}
+
+	const [_, n, r, p, keylen, saltB64, hashB64] = parts
+	const salt = Buffer.from(saltB64, "base64")
+	const expected = Buffer.from(hashB64, "base64")
+
+	const derivedKey = await new Promise<Buffer>((resolve, reject) => {
+		scrypt(
+			password,
+			salt,
+			Number.parseInt(keylen, 10),
+			{
+				N: Number.parseInt(n, 10),
+				r: Number.parseInt(r, 10),
+				p: Number.parseInt(p, 10),
+				maxmem: 64 * 1024 * 1024
+			},
+			(err, derivedKey) => {
+				if (err) reject(err)
+				else resolve(derivedKey as Buffer)
+			}
+		)
+	})
+
+	if (derivedKey.length !== expected.length) {
+		return false
+	}
+
+	return timingSafeEqual(derivedKey, expected)
 }
 
 export async function createSession(

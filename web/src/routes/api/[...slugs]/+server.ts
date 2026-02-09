@@ -1,5 +1,13 @@
 import app from "../../../backend"
 
-type RequestHandler = (v: { request: Request }) => Response | Promise<Response>
+declare global {
+	interface Request {
+		platform?: App.Platform
+	}
+}
 
-export const fallback: RequestHandler = ({ request }) => app.handle(request)
+export const fallback = ({ request, platform }) => {
+	request.platform = platform
+
+	return app.handle(request)
+}

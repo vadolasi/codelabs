@@ -2,7 +2,7 @@
 	"$schema": "https://turborepo.com/schema.json",
 	"tasks": {
 		"build": {
-			"outputs": [".svelte-kit/**", ".vercel/**"]
+			"outputs": [".svelte-kit/**", "build/**"]
 		},
 		"dev": {
 			"persistent": true,

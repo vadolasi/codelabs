@@ -1,4 +1,3 @@
-import { hash } from "@node-rs/argon2"
 import { zxcvbnAsync, zxcvbnOptions } from "@zxcvbn-ts/core"
 import * as zxcvbnCommonPackage from "@zxcvbn-ts/language-common"
 import * as zxcvbnPtBrPackage from "@zxcvbn-ts/language-pt-br"
@@ -6,12 +5,13 @@ import { matcherPwnedFactory } from "@zxcvbn-ts/matcher-pwned"
 import { and, eq, gt } from "drizzle-orm"
 import Elysia, { t } from "elysia"
 import { normalizeEmail } from "email-normalizer"
-import MailChecker from "mailchecker"
 import { v7 as randomUUIDv7 } from "uuid"
-import db, { users } from "../../database"
+import { z } from "zod"
+import { getDb, users } from "../../database"
 import sendEmail from "../../emails"
+import exposePlatform from "../../lib/expose-platform"
 import authMiddleware from "../auth/auth.middleware"
-import { generateToken } from "../auth/auth.service"
+import { generateToken, hashPassword } from "../auth/auth.service"
 import { generateOTPCode } from "./users.service"
 
 const matcherPwned = matcherPwnedFactory(fetch, zxcvbnOptions)
@@ -26,17 +26,28 @@ zxcvbnOptions.setOptions({
 	useLevenshteinDistance: true
 })
 
+const emailSchema = z.string().email()
+
+function isValidEmail(value: string): boolean {
+	const result = emailSchema.safeParse(value)
+	if (!result.success) {
+		return false
+	}
+	return true
+}
+
 const unauthenticated = new Elysia()
+	.use(exposePlatform)
 	.post(
 		"/register",
-		async ({ body: { email, username, password }, status }) => {
+		async ({ body: { email, username, password }, status, platform }) => {
 			const emailNormalized = normalizeEmail({ email })
 
-			if (!MailChecker.isValid(emailNormalized)) {
+			if (!isValidEmail(emailNormalized)) {
 				return status(400, { message: "INVALID_EMAIL" })
 			}
 
-			const [existingUser] = await db
+			const [existingUser] = await getDb(platform.env)
 				.select()
 				.from(users)
 				.where(
@@ -54,14 +65,16 @@ const unauthenticated = new Elysia()
 
 			const emailOTP = generateOTPCode()
 
-			await db.insert(users).values({
-				id: randomUUIDv7(),
-				email,
-				username,
-				password: await hash(password),
-				emailOTP,
-				emailOTPExpiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24)
-			})
+			await getDb(platform.env)
+				.insert(users)
+				.values({
+					id: randomUUIDv7(),
+					email,
+					username,
+					password: await hashPassword(password),
+					emailOTP,
+					emailOTPExpiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24)
+				})
 
 			await sendEmail("emailVerification", {
 				subject: "Verifique o seu email",
@@ -81,8 +94,10 @@ const unauthenticated = new Elysia()
 	)
 	.post(
 		"/resend-verification",
-		async ({ body: { email }, status }) => {
+		async ({ body: { email }, status, platform }) => {
 			const emailNormalized = normalizeEmail({ email })
+
+			const db = getDb(platform.env)
 
 			const [user] = await db
 				.select()
@@ -126,7 +141,9 @@ const unauthenticated = new Elysia()
 	)
 	.post(
 		"/verify-user",
-		async ({ body: { email, code }, status }) => {
+		async ({ body: { email, code }, status, platform }) => {
+			const db = getDb(platform.env)
+
 			const [user] = await db
 				.select()
 				.from(users)
@@ -167,8 +184,10 @@ const unauthenticated = new Elysia()
 	)
 	.get(
 		"/check-email-exists",
-		async ({ query: { email }, status }) => {
+		async ({ query: { email }, status, platform }) => {
 			const emailNormalized = normalizeEmail({ email })
+
+			const db = getDb(platform.env)
 
 			const [existingUser] = await db
 				.select()
@@ -190,7 +209,9 @@ const unauthenticated = new Elysia()
 	)
 	.get(
 		"/check-username-exists",
-		async ({ query: { username }, status }) => {
+		async ({ query: { username }, status, platform }) => {
+			const db = getDb(platform.env)
+
 			const [existingUser] = await db
 				.select()
 				.from(users)
@@ -211,7 +232,9 @@ const unauthenticated = new Elysia()
 	)
 	.post(
 		"/reset-password",
-		async ({ body: { email }, status }) => {
+		async ({ body: { email }, status, platform }) => {
+			const db = getDb(platform.env)
+
 			const [user] = await db
 				.select()
 				.from(users)
@@ -252,7 +275,9 @@ const unauthenticated = new Elysia()
 	)
 	.get(
 		"reset-password/check-code/:emailToken",
-		async ({ params: { emailToken }, status }) => {
+		async ({ params: { emailToken }, platform }) => {
+			const db = getDb(platform.env)
+
 			const [user] = await db
 				.select()
 				.from(users)
@@ -282,7 +307,9 @@ const unauthenticated = new Elysia()
 	)
 	.post(
 		"/reset-password/confirm",
-		async ({ body: { code, newPassword }, status }) => {
+		async ({ body: { code, newPassword }, status, platform }) => {
+			const db = getDb(platform.env)
+
 			const [user] = await db
 				.select()
 				.from(users)
@@ -302,7 +329,7 @@ const unauthenticated = new Elysia()
 			await db
 				.update(users)
 				.set({
-					password: await hash(newPassword),
+					password: await hashPassword(newPassword),
 					emailOTP: null,
 					emailOTPExpiresAt: null
 				})

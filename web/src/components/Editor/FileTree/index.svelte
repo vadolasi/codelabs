@@ -10,7 +10,11 @@ import {
 import { LoroList, LoroMap } from "loro-crdt"
 import picoMatch from "picomatch"
 import { onMount, tick } from "svelte"
-import editorState, { filesMap, loroDoc, webcontainer } from "../editorState.svelte"
+import editorState, {
+	filesMap,
+	loroDoc,
+	webcontainer
+} from "../editorState.svelte"
 import TreeItem from "./TreeItem.svelte"
 
 let render = $state(0)
@@ -88,9 +92,10 @@ const tree = createTree<Item>({
 		},
 		getChildren: (itemId) => {
 			const entry = filesMap.get(itemId)
-			const childrenList = entry?.get("children")
-			const children =
-				childrenList instanceof LoroList ? childrenList.toArray() : []
+			const childrenList = entry?.get("children") as
+				| LoroList<string>
+				| undefined
+			const children = childrenList ? childrenList.toArray() : []
 
 			return children.sort((a, b) => {
 				const aType = filesMap.get(a)?.get("data") as Item
@@ -119,7 +124,6 @@ const tree = createTree<Item>({
 	]
 })
 
-
 async function syncFromFs(rootFsPath: string) {
 	const queue: Array<{ fsPath: string; storePath: string }> = [
 		{ fsPath: rootFsPath, storePath: "/" }
@@ -131,7 +135,11 @@ async function syncFromFs(rootFsPath: string) {
 			continue
 		}
 
-		let entries: Array<{ name: string; isDirectory: () => boolean; isFile: () => boolean }>
+		let entries: Array<{
+			name: string
+			isDirectory: () => boolean
+			isFile: () => boolean
+		}>
 		try {
 			entries = (await webcontainer.current.fs.readdir(current.fsPath, {
 				withFileTypes: true
@@ -242,10 +250,7 @@ onMount(() => {
 				newMap.set("data", {
 					type: "file",
 					path: event.path,
-					content: await webcontainer.current.fs.readFile(
-						event.path,
-						"utf-8"
-					)
+					content: await webcontainer.current.fs.readFile(event.path, "utf-8")
 				})
 			} else {
 				newMap.set("data", {
@@ -258,10 +263,7 @@ onMount(() => {
 			filesMap.setContainer(event.path, newMap)
 
 			const parent =
-				`/${event.path.split("/").slice(0, -1).join("/")}`.replaceAll(
-					"//",
-					"/"
-				)
+				`/${event.path.split("/").slice(0, -1).join("/")}`.replaceAll("//", "/")
 			addChildToParent(parent, event.path)
 		} else if (event.type === "file-remove" || event.type === "dir-remove") {
 			filesMap.delete(event.path)

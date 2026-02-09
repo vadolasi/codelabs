@@ -1,13 +1,6 @@
 import { generateManifest } from "material-icon-theme"
 
-const icons: Record<string, string> = import.meta.glob(
-	"../../node_modules/material-icon-theme/icons/*.svg",
-	{
-		eager: true,
-		query: "?url",
-		import: "default"
-	}
-)
+const iconsBasePath = "/material-icons"
 
 const manifest = generateManifest()
 
@@ -62,10 +55,7 @@ export default function getIcon(
 ) {
 	const icon = getIconName(filename, type)
 	const suffix = type === "folder-open" ? "-open" : ""
-	const key = `../../node_modules/material-icon-theme/icons/${icon}${suffix}.svg`
-	const fallbackKey =
-		type === "file"
-			? "../../node_modules/material-icon-theme/icons/file.svg"
-			: "../../node_modules/material-icon-theme/icons/folder.svg"
-	return icons[key] ?? icons[fallbackKey] ?? ""
+	const fallbackIcon = type === "file" ? "file" : "folder"
+	const resolvedIcon = icon ? `${icon}${suffix}` : fallbackIcon
+	return `${iconsBasePath}/${resolvedIcon}.svg`
 }

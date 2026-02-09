@@ -94,4 +94,7 @@ onMount(() => {
 </script>
 
 
-<div bind:this={terminalContainer} class="w-full h-full bg-base-300 p-1"></div>
+<div
+	bind:this={terminalContainer}
+	class="w-full h-full bg-base-300 border-0 outline-none ring-0 shadow-none"
+></div>

@@ -10,6 +10,7 @@
 	"scripts": {
 		"dev": "turbo run dev",
 		"build": "turbo run build",
+		"rustfs:bucket": "node scripts/create-rustfs-bucket.mjs",
 		"format-and-lint": "biome check .",
 		"format-and-lint:fix": "biome check . --write",
 		"postinstall": "if [ \"$CI\" != \"true\" ]; then lefthook install; fi"
@@ -36,8 +37,5 @@
 		"sharp",
 		"web"
 	],
-	"workspaces": ["web", "realtime", "socketio-msgpack-parser"],
-	"patchedDependencies": {
-		"@vercel/blob@2.0.0": "patches/@vercel%2Fblob@2.0.0.patch"
-	}
+	"workspaces": ["web", "realtime", "socketio-msgpack-parser"]
 }

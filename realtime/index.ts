@@ -1,5 +1,5 @@
 import { Server as Engine } from "@socket.io/bun-engine"
-import { CookieMap, RedisClient, serve } from "bun"
+import { CookieMap, RedisClient, S3Client, serve } from "bun"
 import { Server } from "socket.io"
 import parser from "socketio-msgpack-parser"
 import type { Session } from "web/src/backend/modules/auth/auth.service"
@@ -14,6 +14,23 @@ export type SocketData = {
 	userId: string
 	conferenceId?: string
 }
+
+const s3Config =
+	process.env.S3_BUCKET &&
+	process.env.S3_ENDPOINT &&
+	(process.env.S3_ACCESS_KEY || process.env.S3_ACCESS_KEY_ID) &&
+	(process.env.S3_SECRET_KEY || process.env.S3_SECRET_ACCESS_KEY)
+		? {
+				accessKeyId:
+					process.env.S3_ACCESS_KEY_ID ?? process.env.S3_ACCESS_KEY ?? "",
+				secretAccessKey:
+					process.env.S3_SECRET_ACCESS_KEY ?? process.env.S3_SECRET_KEY ?? "",
+				bucket: process.env.S3_BUCKET,
+				endpoint: process.env.S3_ENDPOINT
+			}
+		: null
+
+const s3 = s3Config ? new S3Client(s3Config) : null
 
 const redis = new RedisClient(process.env.REDIS_URL!)
 
@@ -36,7 +53,6 @@ const engine = new Engine({
 }).on("connection", (socket, request, server) => {
 	// @ts-ignore
 	socket.request = {
-		// @ts-ignore
 		headers: Object.fromEntries(request.headers.entries()),
 		connection: {
 			encrypted:
@@ -100,6 +116,15 @@ io.on("connection", async (socket) => {
 		socket.broadcast.to(`workspace-${workspaceId}`).emit("loro-update", update)
 
 		await redis.lpush(`workspace:${workspaceId}:doc`, Buffer.from(update))
+	})
+
+	socket.on("persist-snapshot", async (workspaceId, snapshot) => {
+		if (!s3) {
+			return
+		}
+
+		const key = `workspace/${workspaceId}/snapshot.bin`
+		await s3.write(key, Buffer.from(snapshot))
 	})
 
 	socket.on("ephemeral-update", async (workspaceId, update) => {

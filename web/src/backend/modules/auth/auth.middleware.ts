@@ -1,16 +1,18 @@
 import { and, eq } from "drizzle-orm"
 import Elysia from "elysia"
-import db, { users } from "../../database"
+import { getDb, users } from "../../database"
+import exposePlatform from "../../lib/expose-platform"
 import { validateSessionToken } from "./auth.service"
 
 const authMiddleware = new Elysia()
+	.use(exposePlatform)
 	.derive(
 		{ as: "scoped" },
 		async ({ cookie: { session: sessionCookie }, status }) => {
 			if (!sessionCookie || !sessionCookie?.value) {
 				return status(401, { message: "UNAUTHORIZED" })
 			}
-			const session = await validateSessionToken(sessionCookie.value)
+			const session = await validateSessionToken(sessionCookie.value as string)
 
 			if (session === null) {
 				sessionCookie.remove()
@@ -24,9 +26,15 @@ const authMiddleware = new Elysia()
 	)
 	.macro({
 		user: (_: true) => ({
-			resolve: async ({ userId, status }) => {
+			resolve: async ({ userId, status, request }) => {
+				const platform = request?.platform
+
+				if (!platform) {
+					throw new Error("Platform not found on request")
+				}
+
 				if (userId !== undefined) {
-					const [user] = await db
+					const [user] = await getDb(platform.env)
 						.select({
 							id: users.id,
 							email: users.email,

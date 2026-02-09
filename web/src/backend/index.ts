@@ -16,16 +16,24 @@ const app = new Elysia({
 		secure: config.NODE_ENV === "production",
 		path: "/",
 		sameSite: "lax",
-		domain: config.NODE_ENV === "production" ? config.DOMAIN : "localhost"
+		domain:
+			config.NODE_ENV === "production" && config.DOMAIN !== "localhost"
+				? config.DOMAIN
+				: undefined
 	}
 })
 	.use(serverTiming())
 	.use(logger())
-	.onRequest(({ set }) => {
-		set.headers["Access-Control-Allow-Origin"] =
+	.onRequest(({ set, request }) => {
+		const originHeader = request.headers.get("Origin")
+		const hostHeader = request.headers.get("Host")
+		const fallbackOrigin =
 			process.env.NODE_ENV === "production"
-				? `https://${config.DOMAIN}`
+				? hostHeader
+					? `https://${hostHeader}`
+					: ""
 				: "http://localhost:5173"
+		set.headers["Access-Control-Allow-Origin"] = originHeader ?? fallbackOrigin
 		set.headers["Access-Control-Allow-Credentials"] = "true"
 		set.headers["Access-Control-Allow-Headers"] = "Content-Type, Accept"
 		set.headers["Access-Control-Allow-Methods"] =
@@ -40,8 +48,13 @@ const app = new Elysia({
 			const origin = request.headers.get("Origin")
 			const referer = request.headers.get("Referer")
 
-			const validOrigin = origin === `https://${config.DOMAIN}`
-			const validReferer = referer?.startsWith(`https://${config.DOMAIN}`)
+			const hostHeader = request.headers.get("Host")
+			const expectedOrigin = hostHeader
+				? `https://${hostHeader}`
+				: (origin ?? "")
+
+			const validOrigin = origin === expectedOrigin
+			const validReferer = referer?.startsWith(expectedOrigin)
 
 			if (!validOrigin || !validReferer) {
 				return new Response("CSRF validation failed", { status: 403 })
