@@ -1,3 +1,3 @@
 import { createCatppuccinPlugin } from "@catppuccin/daisyui"
 
-export default createCatppuccinPlugin("mocha", "blue")
+export default createCatppuccinPlugin("mocha", { primary: "blue" })
