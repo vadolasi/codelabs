@@ -1,7 +1,5 @@
 .env
 
-.turbo/
-
 test-results
 node_modules
 
@@ -26,3 +24,5 @@ vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 
 stats.html
+
+data/

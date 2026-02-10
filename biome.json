@@ -1,5 +1,5 @@
 {
-	"$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
+	"$schema": "https://biomejs.dev/schemas/2.3.14/schema.json",
 	"vcs": {
 		"enabled": true,
 		"clientKind": "git",
@@ -7,49 +7,59 @@
 	},
 	"files": {
 		"ignoreUnknown": true,
-		"ignore": [
-			"web/src/lib/fswatcher/fswatcher.bundle.cjs",
-			"web/src/backend/emails/templates.generated.ts",
-			"web/src/worker-configuration.d.ts"
+		"includes": [
+			"**",
+			"!src/lib/fswatcher/fswatcher.bundle.cjs",
+			"!src/backend/emails/templates.generated.ts"
 		]
 	},
 	"formatter": {
 		"enabled": true,
 		"indentStyle": "tab"
 	},
-	"organizeImports": {
-		"enabled": true
-	},
 	"linter": {
 		"enabled": true,
 		"rules": {
-			"recommended": true,
-			"style": {
-				"noNonNullAssertion": "off"
-			}
+			"recommended": true
 		}
 	},
 	"javascript": {
 		"formatter": {
+			"indentStyle": "space",
+			"indentWidth": 2,
 			"quoteStyle": "double",
-			"semicolons": "asNeeded",
-			"trailingCommas": "none"
+			"trailingCommas": "none",
+			"semicolons": "asNeeded"
+		}
+	},
+	"css": {
+		"parser": {
+			"tailwindDirectives": true
 		}
 	},
 	"overrides": [
 		{
-			"include": ["*.svelte"],
+			"includes": ["**/*.svelte", "**/*.astro", "**/*.vue"],
 			"linter": {
 				"rules": {
 					"style": {
 						"useConst": "off",
 						"useImportType": "off"
 					},
-					"suspicious": {
-						"noExplicitAny": "off"
+					"correctness": {
+						"noUnusedVariables": "off",
+						"noUnusedImports": "off"
 					}
 				}
 			}
 		}
-	]
+	],
+	"assist": {
+		"enabled": true,
+		"actions": {
+			"source": {
+				"organizeImports": "on"
+			}
+		}
+	}
 }
