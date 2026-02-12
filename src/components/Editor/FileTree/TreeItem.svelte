@@ -1,41 +1,42 @@
 <script lang="ts">
-import getIcon from "$lib/icons"
 import type { ItemInstance } from "@headless-tree/core"
 import * as menu from "@zag-js/menu"
 import { normalizeProps, useMachine } from "@zag-js/svelte"
+import getIcon from "$lib/icons"
+
 const { item }: { item: ItemInstance<Item> } = $props()
 
 const itemName = $derived.by(() => item.getItemName())
 const itemData = $derived.by(() => item.getItemData())
 
 const itemProps = $derived.by(() => {
-	const { onClick, ...rest } = item.getProps()
-	return { onClick, rest }
+  const { onClick, ...rest } = item.getProps()
+  return { onClick, rest }
 })
 
 function registerItem(node: HTMLElement) {
-	item.registerElement(node)
-	return {
-		destroy() {
-			item.registerElement(null)
-		}
-	}
+  item.registerElement(node)
+  return {
+    destroy() {
+      item.registerElement(null)
+    }
+  }
 }
 
 const contextMenuId = crypto.randomUUID()
 
 const contextMenuService = useMachine(menu.machine, {
-	id: contextMenuId,
-	onSelect: (event) => {
-		switch (event.value) {
-			case "rename":
-				item.startRenaming()
-				break
-		}
-	}
+  id: contextMenuId,
+  onSelect: (event) => {
+    switch (event.value) {
+      case "rename":
+        item.startRenaming()
+        break
+    }
+  }
 })
 const contextMenuApi = $derived(
-	menu.connect(contextMenuService, normalizeProps)
+  menu.connect(contextMenuService, normalizeProps)
 )
 const renameProps = $derived.by(() => item.getRenameInputProps())
 </script>

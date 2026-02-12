@@ -42,7 +42,7 @@ export async function validateSessionToken(
   sessionId: string
 ): Promise<Session | null> {
   const sessionRow = await db.query.sessions.findFirst({
-    where: (sessions, { eq }) => eq(sessions.id, sessionId)
+    where: (fields) => eq(fields.id, sessionId)
   })
   if (!sessionRow) {
     return null

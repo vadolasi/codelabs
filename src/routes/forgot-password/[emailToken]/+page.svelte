@@ -1,7 +1,4 @@
 <script lang="ts">
-import { goto } from "$app/navigation"
-import { page } from "$app/state"
-import httpClient from "$lib/httpClient"
 import { createForm } from "@tanstack/svelte-form"
 import { createMutation } from "@tanstack/svelte-query"
 import { zxcvbnAsync, zxcvbnOptions } from "@zxcvbn-ts/core"
@@ -9,6 +6,9 @@ import * as zxcvbnCommonPackage from "@zxcvbn-ts/language-common"
 import * as zxcvbnPtBrPackage from "@zxcvbn-ts/language-pt-br"
 import { matcherPwnedFactory } from "@zxcvbn-ts/matcher-pwned"
 import { z } from "zod"
+import { goto } from "$app/navigation"
+import { page } from "$app/state"
+import httpClient from "$lib/httpClient"
 import Button from "../../../components/Button.svelte"
 import FormField2 from "../../../components/FormField.svelte"
 
@@ -16,13 +16,13 @@ const matcherPwned = matcherPwnedFactory(fetch, zxcvbnOptions)
 zxcvbnOptions.addMatcher("pwned", matcherPwned)
 
 zxcvbnOptions.setOptions({
-	translations: zxcvbnPtBrPackage.translations,
-	graphs: zxcvbnCommonPackage.adjacencyGraphs,
-	dictionary: {
-		...zxcvbnCommonPackage.dictionary,
-		...zxcvbnPtBrPackage.dictionary
-	},
-	useLevenshteinDistance: true
+  translations: zxcvbnPtBrPackage.translations,
+  graphs: zxcvbnCommonPackage.adjacencyGraphs,
+  dictionary: {
+    ...zxcvbnCommonPackage.dictionary,
+    ...zxcvbnPtBrPackage.dictionary
+  },
+  useLevenshteinDistance: true
 })
 
 const emailToken = page.params.emailToken!
@@ -32,35 +32,35 @@ const username = page.data.username
 let score: number | null = $state(null)
 
 const resetPasswordMutation = createMutation({
-	mutationFn: async (newPassword: string) => {
-		const { data, error } = await httpClient.users[
-			"reset-password"
-		].confirm.post({
-			code: emailToken,
-			newPassword
-		})
+  mutationFn: async (newPassword: string) => {
+    const { data, error } = await httpClient.users[
+      "reset-password"
+    ].confirm.post({
+      code: emailToken,
+      newPassword
+    })
 
-		if (error) {
-			throw new Error(error.value.message ?? "Erro ao resetar a senha", {
-				cause: error.value
-			})
-		}
+    if (error) {
+      throw new Error(error.value.message ?? "Erro ao resetar a senha", {
+        cause: error.value
+      })
+    }
 
-		return data
-	},
-	onSuccess: () => {
-		goto("/login")
-	}
+    return data
+  },
+  onSuccess: () => {
+    goto("/login")
+  }
 })
 
 const form = createForm(() => ({
-	defaultValues: {
-		password: "",
-		confirmPassword: ""
-	},
-	onSubmit: async ({ value }) => {
-		$resetPasswordMutation.mutate(value.password)
-	}
+  defaultValues: {
+    password: "",
+    confirmPassword: ""
+  },
+  onSubmit: async ({ value }) => {
+    $resetPasswordMutation.mutate(value.password)
+  }
 }))
 </script>
 

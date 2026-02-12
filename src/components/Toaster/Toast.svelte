@@ -3,9 +3,9 @@ import { normalizeProps, useMachine } from "@zag-js/svelte"
 import * as Toast from "@zag-js/toast"
 
 interface ToastProps {
-	toast: Toast.Options
-	index: number
-	parent: Toast.GroupService
+  toast: Toast.Options
+  index: number
+  parent: Toast.GroupService
 }
 
 const { toast, index, parent }: ToastProps = $props()

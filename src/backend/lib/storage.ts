@@ -1,95 +1,75 @@
-import { mkdir } from "node:fs/promises"
-import { join } from "node:path"
-
-const STORAGE_DIR = "data/snapshots"
-const UPDATES_DIR = "data/updates"
-
-// Garante que o diretório existe
-await mkdir(STORAGE_DIR, { recursive: true })
-await mkdir(UPDATES_DIR, { recursive: true })
+import { asc, desc, eq } from "drizzle-orm"
+import { v7 as randomUUIDv7 } from "uuid"
+import { db } from "../database"
+import { workspaceSnapshots, workspaceUpdates } from "../database/schema"
 
 export async function saveSnapshot(
   workspaceId: string,
   data: Uint8Array
 ): Promise<string> {
-  const filename = `${workspaceId}.snapshot`
-  const filepath = join(STORAGE_DIR, filename)
-
-  await Bun.write(filepath, data)
-
-  return filename
+  const id = randomUUIDv7()
+  await db.transaction(async (tx) => {
+    await tx.insert(workspaceSnapshots).values({
+      id,
+      workspaceId,
+      snapshot: Buffer.from(data),
+      createdAt: new Date()
+    })
+    // Removemos todos os updates ao salvar um snapshot
+    await tx
+      .delete(workspaceUpdates)
+      .where(eq(workspaceUpdates.workspaceId, workspaceId))
+  })
+  return id
 }
 
-export async function getSnapshot(workspaceId: string): Promise<Uint8Array> {
-  const filepath = join(STORAGE_DIR, `${workspaceId}.snapshot`)
-  const file = Bun.file(filepath)
-
-  if (!(await file.exists())) {
-    throw new Error("Snapshot not found")
-  }
-
-  return new Uint8Array(await file.arrayBuffer())
+export async function getSnapshot(
+  workspaceId: string
+): Promise<Uint8Array | null> {
+  const row = await db.query.workspaceSnapshots.findFirst({
+    where: (ws) => eq(ws.workspaceId, workspaceId),
+    orderBy: (ws) => desc(ws.createdAt)
+  })
+  if (!row) return null
+  // Usar Uint8Array.from para garantir uma cópia independente dos bytes do Buffer,
+  // evitando problemas com buffers compartilhados no Bun/Node.
+  return Uint8Array.from(row.snapshot)
 }
 
 export async function deleteSnapshot(workspaceId: string): Promise<void> {
-  const filepath = join(STORAGE_DIR, `${workspaceId}.snapshot`)
-  const file = Bun.file(filepath)
-
-  if (await file.exists()) {
-    await Bun.write(filepath, new Uint8Array())
-  }
+  await db
+    .delete(workspaceSnapshots)
+    .where(eq(workspaceSnapshots.workspaceId, workspaceId))
 }
 
 export async function clearWorkspaceUpdates(
   workspaceId: string
 ): Promise<void> {
-  const filepath = join(UPDATES_DIR, `${workspaceId}.updates.json`)
-  await Bun.write(filepath, "[]")
+  await db
+    .delete(workspaceUpdates)
+    .where(eq(workspaceUpdates.workspaceId, workspaceId))
 }
 
 export async function appendWorkspaceUpdate(
   workspaceId: string,
   update: Uint8Array
 ): Promise<void> {
-  const filepath = join(UPDATES_DIR, `${workspaceId}.updates.json`)
-  const file = Bun.file(filepath)
-
-  let updates: string[] = []
-  if (await file.exists()) {
-    try {
-      const text = await file.text()
-      const parsed = JSON.parse(text)
-      if (Array.isArray(parsed)) {
-        updates = parsed
-      }
-    } catch {
-      updates = []
-    }
-  }
-
-  updates.push(Buffer.from(update).toString("base64"))
-  await Bun.write(filepath, JSON.stringify(updates))
+  await db.insert(workspaceUpdates).values({
+    id: randomUUIDv7(),
+    workspaceId,
+    update: Buffer.from(update),
+    createdAt: new Date()
+  })
 }
 
 export async function getWorkspaceUpdates(
   workspaceId: string
-): Promise<string[]> {
-  const filepath = join(UPDATES_DIR, `${workspaceId}.updates.json`)
-  const file = Bun.file(filepath)
+): Promise<Uint8Array[]> {
+  const rows = await db
+    .select()
+    .from(workspaceUpdates)
+    .where(eq(workspaceUpdates.workspaceId, workspaceId))
+    .orderBy(asc(workspaceUpdates.createdAt))
 
-  if (!(await file.exists())) {
-    return []
-  }
-
-  const text = await file.text()
-  if (!text) {
-    return []
-  }
-
-  try {
-    const parsed = JSON.parse(text)
-    return Array.isArray(parsed) ? parsed : []
-  } catch {
-    return []
-  }
+  return rows.map((row) => Uint8Array.from(row.update))
 }

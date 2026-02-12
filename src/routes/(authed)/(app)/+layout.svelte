@@ -1,25 +1,25 @@
 <script lang="ts">
+import { createMutation } from "@tanstack/svelte-query"
 import { goto } from "$app/navigation"
 import httpClient from "$lib/httpClient"
-import { createMutation } from "@tanstack/svelte-query"
 import Button from "../../../components/Button.svelte"
 
 const logoutMutation = createMutation({
-	mutationFn: async () => {
-		const { data, error } = await httpClient.auth.logout.post()
+  mutationFn: async () => {
+    const { data, error } = await httpClient.auth.logout.post()
 
-		if (error) {
-			throw new Error(error.value.message ?? "UNKNOWN_ERROR")
-		}
+    if (error) {
+      throw new Error(error.value.message ?? "UNKNOWN_ERROR")
+    }
 
-		return data
-	},
-	onSuccess: () => {
-		goto("/login")
-	},
-	onError: (error) => {
-		console.error("Logout error:", error)
-	}
+    return data
+  },
+  onSuccess: () => {
+    goto("/login")
+  },
+  onError: (error) => {
+    console.error("Logout error:", error)
+  }
 })
 
 const { children } = $props()

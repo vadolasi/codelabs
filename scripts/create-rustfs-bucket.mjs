@@ -12,16 +12,16 @@ const secretAccessKey = "rustfsadmin"
 const region = "auto"
 
 const s3 = new S3mini({
-	accessKeyId,
-	secretAccessKey,
-	endpoint: `${endpoint.replace(/\/$/, "")}/${bucketName}`,
-	region
+  accessKeyId,
+  secretAccessKey,
+  endpoint: `${endpoint.replace(/\/$/, "")}/${bucketName}`,
+  region
 })
 
 const created = await s3.createBucket()
 if (!created) {
-	console.error(`Failed to create bucket: ${bucketName}`)
-	process.exit(1)
+  console.error(`Failed to create bucket: ${bucketName}`)
+  process.exit(1)
 }
 
 console.log(`Bucket created: ${bucketName}`)

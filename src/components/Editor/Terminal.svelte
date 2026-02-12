@@ -17,30 +17,30 @@ import "@xterm/xterm/css/xterm.css"
 const { colors } = flavors.mocha
 
 const terminal = new Terminal({
-	convertEol: true,
-	allowProposedApi: true,
-	theme: {
-		background: colors.base.hex,
-		foreground: colors.text.hex,
-		cursor: colors.blue.hex,
-		cursorAccent: colors.base.hex,
-		black: colors.base.hex,
-		red: colors.red.hex,
-		green: colors.green.hex,
-		yellow: colors.yellow.hex,
-		blue: colors.blue.hex,
-		magenta: colors.pink.hex,
-		cyan: colors.teal.hex,
-		white: colors.text.hex,
-		brightBlack: colors.overlay0.hex,
-		brightRed: colors.red.hex,
-		brightGreen: colors.green.hex,
-		brightYellow: colors.yellow.hex,
-		brightBlue: colors.blue.hex,
-		brightMagenta: colors.pink.hex,
-		brightCyan: colors.teal.hex,
-		brightWhite: colors.text.hex
-	}
+  convertEol: true,
+  allowProposedApi: true,
+  theme: {
+    background: colors.base.hex,
+    foreground: colors.text.hex,
+    cursor: colors.blue.hex,
+    cursorAccent: colors.base.hex,
+    black: colors.base.hex,
+    red: colors.red.hex,
+    green: colors.green.hex,
+    yellow: colors.yellow.hex,
+    blue: colors.blue.hex,
+    magenta: colors.pink.hex,
+    cyan: colors.teal.hex,
+    white: colors.text.hex,
+    brightBlack: colors.overlay0.hex,
+    brightRed: colors.red.hex,
+    brightGreen: colors.green.hex,
+    brightYellow: colors.yellow.hex,
+    brightBlue: colors.blue.hex,
+    brightMagenta: colors.pink.hex,
+    brightCyan: colors.teal.hex,
+    brightWhite: colors.text.hex
+  }
 })
 terminal.loadAddon(new ClipboardAddon())
 terminal.loadAddon(new ImageAddon())
@@ -59,37 +59,37 @@ let terminalContainer: HTMLDivElement
 let shellProcess: WebContainerProcess
 
 function resize() {
-	fitAddon.fit()
-	shellProcess?.resize({
-		cols: terminal.cols,
-		rows: terminal.rows
-	})
+  fitAddon.fit()
+  shellProcess?.resize({
+    cols: terminal.cols,
+    rows: terminal.rows
+  })
 }
 
 onMount(() => {
-	terminal.open(terminalContainer)
-	webcontainer.current
-		.spawn("jsh", {
-			terminal: {
-				cols: terminal.cols,
-				rows: terminal.rows
-			}
-		})
-		.then((process) => {
-			shellProcess = process
-			shellProcess.output.pipeTo(
-				new WritableStream({
-					write: (data) => terminal.write(data)
-				})
-			)
-			const input = shellProcess.input.getWriter()
-			terminal.onData((data) => {
-				input.write(data)
-			})
-			resize()
-		})
+  terminal.open(terminalContainer)
+  webcontainer.current
+    .spawn("jsh", {
+      terminal: {
+        cols: terminal.cols,
+        rows: terminal.rows
+      }
+    })
+    .then((process) => {
+      shellProcess = process
+      shellProcess.output.pipeTo(
+        new WritableStream({
+          write: (data) => terminal.write(data)
+        })
+      )
+      const input = shellProcess.input.getWriter()
+      terminal.onData((data) => {
+        input.write(data)
+      })
+      resize()
+    })
 
-	return () => terminal.dispose()
+  return () => terminal.dispose()
 })
 </script>
 

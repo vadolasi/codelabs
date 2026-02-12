@@ -1,9 +1,9 @@
 <script lang="ts">
-import { cn } from "$lib/cn"
 import type { HTMLButtonAttributes } from "svelte/elements"
+import { cn } from "$lib/cn"
 
 interface Props extends HTMLButtonAttributes {
-	loading?: boolean
+  loading?: boolean
 }
 
 const { class: className, loading, children, ...props }: Props = $props()

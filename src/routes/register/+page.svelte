@@ -1,6 +1,4 @@
 <script lang="ts">
-import { goto } from "$app/navigation"
-import httpClient from "$lib/httpClient"
 import { createForm } from "@tanstack/svelte-form"
 import { createMutation } from "@tanstack/svelte-query"
 import emailSpellChecker from "@zootools/email-spell-checker"
@@ -9,6 +7,8 @@ import * as zxcvbnCommonPackage from "@zxcvbn-ts/language-common"
 import * as zxcvbnPtBrPackage from "@zxcvbn-ts/language-pt-br"
 import { matcherPwnedFactory } from "@zxcvbn-ts/matcher-pwned"
 import { z } from "zod"
+import { goto } from "$app/navigation"
+import httpClient from "$lib/httpClient"
 import Button from "../../components/Button.svelte"
 import FormField from "../../components/FormField.svelte"
 
@@ -16,22 +16,22 @@ const matcherPwned = matcherPwnedFactory(fetch, zxcvbnOptions)
 zxcvbnOptions.addMatcher("pwned", matcherPwned)
 
 zxcvbnOptions.setOptions({
-	translations: zxcvbnPtBrPackage.translations,
-	graphs: zxcvbnCommonPackage.adjacencyGraphs,
-	dictionary: {
-		...zxcvbnCommonPackage.dictionary,
-		...zxcvbnPtBrPackage.dictionary
-	},
-	useLevenshteinDistance: true
+  translations: zxcvbnPtBrPackage.translations,
+  graphs: zxcvbnCommonPackage.adjacencyGraphs,
+  dictionary: {
+    ...zxcvbnCommonPackage.dictionary,
+    ...zxcvbnPtBrPackage.dictionary
+  },
+  useLevenshteinDistance: true
 })
 
 let score: number | null = $state(null)
 
 const schema = z.object({
-	email: z.string().min(1, "Este campo é obrigatório"),
-	username: z.string().min(1, "Este campo é obrigatório"),
-	password: z.string().min(1, "Este campo é obrigatório"),
-	passwordConfirmation: z.string().min(1, "Este campo é obrigatório")
+  email: z.string().min(1, "Este campo é obrigatório"),
+  username: z.string().min(1, "Este campo é obrigatório"),
+  password: z.string().min(1, "Este campo é obrigatório"),
+  passwordConfirmation: z.string().min(1, "Este campo é obrigatório")
 })
 
 type FormData = z.infer<typeof schema>
@@ -39,41 +39,41 @@ type FormData = z.infer<typeof schema>
 let emailSuggestion: string | null = $state(null)
 
 const registerMutation = createMutation({
-	mutationFn: async ({ email, username, password }: FormData) => {
-		const { data, error } = await httpClient.users.register.post({
-			email,
-			username,
-			password
-		})
+  mutationFn: async ({ email, username, password }: FormData) => {
+    const { data, error } = await httpClient.users.register.post({
+      email,
+      username,
+      password
+    })
 
-		if (error) {
-			throw new Error(error.value.message ?? "Erro ao registrar usuário")
-		}
+    if (error) {
+      throw new Error(error.value.message ?? "Erro ao registrar usuário")
+    }
 
-		return data
-	},
-	onSuccess: (_, { email }) => {
-		goto("/register/verify-email", { state: { email } })
-	}
+    return data
+  },
+  onSuccess: (_, { email }) => {
+    goto("/register/verify-email", { state: { email } })
+  }
 })
 
 const form = createForm(() => ({
-	defaultValues: {
-		email: "",
-		username: "",
-		password: "",
-		passwordConfirmation: ""
-	},
-	onSubmit: async ({ value }) => {
-		await $registerMutation.mutateAsync(value)
-	}
+  defaultValues: {
+    email: "",
+    username: "",
+    password: "",
+    passwordConfirmation: ""
+  },
+  onSubmit: async ({ value }) => {
+    await $registerMutation.mutateAsync(value)
+  }
 }))
 
 function acceptEmailSuggestion() {
-	if (emailSuggestion) {
-		form.setFieldValue("email", emailSuggestion)
-		emailSuggestion = null
-	}
+  if (emailSuggestion) {
+    form.setFieldValue("email", emailSuggestion)
+    emailSuggestion = null
+  }
 }
 </script>
 

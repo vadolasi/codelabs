@@ -1,82 +1,39 @@
 import { Server as Engine } from "@socket.io/bun-engine"
 import { randomUUIDv7 } from "bun"
 import { Queue, Worker } from "bunqueue/client"
-import { asc, eq } from "drizzle-orm"
 import { LoroDoc } from "loro-crdt"
 import { Server } from "socket.io"
 import msgpackParser from "$lib/socketio-msgpack-parser"
-import { db } from "../backend/database"
-import { workspaceUpdates } from "../backend/database/schema"
+import {
+  getSnapshot,
+  getWorkspaceUpdates,
+  saveSnapshot
+} from "../backend/lib/storage"
+import { db, workspaceUpdates } from "./database"
 
 const SNAPSHOT_INTERVAL_MS = 60_000
-const SNAPSHOT_DIR = "data/snapshots"
 
 const activeWorkspaceCounts = new Map<string, number>()
 const scheduledWorkspaces = new Set<string>()
 
-function snapshotPath(workspaceId: string) {
-  return `${SNAPSHOT_DIR}/${workspaceId}.bin`
-}
-
-async function readSnapshot(workspaceId: string): Promise<Uint8Array | null> {
-  const file = Bun.file(snapshotPath(workspaceId))
-  return (await file.exists()) ? new Uint8Array(await file.arrayBuffer()) : null
-}
-
-async function writeSnapshot(workspaceId: string, snapshot: Uint8Array) {
-  await Bun.write(snapshotPath(workspaceId), snapshot)
-}
-
-async function getWorkspaceUpdates(workspaceId: string) {
-  return await db
-    .select()
-    .from(workspaceUpdates)
-    .where(eq(workspaceUpdates.workspaceId, workspaceId))
-    .orderBy(asc(workspaceUpdates.createdAt))
-}
-
-async function clearWorkspaceUpdates(workspaceId: string) {
-  const result = await db
-    .delete(workspaceUpdates)
-    .where(eq(workspaceUpdates.workspaceId, workspaceId))
-  console.log(
-    `[clearWorkspaceUpdates] workspaceId=${workspaceId} result=`,
-    result
-  )
-}
-
 async function refreshSnapshot(workspaceId: string) {
-  const [savedSnapshot, updates] = await Promise.all([
-    readSnapshot(workspaceId),
-    getWorkspaceUpdates(workspaceId)
-  ])
+  let savedSnapshot: Uint8Array | null = null
+  try {
+    savedSnapshot = await getSnapshot(workspaceId)
+  } catch {}
 
-  console.log(
-    `[refreshSnapshot] workspaceId=${workspaceId} updates.length=${updates.length}`
-  )
+  const updates = await getWorkspaceUpdates(workspaceId)
+
   if (!savedSnapshot && updates.length === 0) return
 
   const doc = new LoroDoc()
-  doc.detach()
   if (savedSnapshot) doc.import(savedSnapshot)
   if (updates.length > 0) {
-    doc.importBatch(
-      updates.map((u) =>
-        typeof u.update === "string"
-          ? Buffer.from(u.update)
-          : new Uint8Array(u.update)
-      )
-    )
-    console.log(
-      `[refreshSnapshot] importBatch applied ${updates.length} updates`
-    )
+    doc.importBatch(updates)
   }
   const snapshot = doc.export({ mode: "snapshot" })
-  await writeSnapshot(workspaceId, snapshot)
-  console.log(
-    `[refreshSnapshot] snapshot written for workspaceId=${workspaceId}`
-  )
-  if (updates.length > 0) await clearWorkspaceUpdates(workspaceId)
+
+  await saveSnapshot(workspaceId, snapshot)
 }
 
 function getSchedulerId(workspaceId: string) {
@@ -125,6 +82,7 @@ async function markWorkspaceInactive(workspaceId: string) {
   if (nextCount <= 0) {
     activeWorkspaceCounts.delete(workspaceId)
     await removeScheduler(workspaceId)
+    await refreshSnapshot(workspaceId)
     return
   }
   activeWorkspaceCounts.set(workspaceId, nextCount)
@@ -164,28 +122,19 @@ io.on("connection", (socket) => {
 
   socket.on("loro-update", async (id, update) => {
     if (!id) {
-      console.log("[loro-update] Ignorado: id vazio")
       return
     }
-    console.log("[loro-update] Recebido:", { id, update })
     socket.to(id).emit("loro-update", update)
     try {
-      const result = await db.insert(workspaceUpdates).values({
+      await db.insert(workspaceUpdates).values({
         id: randomUUIDv7(),
         workspaceId: id,
         update: Buffer.from(update),
         createdAt: new Date()
       })
-      console.log("[loro-update] Insert result:", result)
     } catch (err) {
       console.error("[loro-update] Erro ao inserir update:", err)
     }
-  })
-
-  socket.on("persist-snapshot", async (id, snapshot) => {
-    if (!id) return
-    await writeSnapshot(id, new Uint8Array(snapshot))
-    await clearWorkspaceUpdates(id)
   })
 
   socket.on("ephemeral-update", (id, update) => {

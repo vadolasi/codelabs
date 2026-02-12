@@ -1,19 +1,19 @@
 <script lang="ts" generics="T">
-import {
-	createSvelteTable,
-	flexRender,
-	getCoreRowModel
-} from "@tanstack/svelte-table"
 import type { ColumnDef, TableOptions } from "@tanstack/svelte-table"
+import {
+  createSvelteTable,
+  flexRender,
+  getCoreRowModel
+} from "@tanstack/svelte-table"
 import { writable } from "svelte/store"
 
 export let columns: ColumnDef<T, string>[]
 export let data: T[]
 
 const options = writable<TableOptions<T>>({
-	data,
-	columns,
-	getCoreRowModel: getCoreRowModel()
+  data,
+  columns,
+  getCoreRowModel: getCoreRowModel()
 })
 
 const table = createSvelteTable(options)

@@ -1,179 +1,179 @@
 <script lang="ts">
-import getIcon from "$lib/icons"
 import { catppuccinMocha } from "@catppuccin/codemirror"
 import {
-	autocompletion,
-	closeBrackets,
-	closeBracketsKeymap,
-	completionKeymap
+  autocompletion,
+  closeBrackets,
+  closeBracketsKeymap,
+  completionKeymap
 } from "@codemirror/autocomplete"
 import { defaultKeymap, history, historyKeymap } from "@codemirror/commands"
 import {
-	bracketMatching,
-	defaultHighlightStyle,
-	foldGutter,
-	foldKeymap,
-	indentOnInput,
-	syntaxHighlighting
+  bracketMatching,
+  defaultHighlightStyle,
+  foldGutter,
+  foldKeymap,
+  indentOnInput,
+  syntaxHighlighting
 } from "@codemirror/language"
 import { lintKeymap } from "@codemirror/lint"
 import { highlightSelectionMatches, searchKeymap } from "@codemirror/search"
 import {
-	EditorState,
-	type EditorStateConfig,
-	type Extension,
-	Prec
+  EditorState,
+  type EditorStateConfig,
+  type Extension,
+  Prec
 } from "@codemirror/state"
 import {
-	EditorView,
-	crosshairCursor,
-	drawSelection,
-	dropCursor,
-	highlightActiveLine,
-	highlightActiveLineGutter,
-	highlightSpecialChars,
-	keymap,
-	lineNumbers,
-	rectangularSelection
+  crosshairCursor,
+  drawSelection,
+  dropCursor,
+  EditorView,
+  highlightActiveLine,
+  highlightActiveLineGutter,
+  highlightSpecialChars,
+  keymap,
+  lineNumbers,
+  rectangularSelection
 } from "@codemirror/view"
 import { LoroExtensions } from "loro-codemirror"
-import { LoroMap, LoroText } from "loro-crdt"
+import { LoroText } from "loro-crdt"
 import { onMount } from "svelte"
+import getIcon from "$lib/icons"
 import editorState, {
-	loroDoc,
-	ephemeralStore,
-	undoManager,
-	filesMap
+  ephemeralStore,
+  filesMap,
+  loroDoc,
+  undoManager
 } from "./editorState.svelte"
 import { getLanguage } from "./language"
 
 let view: EditorView
 let editorContainer: HTMLDivElement
 const editorTheme = EditorView.theme({
-	"&": {
-		width: "100%",
-		height: "100%",
-		flex: 1
-	}
+  "&": {
+    width: "100%",
+    height: "100%",
+    flex: 1
+  }
 })
 
 onMount(() => {
-	view = new EditorView({ parent: editorContainer })
+  view = new EditorView({ parent: editorContainer })
 })
 
 function getRandomDarkColor() {
-	function toHex(c: number) {
-		return c.toString(16).padStart(2, "0")
-	}
+  function toHex(c: number) {
+    return c.toString(16).padStart(2, "0")
+  }
 
-	const r = Math.floor(Math.random() * 128)
-	const g = Math.floor(Math.random() * 128)
-	const b = Math.floor(Math.random() * 128)
+  const r = Math.floor(Math.random() * 128)
+  const g = Math.floor(Math.random() * 128)
+  const b = Math.floor(Math.random() * 128)
 
-	return `#${toHex(r)}${toHex(g)}${toHex(b)}`
+  return `#${toHex(r)}${toHex(g)}${toHex(b)}`
 }
 
 $effect(() => {
-	if (editorState.currentTab) {
-		async function setupEditor() {
-			const previousTab = editorState.previousTab
-			if (previousTab) {
-				editorState.saveState(previousTab, view.state.toJSON())
-			}
+  if (editorState.currentTab) {
+    async function setupEditor() {
+      const previousTab = editorState.previousTab
+      if (previousTab) {
+        editorState.saveState(previousTab, view.state.toJSON())
+      }
 
-			const config: EditorStateConfig = {
-				extensions: [
-					keymap.of(defaultKeymap),
-					lineNumbers(),
-					highlightActiveLineGutter(),
-					highlightSpecialChars(),
-					history(),
-					foldGutter(),
-					drawSelection(),
-					dropCursor(),
-					EditorState.allowMultipleSelections.of(true),
-					indentOnInput(),
-					syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
-					bracketMatching(),
-					closeBrackets(),
-					autocompletion(),
-					rectangularSelection(),
-					crosshairCursor(),
-					highlightActiveLine(),
-					highlightSelectionMatches(),
-					LoroExtensions(
-						loroDoc,
-						{
-							ephemeral: ephemeralStore,
-							user: { name: "a", colorClassName: getRandomDarkColor() }
-						},
-						undoManager,
-						() => {
-							const item = filesMap.get(editorState.currentTab!)
+      const config: EditorStateConfig = {
+        extensions: [
+          keymap.of(defaultKeymap),
+          lineNumbers(),
+          highlightActiveLineGutter(),
+          highlightSpecialChars(),
+          history(),
+          foldGutter(),
+          drawSelection(),
+          dropCursor(),
+          EditorState.allowMultipleSelections.of(true),
+          indentOnInput(),
+          syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
+          bracketMatching(),
+          closeBrackets(),
+          autocompletion(),
+          rectangularSelection(),
+          crosshairCursor(),
+          highlightActiveLine(),
+          highlightSelectionMatches(),
+          LoroExtensions(
+            loroDoc,
+            {
+              ephemeral: ephemeralStore,
+              user: { name: "a", colorClassName: getRandomDarkColor() }
+            },
+            undoManager,
+            () => {
+              const item = filesMap.get(editorState.currentTab!)
 
-							const container = item.get("editableContent")
-							if (container instanceof LoroText) {
-								return container
-							}
+              const container = item.get("editableContent")
+              if (container instanceof LoroText) {
+                return container
+              }
 
-							const text = new LoroText()
-							const data = item.get("data") as Item
-							text.update(data.type === "file" ? data.content : "")
-							item.setContainer("editableContent", text)
-							return text
-						}
-					),
-					keymap.of([
-						...closeBracketsKeymap,
-						...defaultKeymap,
-						...searchKeymap,
-						...historyKeymap,
-						...foldKeymap,
-						...completionKeymap,
-						...lintKeymap
-					]),
-					editorTheme,
-					catppuccinMocha,
-					Prec.highest(
-						keymap.of([
-							{
-								key: "Mod-s",
-								run(view) {
-									filesMap.get(editorState.currentTab!).set("data", {
-										type: "file",
-										path: editorState.currentTab!,
-										content: view.state.doc.toString()
-									})
-									loroDoc.commit()
-									return true
-								}
-							}
-						])
-					)
-				]
-			}
+              const text = new LoroText()
+              const data = item.get("data") as Item
+              text.update(data.type === "file" ? data.content : "")
+              item.setContainer("editableContent", text)
+              return text
+            }
+          ),
+          keymap.of([
+            ...closeBracketsKeymap,
+            ...defaultKeymap,
+            ...searchKeymap,
+            ...historyKeymap,
+            ...foldKeymap,
+            ...completionKeymap,
+            ...lintKeymap
+          ]),
+          editorTheme,
+          catppuccinMocha,
+          Prec.highest(
+            keymap.of([
+              {
+                key: "Mod-s",
+                run(view) {
+                  filesMap.get(editorState.currentTab!).set("data", {
+                    type: "file",
+                    path: editorState.currentTab!,
+                    content: view.state.doc.toString()
+                  })
+                  loroDoc.commit()
+                  return true
+                }
+              }
+            ])
+          )
+        ]
+      }
 
-			const languageSupport = await getLanguage(editorState.currentTab!)
+      const languageSupport = await getLanguage(editorState.currentTab!)
 
-			if (languageSupport) {
-				;(config.extensions as Extension[]).push(languageSupport)
-			}
+      if (languageSupport) {
+        ;(config.extensions as Extension[]).push(languageSupport)
+      }
 
-			const previousState = editorState.getState(editorState.currentTab!)
-			view.setState(
-				previousState
-					? EditorState.fromJSON(previousState, config)
-					: EditorState.create(config)
-			)
-		}
+      const previousState = editorState.getState(editorState.currentTab!)
+      view.setState(
+        previousState
+          ? EditorState.fromJSON(previousState, config)
+          : EditorState.create(config)
+      )
+    }
 
-		setupEditor()
-	}
+    setupEditor()
+  }
 })
 
 const tabNames = $derived(editorState.tabs.map((tab) => tab.getItemName()))
 const duplicateFileNames = $derived(
-	tabNames.filter((item, index) => tabNames.indexOf(item) !== index)
+  tabNames.filter((item, index) => tabNames.indexOf(item) !== index)
 )
 </script>
 

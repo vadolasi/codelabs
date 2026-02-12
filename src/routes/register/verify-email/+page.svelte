@@ -1,85 +1,85 @@
 <script lang="ts">
-import { goto } from "$app/navigation"
-import { page } from "$app/state"
-import httpClient from "$lib/httpClient"
 import { createMutation } from "@tanstack/svelte-query"
 import * as pinInput from "@zag-js/pin-input"
 import { normalizeProps, useMachine } from "@zag-js/svelte"
 import { onMount } from "svelte"
+import { goto } from "$app/navigation"
+import { page } from "$app/state"
+import httpClient from "$lib/httpClient"
 import Button from "../../../components/Button.svelte"
 import toaster from "../../../components/Toaster/store"
 
 const { email } = page.state as { email: string }
 
 onMount(() => {
-	if (!email) {
-		goto("/login")
-	}
+  if (!email) {
+    goto("/login")
+  }
 })
 
 const verifyEmailMutation = createMutation({
-	mutationFn: async (code: string) => {
-		const { data, error } = await httpClient.users["verify-user"].post({
-			email,
-			code
-		})
+  mutationFn: async (code: string) => {
+    const { data, error } = await httpClient.users["verify-user"].post({
+      email,
+      code
+    })
 
-		if (error) {
-			throw new Error(error.value.message ?? "Erro ao registrar usuário", {
-				cause: error.value
-			})
-		}
+    if (error) {
+      throw new Error(error.value.message ?? "Erro ao registrar usuário", {
+        cause: error.value
+      })
+    }
 
-		return data
-	},
-	onSuccess: () => {
-		toaster.success({
-			title: "E-mail verificado com sucesso"
-		})
-		goto("/login")
-	},
-	onError: (error) => {
-		toaster.error({
-			title: "Erro ao verificar e-mail",
-			description: error.message
-		})
-	}
+    return data
+  },
+  onSuccess: () => {
+    toaster.success({
+      title: "E-mail verificado com sucesso"
+    })
+    goto("/login")
+  },
+  onError: (error) => {
+    toaster.error({
+      title: "Erro ao verificar e-mail",
+      description: error.message
+    })
+  }
 })
 
 const resendCodeMutation = createMutation({
-	mutationFn: async () => {
-		const { error } = await httpClient.users["resend-verification"].post({
-			email
-		})
+  mutationFn: async () => {
+    const { error } = await httpClient.users["resend-verification"].post({
+      email
+    })
 
-		if (error) {
-			throw new Error(error.value.message ?? "Erro ao reenviar código", {
-				cause: error.value
-			})
-		}
-	},
-	onSuccess: () => {
-		toaster.success({
-			title: "Código reenviado"
-		})
-	},
-	onError: (error) => {
-		toaster.error({
-			title: "Erro ao reenviar código",
-			description: error.message
-		})
-	}
+    if (error) {
+      throw new Error(error.value.message ?? "Erro ao reenviar código", {
+        cause: error.value
+      })
+    }
+  },
+  onSuccess: () => {
+    toaster.success({
+      title: "Código reenviado"
+    })
+  },
+  onError: (error) => {
+    toaster.error({
+      title: "Erro ao reenviar código",
+      description: error.message
+    })
+  }
 })
 
 const service = useMachine(pinInput.machine, {
-	id: "pin_code",
-	type: "numeric",
-	autoFocus: true,
-	blurOnComplete: true,
-	otp: true,
-	onValueComplete: ({ valueAsString }) => {
-		$verifyEmailMutation.mutateAsync(valueAsString)
-	}
+  id: "pin_code",
+  type: "numeric",
+  autoFocus: true,
+  blurOnComplete: true,
+  otp: true,
+  onValueComplete: ({ valueAsString }) => {
+    $verifyEmailMutation.mutateAsync(valueAsString)
+  }
 })
 const api = $derived(pinInput.connect(service, normalizeProps))
 </script>

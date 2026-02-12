@@ -1,5 +1,6 @@
 <script lang="ts">
 const { iframeUrl }: { iframeUrl: string } = $props()
+
 import { ExternalLink, RotateCcw } from "@lucide/svelte"
 
 let render = $state(0)

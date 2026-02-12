@@ -1,3 +1,4 @@
+import { eq, or } from "drizzle-orm"
 import Elysia, { t } from "elysia"
 import { db, users } from "../../database"
 import authMiddleware from "./auth.middleware"
@@ -16,10 +17,10 @@ const unauthenticated = new Elysia().post(
     status
   }) => {
     const user = await db.query.users.findFirst({
-      where: (users, { eq, or }) =>
+      where: (fields) =>
         or(
-          eq(users.email, emailOrUsername),
-          eq(users.username, emailOrUsername)
+          eq(fields.email, emailOrUsername),
+          eq(fields.username, emailOrUsername)
         )
     })
 

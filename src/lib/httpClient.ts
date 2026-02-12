@@ -38,8 +38,6 @@ export function getHttpClient(url: string, fetch: typeof window.fetch) {
   return httpClient
 }
 
-const httpClient = browser
-  ? getHttpClient(window.location.origin, fetch)
-  : getHttpClient("/", fetch)
+const httpClient = getHttpClient(browser ? window.location.origin : "/", fetch)
 
 export default httpClient

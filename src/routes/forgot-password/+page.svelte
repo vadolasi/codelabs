@@ -1,43 +1,43 @@
 <script lang="ts">
-import { goto } from "$app/navigation"
-import httpClient from "$lib/httpClient"
 import { createForm } from "@tanstack/svelte-form"
 import { createMutation } from "@tanstack/svelte-query"
+import { goto } from "$app/navigation"
+import httpClient from "$lib/httpClient"
 import Button from "../../components/Button.svelte"
 import FormField from "../../components/FormField.svelte"
 import toaster from "../../components/Toaster/store"
 
 const resetPasswordMutation = createMutation({
-	mutationFn: async (email: string) => {
-		const { data, error } = await httpClient.users["reset-password"].post({
-			email
-		})
+  mutationFn: async (email: string) => {
+    const { data, error } = await httpClient.users["reset-password"].post({
+      email
+    })
 
-		if (error) {
-			throw new Error(error.value.message ?? "Erro ao enviar e-mail", {
-				cause: error.value
-			})
-		}
+    if (error) {
+      throw new Error(error.value.message ?? "Erro ao enviar e-mail", {
+        cause: error.value
+      })
+    }
 
-		return data
-	},
-	onSuccess: () => {
-		toaster.create({
-			title: "E-mail enviado",
-			description: "Verifique sua caixa de entrada para redefinir sua senha.",
-			type: "success"
-		})
-		goto("/login")
-	}
+    return data
+  },
+  onSuccess: () => {
+    toaster.create({
+      title: "E-mail enviado",
+      description: "Verifique sua caixa de entrada para redefinir sua senha.",
+      type: "success"
+    })
+    goto("/login")
+  }
 })
 
 const form = createForm(() => ({
-	defaultValues: {
-		email: ""
-	},
-	onSubmit: async ({ value }) => {
-		$resetPasswordMutation.mutate(value.email)
-	}
+  defaultValues: {
+    email: ""
+  },
+  onSubmit: async ({ value }) => {
+    $resetPasswordMutation.mutate(value.email)
+  }
 }))
 </script>
 

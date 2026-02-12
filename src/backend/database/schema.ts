@@ -1,3 +1,24 @@
+export const workspaceSnapshots = sqliteTable("workspace_snapshots", {
+  id: text("id").primaryKey().notNull(),
+  workspaceId: text("workspace_id")
+    .notNull()
+    .references(() => workspaces.id, { onDelete: "cascade" }),
+  snapshot: blob("snapshot", { mode: "buffer" }).notNull(),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .$defaultFn(() => new Date())
+})
+
+export const workspaceSnapshotsRelations = relations(
+  workspaceSnapshots,
+  ({ one }) => ({
+    workspace: one(workspaces, {
+      fields: [workspaceSnapshots.workspaceId],
+      references: [workspaces.id]
+    })
+  })
+)
+
 import { relations } from "drizzle-orm"
 import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core"
 import { blob } from "drizzle-orm/sqlite-core/columns/blob"

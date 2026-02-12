@@ -1,19 +1,19 @@
 <script lang="ts">
-import httpClient from "$lib/httpClient"
 import { createQuery } from "@tanstack/svelte-query"
+import httpClient from "$lib/httpClient"
 import Workspaces from "./data.svelte"
 
 const query = createQuery({
-	queryKey: ["workspaces"],
-	queryFn: async () => {
-		const { data, error } = await httpClient.workspaces.get()
+  queryKey: ["workspaces"],
+  queryFn: async () => {
+    const { data, error } = await httpClient.workspaces.get()
 
-		if (error) {
-			throw new Error("Error fetching workspaces")
-		}
+    if (error) {
+      throw new Error("Error fetching workspaces")
+    }
 
-		return data
-	}
+    return data
+  }
 })
 </script>
 

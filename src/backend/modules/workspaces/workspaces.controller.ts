@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm"
+import { and, eq, inArray } from "drizzle-orm"
 import Elysia, { t } from "elysia"
 import { nanoid } from "nanoid"
 import { v7 as randomUUIDv7 } from "uuid"
@@ -18,7 +18,7 @@ const workspacesController = new Elysia({
   .use(authMiddleware)
   .get("/", async ({ userId }) => {
     return await db.query.workspaces.findMany({
-      where: (workspaces, { inArray }) =>
+      where: (workspaces) =>
         inArray(
           workspaces.id,
           db
@@ -36,11 +36,11 @@ const workspacesController = new Elysia({
   })
   .get("/:slug", async ({ params: { slug }, userId, status }) => {
     const user = await db.query.workspaces__users.findFirst({
-      where: (workspaces__users, { eq, and, inArray }) =>
+      where: (fields) =>
         and(
-          eq(workspaces__users.userId, userId),
+          eq(fields.userId, userId),
           inArray(
-            workspaces__users.workspaceId,
+            fields.workspaceId,
             db
               .select({ id: workspaces.id })
               .from(workspaces)
@@ -67,14 +67,12 @@ const workspacesController = new Elysia({
 
     const workspace = user.workspace
 
-    const [snapshot, updates] = await Promise.all([
-      getSnapshot(workspace.id).catch(() => null),
-      getWorkspaceUpdates(workspace.id)
-    ])
+    const snapshot = await getSnapshot(workspace.id)
+    const updates = await getWorkspaceUpdates(workspace.id)
 
     return {
       workspace,
-      doc: snapshot ? Buffer.from(snapshot) : null,
+      doc: snapshot,
       updates
     }
   })
@@ -115,9 +113,8 @@ const workspacesController = new Elysia({
     "/invite",
     async ({ body: { users, role, workspaceId, ttl }, userId, status }) => {
       const user = await db.query.workspaces__users.findFirst({
-        where: (workspaces__users, { eq }) =>
-          eq(workspaces__users.userId, userId) &&
-          eq(workspaces__users.workspaceId, workspaceId),
+        where: (fields) =>
+          and(eq(fields.userId, userId), eq(fields.workspaceId, workspaceId)),
         columns: {
           role: true
         }
@@ -165,7 +162,7 @@ const workspacesController = new Elysia({
     "/join/:token",
     async ({ params: { token }, user, status }) => {
       const invite = await db.query.workspaceInvite.findFirst({
-        where: (workspaceInvite, { eq }) => eq(workspaceInvite.token, token),
+        where: (fields) => eq(fields.token, token),
         columns: {
           workspaceId: true,
           expiresAt: true,
@@ -196,10 +193,10 @@ const workspacesController = new Elysia({
 
       const userAlreadyInWorkspace = await db.query.workspaces__users.findFirst(
         {
-          where: (workspaces__users, { eq, and }) =>
+          where: (fields) =>
             and(
-              eq(workspaces__users.userId, user.id),
-              eq(workspaces__users.workspaceId, invite.workspaceId)
+              eq(fields.userId, user.id),
+              eq(fields.workspaceId, invite.workspaceId)
             ),
           columns: {
             id: true

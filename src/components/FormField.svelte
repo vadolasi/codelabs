@@ -1,45 +1,45 @@
 <script lang="ts">
-import { cn } from "$lib/cn"
 import type { FieldApi } from "@tanstack/svelte-form"
 import type { HTMLInputAttributes } from "svelte/elements"
+import { cn } from "$lib/cn"
 
 interface Props extends Omit<HTMLInputAttributes, "form"> {
-	containerClass?: string
-	label: string
-	field: FieldApi<
-		any,
-		any,
-		any,
-		any,
-		any,
-		any,
-		any,
-		any,
-		any,
-		any,
-		any,
-		any,
-		any,
-		any,
-		any,
-		any,
-		any,
-		any,
-		any,
-		any,
-		any,
-		any,
-		any
-	>
+  containerClass?: string
+  label: string
+  field: FieldApi<
+    any,
+    any,
+    any,
+    any,
+    any,
+    any,
+    any,
+    any,
+    any,
+    any,
+    any,
+    any,
+    any,
+    any,
+    any,
+    any,
+    any,
+    any,
+    any,
+    any,
+    any,
+    any,
+    any
+  >
 }
 
 const {
-	label,
-	field,
-	containerClass,
-	class: className,
-	children,
-	...props
+  label,
+  field,
+  containerClass,
+  class: className,
+  children,
+  ...props
 }: Props = $props()
 
 const isInvalid = $derived(() => field.state.meta.errors.length > 0)

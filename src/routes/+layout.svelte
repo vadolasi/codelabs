@@ -6,7 +6,7 @@ import Toaster from "../components/Toaster/index.svelte"
 import type { LayoutData } from "./$types"
 
 const { queryClient, children }: LayoutData & { children: Snippet<[]> } =
-	$props()
+  $props()
 </script>
 
 <Toaster />

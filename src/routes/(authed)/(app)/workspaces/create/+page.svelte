@@ -1,44 +1,44 @@
 <script lang="ts">
-import { goto } from "$app/navigation"
-import httpClient from "$lib/httpClient"
 import randomName from "@scaleway/random-name"
 import { createForm } from "@tanstack/svelte-form"
 import { createMutation } from "@tanstack/svelte-query"
 import { z } from "zod"
+import { goto } from "$app/navigation"
+import httpClient from "$lib/httpClient"
 import Button from "../../../../../components/Button.svelte"
 import FormField from "../../../../../components/FormField.svelte"
 
 const schema = z.object({
-	name: z.string().min(1, "Este campo é obrigatório")
+  name: z.string().min(1, "Este campo é obrigatório")
 })
 
 type FormData = z.infer<typeof schema>
 
 const createWorkspaceMutation = createMutation({
-	mutationFn: async ({ name }: FormData) => {
-		const { data, error } = await httpClient.workspaces.post({ name })
+  mutationFn: async ({ name }: FormData) => {
+    const { data, error } = await httpClient.workspaces.post({ name })
 
-		if (error) {
-			throw new Error(error.value.message ?? "UNKNOWN_ERROR")
-		}
+    if (error) {
+      throw new Error(error.value.message ?? "UNKNOWN_ERROR")
+    }
 
-		return data
-	},
-	onSuccess: ({ slug }) => {
-		goto(`/workspaces/${slug}`)
-	},
-	onError: (error) => {
-		console.error("Login error:", error)
-	}
+    return data
+  },
+  onSuccess: ({ slug }) => {
+    goto(`/workspaces/${slug}`)
+  },
+  onError: (error) => {
+    console.error("Login error:", error)
+  }
 })
 
 const form = createForm(() => ({
-	defaultValues: {
-		name: randomName("", " ")
-	},
-	onSubmit: async ({ value }) => {
-		await $createWorkspaceMutation.mutateAsync(value)
-	}
+  defaultValues: {
+    name: randomName("", " ")
+  },
+  onSubmit: async ({ value }) => {
+    await $createWorkspaceMutation.mutateAsync(value)
+  }
 }))
 </script>
 
