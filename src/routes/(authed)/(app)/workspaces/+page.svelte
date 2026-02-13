@@ -3,7 +3,10 @@ import { createQuery } from "@tanstack/svelte-query"
 import httpClient from "$lib/httpClient"
 import Workspaces from "./data.svelte"
 
+let { data } = $props()
+
 const query = createQuery({
+  initialData: () => data.workspaces,
   queryKey: ["workspaces"],
   queryFn: async () => {
     const { data, error } = await httpClient.workspaces.get()

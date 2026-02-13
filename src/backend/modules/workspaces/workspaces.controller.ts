@@ -16,24 +16,36 @@ const workspacesController = new Elysia({
   prefix: "/workspaces"
 })
   .use(authMiddleware)
-  .get("/", async ({ userId }) => {
-    return await db.query.workspaces.findMany({
-      where: (workspaces) =>
-        inArray(
-          workspaces.id,
-          db
-            .select({ id: workspaces__users.workspaceId })
-            .from(workspaces__users)
-            .where(eq(workspaces__users.userId, userId))
-        ),
-      columns: {
-        id: true,
-        name: true,
-        createdAt: true,
-        slug: true
-      }
-    })
-  })
+  .get(
+    "/",
+    async ({ userId, query: { limit, offset } }) => {
+      return await db.query.workspaces.findMany({
+        where: (workspaces) =>
+          inArray(
+            workspaces.id,
+            db
+              .select({ id: workspaces__users.workspaceId })
+              .from(workspaces__users)
+              .where(eq(workspaces__users.userId, userId))
+          ),
+        orderBy: (workspaces, { desc }) => desc(workspaces.updatedAt),
+        limit: limit ?? 20,
+        offset: offset ?? 0,
+        columns: {
+          id: true,
+          name: true,
+          createdAt: true,
+          slug: true
+        }
+      })
+    },
+    {
+      query: t.Object({
+        limit: t.Optional(t.Number()),
+        offset: t.Optional(t.Number())
+      })
+    }
+  )
   .get("/:slug", async ({ params: { slug }, userId, status }) => {
     const user = await db.query.workspaces__users.findFirst({
       where: (fields) =>

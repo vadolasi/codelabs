@@ -64,8 +64,11 @@ const {
   params: { workspaceSlug }
 } = page
 
+let { data } = $props()
+
 const query = createQuery({
   queryKey: ["workspaces", workspaceSlug],
+  initialData: () => data.workspace,
   queryFn: async () => {
     const { data, error } = await httpClient
       .workspaces({ slug: workspaceSlug! })
@@ -77,10 +80,11 @@ const query = createQuery({
   }
 })
 
-let webcontainer: WebContainer | null = null
+let webcontainer: WebContainer | null = $state(null)
 let stopFsWatcher: (() => void) | null = null
 
-$: if ($query.data !== undefined && webcontainer === null) {
+$effect(() => {
+  if ($query.data !== undefined && webcontainer === null) {
   if ($query.data.doc) {
     const snapshot = normalizeBinary($query.data.doc)
     if (snapshot) {
@@ -106,8 +110,8 @@ $: if ($query.data !== undefined && webcontainer === null) {
       rootPath: "."
     })
     webcontainer = loadedWebcontainer
-  })
-}
+  })}
+})
 
 onMount(() => {
   return () => {

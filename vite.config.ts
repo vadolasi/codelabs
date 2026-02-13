@@ -16,6 +16,14 @@ export default defineConfig({
     devtoolsJson()
   ],
   build: {
-    target: "esnext"
+    target: "esnext",
+    rollupOptions: {
+      external: ["bun"]
+    }
+  },
+  server: {
+    watch: {
+      ignored: ["**/static/material-icons/**", "**/data/**"]
+    }
   }
 })

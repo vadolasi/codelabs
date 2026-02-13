@@ -1,3 +1,7 @@
+import { relations } from "drizzle-orm"
+import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core"
+import { blob } from "drizzle-orm/sqlite-core/columns/blob"
+
 export const workspaceSnapshots = sqliteTable("workspace_snapshots", {
   id: text("id").primaryKey().notNull(),
   workspaceId: text("workspace_id")
@@ -18,10 +22,6 @@ export const workspaceSnapshotsRelations = relations(
     })
   })
 )
-
-import { relations } from "drizzle-orm"
-import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core"
-import { blob } from "drizzle-orm/sqlite-core/columns/blob"
 
 export const users = sqliteTable("users", {
   id: text("id").primaryKey(),

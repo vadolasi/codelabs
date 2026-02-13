@@ -27,7 +27,7 @@ const { children } = $props()
 
 <header class="bg-base-300 border-b border-base-content/10 fixed top-0 z-50 h-20 flex items-center w-full">
   <div class="container m-auto flex items-center justify-between p-4">
-    <a href="/workspaces" class="btn btn-ghost">
+    <a href="/" class="btn btn-ghost">
       <span class="hidden md:inline">Codelabs</span>
     </a>
     <Button

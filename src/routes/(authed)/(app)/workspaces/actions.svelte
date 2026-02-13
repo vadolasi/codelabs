@@ -15,9 +15,9 @@ const {
 const slug = $derived.by(() => row.original.slug)
 </script>
 
-<button
+<a
   class="btn btn-primary"
-  onclick={() => goto(`/workspaces/${slug}`)}
+  href={`/workspaces/${slug}`}
 >
   Acessar
-</button>
+</a>

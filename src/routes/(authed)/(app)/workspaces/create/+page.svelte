@@ -37,7 +37,7 @@ const form = createForm(() => ({
     name: randomName("", " ")
   },
   onSubmit: async ({ value }) => {
-    await $createWorkspaceMutation.mutateAsync(value)
+    $createWorkspaceMutation.mutate(value)
   }
 }))
 </script>

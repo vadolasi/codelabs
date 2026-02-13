@@ -1,6 +1,7 @@
 import { Server as Engine } from "@socket.io/bun-engine"
 import { randomUUIDv7 } from "bun"
 import { Queue, Worker } from "bunqueue/client"
+import { eq } from "drizzle-orm"
 import { LoroDoc } from "loro-crdt"
 import { Server } from "socket.io"
 import msgpackParser from "$lib/socketio-msgpack-parser"
@@ -9,7 +10,7 @@ import {
   getWorkspaceUpdates,
   saveSnapshot
 } from "../backend/lib/storage"
-import { db, workspaceUpdates } from "./database"
+import { db, workspaces, workspaceUpdates } from "./database"
 
 const SNAPSHOT_INTERVAL_MS = 60_000
 
@@ -126,11 +127,17 @@ io.on("connection", (socket) => {
     }
     socket.to(id).emit("loro-update", update)
     try {
-      await db.insert(workspaceUpdates).values({
-        id: randomUUIDv7(),
-        workspaceId: id,
-        update: Buffer.from(update),
-        createdAt: new Date()
+      await db.transaction(async (tx) => {
+        await tx.insert(workspaceUpdates).values({
+          id: randomUUIDv7(),
+          workspaceId: id,
+          update: Buffer.from(update),
+          createdAt: new Date()
+        })
+        await tx
+          .update(workspaces)
+          .set({ updatedAt: new Date() })
+          .where(eq(workspaces.id, id))
       })
     } catch (err) {
       console.error("[loro-update] Erro ao inserir update:", err)

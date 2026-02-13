@@ -183,7 +183,7 @@ const duplicateFileNames = $derived(
 			{#each editorState.tabs as tab (tab.getItemData().path)}
         <!-- svelte-ignore a11y_click_events_have_key_events -->
         <!-- svelte-ignore a11y_no_static_element_interactions -->
-		<div role="button" tabindex="0" class="py-1 px-3 flex gap-1 items-center justify-center hover:bg-base-200 text-sm group border-primery select-none" class:bg-base-200={editorState.currentTab === tab.getItemData().path} onclick={() => editorState.setCurrentTab(tab)}>
+		    <div role="button" tabindex="0" class="py-1 px-3 flex gap-1 items-center justify-center hover:bg-base-200 text-sm group border-primery select-none" class:bg-base-200={editorState.currentTab === tab.getItemData().path} onclick={() => editorState.setCurrentTab(tab)}>
           <img src={getIcon(tab.getItemName(), "file")} alt="file icon" class="w-4 h-4" />
           <span class="text-nowrap">{tab.getItemName()}</span>
           {#if duplicateFileNames.includes(tab.getItemName())}

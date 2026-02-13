@@ -4,6 +4,7 @@ import type { WebContainer } from "@webcontainer/api"
 import { io, type Socket } from "socket.io-client"
 import { onMount } from "svelte"
 import { Pane, Splitpanes } from "svelte-splitpanes"
+  import { dev } from "$app/environment";
 import httpClient from "$lib/httpClient"
 import parser from "$lib/socketio-msgpack-parser"
 import Editor from "./Editor.svelte"
@@ -49,7 +50,7 @@ onMount(() => {
     }
   })
   const socket: Socket<ServerToClientEvents, ClientToServerEvents> = io(
-    window.location.origin,
+    dev ? "http://localhost:5174" : window.location.origin,
     {
       parser,
       query: {
