@@ -3,19 +3,14 @@ import { Packr } from "msgpackr"
 import { browser } from "$app/environment"
 import type { App } from "../backend"
 
-const packr = new Packr({
-  bundleStrings: true
-})
+const packr = new Packr({ bundleStrings: true })
 
 export function getHttpClient(url: string, fetch: typeof window.fetch) {
   const { api: httpClient } = treaty<App>(url, {
+    fetcher: fetch,
     onRequest: (_path, { body }) => {
       if (body !== undefined && typeof body !== "string") {
         return {
-          headers: {
-            "content-type": "application/x-msgpack",
-            accept: "application/x-msgpack"
-          },
           body: new Uint8Array(packr.pack(body))
         }
       }
@@ -28,11 +23,7 @@ export function getHttpClient(url: string, fetch: typeof window.fetch) {
       ) {
         return packr.unpack(new Uint8Array(await response.arrayBuffer()))
       }
-    },
-    headers: {
-      accept: "application/x-msgpack"
-    },
-    fetcher: fetch
+    }
   })
 
   return httpClient

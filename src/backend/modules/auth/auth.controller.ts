@@ -1,4 +1,3 @@
-import { eq, or } from "drizzle-orm"
 import Elysia, { t } from "elysia"
 import { db, users } from "../../database"
 import authMiddleware from "./auth.middleware"
@@ -14,25 +13,29 @@ const unauthenticated = new Elysia().post(
   async ({
     body: { emailOrUsername, password },
     cookie: { session: sessionCookie },
-    status
+    status,
+    set
   }) => {
     const user = await db.query.users.findFirst({
-      where: (fields) =>
+      where: (users, { eq, or }) =>
         or(
-          eq(fields.email, emailOrUsername),
-          eq(fields.username, emailOrUsername)
+          eq(users.email, emailOrUsername),
+          eq(users.username, emailOrUsername)
         )
     })
 
     if (!user) {
+      set.status = 401
       return status(401, { code: "USER_NOT_FOUND" })
     }
 
     if (!(await verifyPassword(user.password, password))) {
+      set.status = 401
       return status(401, { code: "INVALID_PASSWORD" })
     }
 
     if (user.emailVerified === false) {
+      set.status = 401
       return status(401, {
         code: "EMAIL_NOT_VERIFIED",
         data: { email: user.email }

@@ -46,7 +46,11 @@ const workspacesController = new Elysia({
       })
     }
   )
-  .get("/:slug", async ({ params: { slug }, userId, status }) => {
+  .get("/:slug", async ({ params: { slug }, userId, status, headers }) => {
+    if (headers.accept !== "application/x-msgpack") {
+      return status(400, { message: "Client must accept application/x-msgpack" })
+    }
+
     const user = await db.query.workspaces__users.findFirst({
       where: (fields) =>
         and(

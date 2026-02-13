@@ -22,44 +22,22 @@ const app = new Elysia({
   }
 })
   .use(serverTiming())
-  .onRequest(({ set, request }) => {
+  .onRequest(({ request }) => {
     const originHeader = request.headers.get("Origin")
+    const referer = request.headers.get("Referer")
+
     const hostHeader = request.headers.get("Host")
-    const fallbackOrigin =
-      process.env.NODE_ENV === "production"
-        ? hostHeader
-          ? `https://${hostHeader}`
-          : ""
-        : "http://localhost:5173"
-    set.headers["Access-Control-Allow-Origin"] = originHeader ?? fallbackOrigin
-    set.headers["Access-Control-Allow-Credentials"] = "true"
-    set.headers["Access-Control-Allow-Headers"] = "Content-Type, Accept"
-    set.headers["Access-Control-Allow-Methods"] =
-      "GET, POST, PUT, PATCH, DELETE"
-    set.headers["Access-Control-Expose-Headers"] = "Content-Type"
-  })
-  .onRequest(async ({ request }) => {
-    if (
-      config.NODE_ENV === "production" &&
-      !["GET", "HEAD", "OPTIONS"].includes(request.method)
-    ) {
-      const origin = request.headers.get("Origin")
-      const referer = request.headers.get("Referer")
+    const expectedOrigin = hostHeader
+      ? `https://${hostHeader}`
+      : (originHeader ?? "")
 
-      const hostHeader = request.headers.get("Host")
-      const expectedOrigin = hostHeader
-        ? `https://${hostHeader}`
-        : (origin ?? "")
+    const validOrigin = !originHeader || originHeader === expectedOrigin
+    const validReferer = !referer || referer?.startsWith(expectedOrigin)
 
-      const validOrigin = origin === expectedOrigin
-      const validReferer = referer?.startsWith(expectedOrigin)
-
-      if (!validOrigin || !validReferer) {
-        return new Response("CSRF validation failed", { status: 403 })
-      }
+    if (config.NODE_ENV === "production" && (!validOrigin || !validReferer)) {
+      return new Response("CSRF validation failed", { status: 403 })
     }
   })
-  .options("*", () => {})
   .onParse(async ({ request }, contentType) => {
     if (request.headers.get("upgrade") === "websocket" || !contentType) {
       return request

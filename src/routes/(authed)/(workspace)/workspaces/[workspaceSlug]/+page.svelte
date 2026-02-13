@@ -12,23 +12,6 @@ import {
 } from "../../../../../components/Editor/editorState.svelte"
 import Editor from "../../../../../components/Editor/index.svelte"
 
-function normalizeBinary(value: unknown): Uint8Array | null {
-  if (value instanceof Uint8Array) return value
-  if (value instanceof ArrayBuffer) return new Uint8Array(value)
-  if (Array.isArray(value)) return new Uint8Array(value as number[])
-  if (
-    value &&
-    typeof value === "object" &&
-    "type" in value &&
-    value.type === "Buffer" &&
-    "data" in value &&
-    Array.isArray(value.data)
-  ) {
-    return new Uint8Array(value.data as number[])
-  }
-  return null
-}
-
 function getFileTree(rootPath = "/"): FileSystemTree {
   const fileTree: FileSystemTree = {}
 
@@ -64,15 +47,13 @@ const {
   params: { workspaceSlug }
 } = page
 
-let { data } = $props()
 
 const query = createQuery({
   queryKey: ["workspaces", workspaceSlug],
-  initialData: () => data.workspace,
   queryFn: async () => {
     const { data, error } = await httpClient
       .workspaces({ slug: workspaceSlug! })
-      .get()
+      .get({ headers: { accept: "application/x-msgpack" } })
     if (error) {
       throw new Error("Error fetching workspace")
     }
@@ -85,32 +66,28 @@ let stopFsWatcher: (() => void) | null = null
 
 $effect(() => {
   if ($query.data !== undefined && webcontainer === null) {
-  if ($query.data.doc) {
-    const snapshot = normalizeBinary($query.data.doc)
-    if (snapshot) {
-      loroDoc.import(snapshot)
+    if ($query.data.doc) {
+      loroDoc.import($query.data.doc)
     }
-  }
 
-  if ($query.data.updates?.length) {
-    const updates = $query.data.updates
-      .map((update) => normalizeBinary(update))
-      .filter((update): update is Uint8Array => Boolean(update))
-    if (updates.length > 0) {
-      loroDoc.importBatch(updates)
+    if ($query.data.updates?.length) {
+      const updates = $query.data.updates
+        .filter((update): update is Uint8Array => Boolean(update))
+      if (updates.length > 0) {
+        loroDoc.importBatch(updates)
+      }
     }
-  }
 
-  WebContainer.boot({
-    workdirName: "codelabs"
-  }).then(async (loadedWebcontainer) => {
-    const fileTree = getFileTree()
-    await loadedWebcontainer.mount(fileTree)
-    stopFsWatcher = await startFsWatcher(loadedWebcontainer, {
-      rootPath: "."
-    })
-    webcontainer = loadedWebcontainer
-  })}
+    WebContainer.boot({
+      workdirName: "codelabs"
+    }).then(async (loadedWebcontainer) => {
+      const fileTree = getFileTree()
+      await loadedWebcontainer.mount(fileTree)
+      stopFsWatcher = await startFsWatcher(loadedWebcontainer, {
+        rootPath: "."
+      })
+      webcontainer = loadedWebcontainer
+    })}
 })
 
 onMount(() => {

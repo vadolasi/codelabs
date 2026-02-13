@@ -15,7 +15,6 @@ export async function saveSnapshot(
       snapshot: Buffer.from(data),
       createdAt: new Date()
     })
-    // Removemos todos os updates ao salvar um snapshot
     await tx
       .delete(workspaceUpdates)
       .where(eq(workspaceUpdates.workspaceId, workspaceId))
@@ -31,8 +30,6 @@ export async function getSnapshot(
     orderBy: (ws) => desc(ws.createdAt)
   })
   if (!row) return null
-  // Usar Uint8Array.from para garantir uma cópia independente dos bytes do Buffer,
-  // evitando problemas com buffers compartilhados no Bun/Node.
   return Uint8Array.from(row.snapshot)
 }
 

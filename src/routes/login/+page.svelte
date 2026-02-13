@@ -17,6 +17,10 @@ type FormData = z.infer<typeof schema>
 
 let errorMessage: string | null = $state(null)
 
+const messageCodes: Record<string, string> = {
+  "INVALID_PASSWORD": "Senha incorreta"
+}
+
 const loginMutation = createMutation({
   mutationFn: async ({ emailOrUsername, password }: FormData) => {
     const { data, error } = await httpClient.auth.login.post({
@@ -49,7 +53,7 @@ const loginMutation = createMutation({
         .email
       goto("/register/verify-email", { state: { email } })
     } else {
-      errorMessage = error.message
+      errorMessage = messageCodes[error.message] || "Ocorreu um erro ao tentar entrar. Tente novamente."
     }
   }
 })

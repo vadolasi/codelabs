@@ -92,6 +92,70 @@ const emailActions = new Elysia()
     }
   )
   .post(
+    "/verify-user",
+    async ({ body: { email, code }, status }) => {
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(
+          and(
+            eq(users.email, email),
+            eq(users.emailOTP, code),
+            gt(users.emailOTPExpiresAt, new Date())
+          )
+        )
+        .limit(1)
+
+      if (!user) {
+        return status(400, { message: "INVALID_VERIFICATION_CODE" })
+      }
+
+      await db
+        .update(users)
+        .set({
+          emailVerified: true,
+          emailOTP: null,
+          emailOTPExpiresAt: null
+        })
+        .where(eq(users.id, user.id))
+
+      return {}
+    },
+    {
+      body: t.Object({
+        email: t.String({ maxLength: 255, minLength: 5 }),
+        code: t.String({ maxLength: 6, minLength: 6 })
+      }),
+      rateLimit: {
+        level: "medium",
+        useIP: true
+      }
+    }
+  )
+  .get(
+    "/check-email-exists",
+    async ({ query: { email }, status }) => {
+      const emailNormalized = normalizeEmail({ email })
+
+      const [existingUser] = await db
+        .select()
+        .from(users)
+        .where(and(eq(users.email, emailNormalized)))
+        .limit(1)
+
+      if (existingUser) {
+        return status(400, { message: "EMAIL_ALREADY_EXISTS" })
+      }
+
+      return {}
+    },
+    {
+      query: t.Object({
+        email: t.String()
+      })
+    }
+  )
+  .post(
     "/resend-verification",
     async ({ body: { email }, status }) => {
       const emailNormalized = normalizeEmail({ email })

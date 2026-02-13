@@ -12,22 +12,28 @@ RUN bun run fswatcher:build
 RUN bun run icons:prepare
 RUN bun run emails:compile
 
-RUN bun run build
-
 RUN mkdir -p /app/data
 
-FROM oven/bun:1-distroless
+RUN VITE_BUILD=true bun run build
+
+FROM oven/bun:1-slim
 
 WORKDIR /app
 
 ENV NODE_ENV=production
 ENV PORT=3000
 
-COPY --from=builder /app/build ./build
-COPY --from=builder /app/package.json ./
+COPY package.json bun.lock ./
+RUN bun install --production --frozen-lockfile
 
+COPY --from=builder /app/build ./build
+COPY --from=builder /app/drizzle ./drizzle
 COPY --from=builder /app/data ./data
+
+RUN chown -R bun:bun /app
+
+USER bun
 
 EXPOSE 3000
 
-CMD ["build/index.js"]
+CMD ["bun", "build/index.js"]
