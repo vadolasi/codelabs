@@ -6,7 +6,7 @@
 	"scripts": {
 		"icons:prepare": "bun run scripts/prepare-icons.mjs",
 		"emails:compile": "bun run scripts/compile-emails.mjs",
-		"dev": "concurrently 'bunx --bun vite dev' 'bun --watch dev-realtime-server.ts'",
+		"dev": "concurrently 'bunx --bun vite dev' 'SKIP_DB_INIT=true bun --watch dev-realtime-server.ts'",
 		"build": "bunx --bun vite build",
 		"preview": "bun run build/index.js",
 		"prepare": "lefthook install && svelte-kit sync || echo ''",

@@ -14,7 +14,7 @@ RUN bun run emails:compile
 
 RUN mkdir -p /app/data
 
-RUN VITE_BUILD=true bun run build
+RUN BUILD=true bun run build
 
 FROM oven/bun:1-slim
 
