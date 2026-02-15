@@ -35,7 +35,10 @@ export const users = sqliteTable("users", {
     .notNull()
     .default(false),
   emailOTP: text("email_otp"),
-  emailOTPExpiresAt: integer("email_otp_expires_at", { mode: "timestamp" })
+  emailOTPExpiresAt: integer("email_otp_expires_at", { mode: "timestamp" }),
+  role: text("role", { enum: ["user", "admin"] })
+    .notNull()
+    .default("user")
 })
 
 export const usersRelations = relations(users, ({ many }) => ({

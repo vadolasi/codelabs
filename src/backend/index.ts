@@ -2,9 +2,10 @@ import serverTiming from "@elysiajs/server-timing"
 import { Elysia } from "elysia"
 import { Packr } from "msgpackr"
 import config from "./lib/config"
-import authController from "./modules/auth/auth.controller"
-import usersController from "./modules/users/users.controller"
-import workspacesController from "./modules/workspaces/workspaces.controller"
+import adminController from "./modules/admin"
+import authController from "./modules/auth"
+import usersController from "./modules/users"
+import workspacesController from "./modules/workspaces"
 
 const packr = new Packr({ bundleStrings: true })
 
@@ -39,10 +40,6 @@ const app = new Elysia({
     }
   })
   .onParse(async ({ request }, contentType) => {
-    if (request.headers.get("upgrade") === "websocket" || !contentType) {
-      return request
-    }
-
     if (contentType === "application/x-msgpack") {
       return packr.unpack(Buffer.from(await request.arrayBuffer()))
     }
@@ -59,6 +56,7 @@ const app = new Elysia({
   .use(authController)
   .use(usersController)
   .use(workspacesController)
+  .use(adminController)
 
 export default app
 

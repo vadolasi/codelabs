@@ -23,20 +23,21 @@ const authMiddleware = new Elysia()
     }
   )
   .macro({
-    user: (_: true) => ({
+    user: (role: true | "admin") => ({
       resolve: async ({ userId, status }) => {
         if (userId !== undefined) {
           const [user] = await db
             .select({
               id: users.id,
               email: users.email,
-              username: users.username
+              username: users.username,
+              role: users.role
             })
             .from(users)
             .where(and(eq(users.id, userId)))
             .limit(1)
 
-          if (!user) {
+          if (!user || (role === "admin" && user.role !== "admin")) {
             return status(401, { message: "UNAUTHORIZED" })
           }
 

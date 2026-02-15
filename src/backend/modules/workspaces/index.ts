@@ -1,3 +1,5 @@
+// import { hitlimit } from "@joint-ops/hitlimit-bun/elysia"
+// import { memoryStore } from "@joint-ops/hitlimit-bun/stores/memory"
 import { and, eq, inArray } from "drizzle-orm"
 import Elysia, { t } from "elysia"
 import { nanoid } from "nanoid"
@@ -16,6 +18,7 @@ const workspacesController = new Elysia({
   prefix: "/workspaces"
 })
   .use(authMiddleware)
+  // .use(hitlimit({ limit: 100, window: "1m", store: memoryStore() }))
   .get(
     "/",
     async ({ userId, query: { limit, offset } }) => {
@@ -48,7 +51,9 @@ const workspacesController = new Elysia({
   )
   .get("/:slug", async ({ params: { slug }, userId, status, headers }) => {
     if (headers.accept !== "application/x-msgpack") {
-      return status(400, { message: "Client must accept application/x-msgpack" })
+      return status(400, {
+        message: "Client must accept application/x-msgpack"
+      })
     }
 
     const user = await db.query.workspaces__users.findFirst({

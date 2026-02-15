@@ -22,7 +22,7 @@ const logoutMutation = createMutation({
   }
 })
 
-const { children } = $props()
+const { data, children } = $props()
 </script>
 
 <header class="bg-base-300 border-b border-base-content/10 fixed top-0 z-50 h-20 flex items-center w-full">
@@ -30,13 +30,20 @@ const { children } = $props()
     <a href="/" class="btn btn-ghost">
       <span class="hidden md:inline">Codelabs</span>
     </a>
-    <Button
-      class="btn-ghost"
-      onclick={() => $logoutMutation.mutate()}
-      loading={$logoutMutation.isPending}
-    >
-      Sair
-    </Button>
+    <div>
+      {#if data.user.role === "admin"}
+        <a href="/admin" class="btn btn-ghost mr-2">
+          Administração
+        </a>
+      {/if}
+      <Button
+        class="btn-ghost"
+        onclick={() => $logoutMutation.mutate()}
+        loading={$logoutMutation.isPending}
+      >
+        Sair
+      </Button>
+    </div>
   </div>
 </header>
 

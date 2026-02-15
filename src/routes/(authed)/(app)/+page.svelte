@@ -37,7 +37,7 @@ const query = createQuery({
     <h2 class="title">Últimos workspaces</h2>
     <ul class="grid grid-cols-4 gap-4">
       {#each $query.data as workspace}
-        <li class="card border">
+        <li class="card card-border">
           <a href={`/workspaces/${workspace.slug}`}>
             <div class="card-body">
               <h2 class="card-title">{workspace.name}</h2>
