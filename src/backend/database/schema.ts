@@ -95,6 +95,9 @@ export const workspaces__users = sqliteTable("workspace_users", {
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
     .$defaultFn(() => new Date()),
+  lastAccessedAt: integer("last_accessed_at", { mode: "timestamp" }).$defaultFn(
+    () => new Date()
+  ),
   role: text("role", { enum: ["owner", "admin", "editor", "viewer"] }).notNull()
 })
 

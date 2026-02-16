@@ -59,6 +59,7 @@
         "@zag-js/menu": "^1.33.1",
         "@zag-js/pin-input": "^1.33.1",
         "@zag-js/svelte": "^1.33.1",
+        "@zag-js/tabs": "^1.33.1",
         "@zag-js/toast": "^1.33.1",
         "@zootools/email-spell-checker": "^1.12.0",
         "@zxcvbn-ts/core": "^3.0.4",
@@ -911,6 +912,8 @@
     "@zag-js/rect-utils": ["@zag-js/rect-utils@1.33.1", "", {}, "sha512-vCIgZF/z8oeYfUhGUgRiNEfOS8on4rUXi4vtL4IvHSdAv5VxZw4ODoLhIzRGT3BwsiMfr8qJ8fmrcR2oFRFQgA=="],
 
     "@zag-js/svelte": ["@zag-js/svelte@1.33.1", "", { "dependencies": { "@zag-js/core": "1.33.1", "@zag-js/types": "1.33.1", "@zag-js/utils": "1.33.1" }, "peerDependencies": { "svelte": ">=5" } }, "sha512-FGOvPPdM5AcYSEOsNGFBn4uwmpcGNpkwLc5CnexzyC9ow/IKcSGjbcv1QbbyprhsOvNNsjJPzHdyFUtun8yObQ=="],
+
+    "@zag-js/tabs": ["@zag-js/tabs@1.33.1", "", { "dependencies": { "@zag-js/anatomy": "1.33.1", "@zag-js/core": "1.33.1", "@zag-js/dom-query": "1.33.1", "@zag-js/types": "1.33.1", "@zag-js/utils": "1.33.1" } }, "sha512-Xquhso7jUch9UrG5N+5vNfR8S2bWUk6EDpBBArY0X5oPSnlzgwJcjWh98hH1QyHX3JmWZN4kAfVKUxNdQxRnVw=="],
 
     "@zag-js/toast": ["@zag-js/toast@1.33.1", "", { "dependencies": { "@zag-js/anatomy": "1.33.1", "@zag-js/core": "1.33.1", "@zag-js/dismissable": "1.33.1", "@zag-js/dom-query": "1.33.1", "@zag-js/types": "1.33.1", "@zag-js/utils": "1.33.1" } }, "sha512-kI2/VJcBQGgHpmuWiIDqPn8ejFEODh5YhjWbnvjGRG+x3XoPuMq6hhxXV6VWJslbZJtTmzxDcP+Xamdrf1hbZA=="],
 

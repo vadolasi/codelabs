@@ -9,7 +9,7 @@ import httpClient from "$lib/httpClient"
 import Button from "../../../components/Button.svelte"
 import toaster from "../../../components/Toaster/store"
 
-const { email } = page.state as { email: string }
+const { email, redirectTo } = page.state as { email: string; redirectTo?: string }
 
 onMount(() => {
   if (!email) {
@@ -33,15 +33,22 @@ const verifyEmailMutation = createMutation({
     return data
   },
   onSuccess: () => {
-    toaster.success({
-      title: "E-mail verificado com sucesso"
+    toaster.create({
+      title: "E-mail verificado com sucesso",
+      type: "success"
     })
-    goto("/login")
+    
+    if (redirectTo) {
+      goto(`/login?redirect=${encodeURIComponent(redirectTo)}`)
+    } else {
+      goto("/login")
+    }
   },
   onError: (error) => {
-    toaster.error({
+    toaster.create({
       title: "Erro ao verificar e-mail",
-      description: error.message
+      description: error.message,
+      type: "error"
     })
   }
 })
@@ -59,14 +66,16 @@ const resendCodeMutation = createMutation({
     }
   },
   onSuccess: () => {
-    toaster.success({
-      title: "Código reenviado"
+    toaster.create({
+      title: "Código reenviado",
+      type: "success"
     })
   },
   onError: (error) => {
-    toaster.error({
+    toaster.create({
       title: "Erro ao reenviar código",
-      description: error.message
+      description: error.message,
+      type: "error"
     })
   }
 })

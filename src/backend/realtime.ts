@@ -1,7 +1,7 @@
 import { Server as Engine } from "@socket.io/bun-engine"
 import { randomUUIDv7 } from "bun"
 import { Queue, Worker } from "bunqueue/client"
-import { eq } from "drizzle-orm"
+import { and, eq } from "drizzle-orm"
 import { LoroDoc } from "loro-crdt"
 import { Server } from "socket.io"
 import msgpackParser from "$lib/socketio-msgpack-parser"
@@ -10,7 +10,8 @@ import {
   getWorkspaceUpdates,
   saveSnapshot
 } from "../backend/lib/storage"
-import { db, workspaces, workspaceUpdates } from "./database"
+import { db, workspaces, workspaces__users, workspaceUpdates } from "./database"
+import { validateSessionToken } from "./modules/auth/auth.service"
 
 const SNAPSHOT_INTERVAL_MS = 60_000
 
@@ -90,12 +91,58 @@ async function markWorkspaceInactive(workspaceId: string) {
 }
 
 const io = new Server({ parser: msgpackParser })
+
+io.use(async (socket, next) => {
+  const cookieString = socket.handshake.headers.cookie || ""
+  const cookies = Object.fromEntries(
+    cookieString.split("; ").map((c) => c.split("="))
+  )
+  const sessionId = cookies.session
+
+  if (!sessionId) {
+    return next(new Error("Authentication error: No session cookie"))
+  }
+
+  const session = await validateSessionToken(sessionId)
+  if (!session) {
+    return next(new Error("Authentication error: Invalid session"))
+  }
+
+  const workspaceId = String(socket.handshake.query.workspaceId || "")
+  if (!workspaceId) {
+    return next(new Error("Workspace ID is required"))
+  }
+
+  const membership = await db.query.workspaces__users.findFirst({
+    where: and(
+      eq(workspaces__users.userId, session.userId),
+      eq(workspaces__users.workspaceId, workspaceId)
+    ),
+    columns: {
+      role: true
+    }
+  })
+
+  if (!membership) {
+    return next(new Error("Access denied: Not a member of this workspace"))
+  }
+
+  socket.data = {
+    userId: session.userId,
+    workspaceId,
+    role: membership.role
+  }
+
+  next()
+})
+
 const engine = new Engine()
 io.bind(engine)
 
 io.on("connection", (socket) => {
-  const workspaceId = String(socket.handshake.query.workspaceId || "")
+  const { workspaceId, role } = socket.data
   const joinedWorkspaces = new Set<string>()
+
   if (workspaceId) {
     socket.join(workspaceId)
     joinedWorkspaces.add(workspaceId)
@@ -103,9 +150,20 @@ io.on("connection", (socket) => {
   }
 
   socket.on("connect-to-workspace", async (id) => {
-    socket.join(id)
-    joinedWorkspaces.add(id)
-    await markWorkspaceActive(id)
+    // Basic validation to prevent joining unauthorized workspaces after connection
+    const membership = await db.query.workspaces__users.findFirst({
+      where: and(
+        eq(workspaces__users.userId, socket.data.userId),
+        eq(workspaces__users.workspaceId, id)
+      ),
+      columns: { id: true }
+    })
+
+    if (membership) {
+      socket.join(id)
+      joinedWorkspaces.add(id)
+      await markWorkspaceActive(id)
+    }
   })
 
   socket.on("disconnect-from-workspace", async (id) => {
@@ -122,9 +180,15 @@ io.on("connection", (socket) => {
   })
 
   socket.on("loro-update", async (id, update) => {
-    if (!id) {
+    if (!id || id !== workspaceId) {
       return
     }
+
+    if (role === "viewer") {
+      console.warn(`User ${socket.data.userId} attempted to update as viewer`)
+      return
+    }
+
     socket.to(id).emit("loro-update", update)
     try {
       await db.transaction(async (tx) => {

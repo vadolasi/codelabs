@@ -1,5 +1,5 @@
 <script lang="ts">
-import { Home } from "@lucide/svelte"
+import { Home, Share2 } from "@lucide/svelte"
 import type { WebContainer } from "@webcontainer/api"
 import { io, type Socket } from "socket.io-client"
 import { onMount } from "svelte"
@@ -15,6 +15,7 @@ import editorState, {
 } from "./editorState.svelte"
 import FileTree from "./FileTree/index.svelte"
 import Previewers from "./Previewers/index.svelte"
+import ShareModal from "./ShareModal.svelte"
 import type {
   ClientToServerEvents,
   ServerToClientEvents
@@ -97,6 +98,8 @@ function closeTerminal(terminal: string) {
     currentTerminal = terminals[0] || null
   }
 }
+
+let showShareModal = $state(false)
 </script>
 
 <div class="h-screen w-screen flex flex-col bg-base-300 text-base-content">
@@ -110,6 +113,10 @@ function closeTerminal(terminal: string) {
         <div class="text-sm font-medium text-base-content/90">{currentWorkspace.name}</div>
       </div>
       <div class="ml-auto flex items-center gap-2">
+        <button class="btn btn-ghost btn-sm gap-2" onclick={() => (showShareModal = true)}>
+          <Share2 class="w-4 h-4" />
+          Compartilhar
+        </button>
         <button class="btn btn-ghost btn-xs" onclick={newTerminal}>Novo terminal</button>
       </div>
     </div>
@@ -186,3 +193,10 @@ function closeTerminal(terminal: string) {
     {/if}
   </Splitpanes>
 </div>
+
+{#if showShareModal}
+  <ShareModal
+    workspace={currentWorkspace}
+    onClose={() => (showShareModal = false)}
+  />
+{/if}

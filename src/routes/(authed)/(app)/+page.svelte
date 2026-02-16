@@ -10,7 +10,8 @@ const query = createQuery({
   queryFn: async () => {
     const { data, error } = await httpClient.workspaces.get({
       query: {
-        limit: 5
+        limit: 5,
+        recent: true
       }
     })
 

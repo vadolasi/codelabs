@@ -1,6 +1,6 @@
 <mjml>
   <mj-head>
-    <mj-title>Convite</mj-title>
+    <mj-title>Convite para Workspace</mj-title>
     <mj-attributes>
       <mj-text font-family="Helvetica, Arial, sans-serif" />
     </mj-attributes>
@@ -19,15 +19,20 @@
     <mj-section>
       <mj-column>
         <mj-text font-size="20px" color="#000000" font-family="Helvetica, Arial, sans-serif">
-          Convite para workspace
+          Você foi convidado para o workspace <strong>{{workspaceName}}</strong>
         </mj-text>
         <mj-text font-size="16px" color="#000000" font-family="Helvetica, Arial, sans-serif">
-          Utilize o código abaixo para aceitar o convite:
+          Clique no botão abaixo para aceitar o convite e começar a colaborar:
         </mj-text>
-        <mj-text background-color="#007BFF" color="#ffffff">
-          {{code}}
-        </mj-text>
+        <mj-button background-color="#007BFF" color="#ffffff" href="https://{{config.DOMAIN}}/invite/{{code}}">
+          Aceitar Convite
+        </mj-button>
         <mj-text font-size="16px" color="#000000" font-family="Helvetica, Arial, sans-serif">
+          Ou copie e cole o link abaixo no seu navegador:
+          <br />
+          <a href="https://{{config.DOMAIN}}/invite/{{code}}">https://{{config.DOMAIN}}/invite/{{code}}</a>
+        </mj-text>
+        <mj-text font-size="14px" color="#666666" font-family="Helvetica, Arial, sans-serif">
           Se você não esperava este convite, ignore este e-mail.
         </mj-text>
       </mj-column>

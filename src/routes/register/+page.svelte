@@ -8,6 +8,7 @@ import * as zxcvbnPtBrPackage from "@zxcvbn-ts/language-pt-br"
 import { matcherPwnedFactory } from "@zxcvbn-ts/matcher-pwned"
 import { z } from "zod"
 import { goto } from "$app/navigation"
+import { page } from "$app/state"
 import httpClient from "$lib/httpClient"
 import Button from "../../components/Button.svelte"
 import FormField from "../../components/FormField.svelte"
@@ -53,7 +54,8 @@ const registerMutation = createMutation({
     return data
   },
   onSuccess: (_, { email }) => {
-    goto("/register/verify-email", { state: { email } })
+    const redirectTo = page.url.searchParams.get("redirect")
+    goto("/register/verify-email", { state: { email, redirectTo } })
   }
 })
 
@@ -202,7 +204,10 @@ function acceptEmailSuggestion() {
 
       <div class="card-actions">
         <Button type="submit" class="btn-primary btn-block" loading={$registerMutation.isPending}>Registrar</Button>
-        <span class="text-center text-base-content w-full">Já tem uma conta? <a href="/login" class="link">Entrar</a></span>
+        <span class="text-center text-base-content w-full">
+          Já tem uma conta?
+          <a href={`/login${page.url.search}`} class="link">Entrar</a>
+        </span>
       </div>
     </form>
   </div>

@@ -2,7 +2,12 @@ import { redirect } from "@sveltejs/kit"
 import { getHttpClient } from "$lib/httpClient"
 import type { RequestHandler } from "./$types"
 
-export const GET: RequestHandler = async ({ params, fetch, url }) => {
+export const GET: RequestHandler = async ({ params, fetch, url, locals }) => {
+  if (!locals.user) {
+    const paramsUrl = new URLSearchParams({ redirect: url.pathname }).toString()
+    return redirect(307, `/login?${paramsUrl}`)
+  }
+
   const httpClient = getHttpClient(url.origin, fetch)
 
   const { data, error } = await httpClient.workspaces

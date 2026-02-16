@@ -7,13 +7,17 @@ import { matcherPwnedFactory } from "@zxcvbn-ts/matcher-pwned"
 import { and, eq, gt } from "drizzle-orm"
 import Elysia, { t } from "elysia"
 import { normalizeEmail } from "email-normalizer"
+import { Resend } from "resend"
 import { v7 as randomUUIDv7 } from "uuid"
 import { z } from "zod"
 import { db, users } from "../../database"
 import sendEmail from "../../emails"
+import config from "../../lib/config"
 import authMiddleware from "../auth/auth.middleware"
 import { generateToken, hashPassword } from "../auth/auth.service"
 import { generateOTPCode } from "./users.service"
+
+const resend = new Resend(config.RESEND_API_KEY)
 
 const matcherPwned = matcherPwnedFactory(fetch, zxcvbnOptions)
 zxcvbnOptions.addMatcher("pwned", matcherPwned)
@@ -75,17 +79,33 @@ const emailActions = new Elysia()
         emailOTPExpiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24)
       })
 
-      await sendEmail("emailVerification", {
-        subject: "Verifique o seu email",
-        data: { code: emailOTP },
-        to: email
-      })
+      ;(async () => {
+        await sendEmail("emailVerification", {
+          subject: "Verifique o seu email",
+          data: { code: emailOTP },
+          to: email
+        })
+
+        const { data: contact, error } = await resend.contacts.create({
+          email: emailNormalized,
+          unsubscribed: false
+        })
+
+        if (error) {
+          console.error("Failed to add contact to Resend:", error)
+        } else {
+          await resend.contacts.segments.add({
+            contactId: contact.id,
+            segmentId: "656dc7f2-37c4-4246-909a-1d66b56b7b80"
+          })
+        }
+      })()
 
       return {}
     },
     {
       body: t.Object({
-        email: t.String({ maxLength: 255, minLength: 5 }),
+        email: t.String({ maxLength: 255, minLength: 5, format: "email" }),
         username: t.String({ maxLength: 255, minLength: 3 }),
         password: t.String({ minLength: 8 })
       })
@@ -123,7 +143,7 @@ const emailActions = new Elysia()
     },
     {
       body: t.Object({
-        email: t.String({ maxLength: 255, minLength: 5 }),
+        email: t.String({ maxLength: 255, minLength: 5, format: "email" }),
         code: t.String({ maxLength: 6, minLength: 6 })
       }),
       rateLimit: {

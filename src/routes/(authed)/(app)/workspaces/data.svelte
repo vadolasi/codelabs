@@ -23,6 +23,19 @@ const columns: ColumnDef<Data[0], string>[] = [
     header: "Nome",
     cell: (info) => info.renderValue()
   }),
+  columnHelper.accessor("role", {
+    header: "Função",
+    cell: (info) => {
+      const role = info.getValue()
+      const labels = {
+        owner: "Dono",
+        admin: "Admin",
+        editor: "Editor",
+        viewer: "Visualizador"
+      }
+      return labels[role as keyof typeof labels] || role
+    }
+  }),
   columnHelper.accessor((row) => formatDate(row.createdAt), {
     id: "createdAt",
     header: "Criado em",

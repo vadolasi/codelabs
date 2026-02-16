@@ -6,7 +6,8 @@ export const load: PageLoad = async ({ fetch, url }) => {
 
   const { data: workspaces, error } = await httpClient.workspaces.get({
     query: {
-      limit: 5
+      limit: 5,
+      recent: true
     }
   })
 

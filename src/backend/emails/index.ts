@@ -11,7 +11,7 @@ const resend = new Resend(config.RESEND_API_KEY)
 interface EmailTemplates {
   emailVerification: { code: string }
   resetPassword: { code: string }
-  workspaceInvite: { code: string }
+  workspaceInvite: { code: string; workspaceName: string }
 }
 
 export default async function sendEmail(

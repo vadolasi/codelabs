@@ -105,7 +105,10 @@ const form = createForm(() => ({
       <div class="card-actions">
         <Button type="submit" class="btn btn-primary btn-block" loading={$loginMutation.isPending}>Entrar</Button>
         <div class="flex flex-col items-center w-full gap-3">
-          <span class="text-base-content">Não tem uma conta? <a href="/register" class="link">Registrar</a></span>
+          <span class="text-base-content">
+            Não tem uma conta?
+            <a href={`/register${page.url.search}`} class="link">Registrar</a>
+          </span>
           <span class="text-base-content -mt-2"><a href="/forgot-password" class="link">Esqueceu a senha?</a></span>
         </div>
       </div>

@@ -10,6 +10,7 @@ import {
   workspaces,
   workspaces__users
 } from "../../database"
+import sendEmail from "../../emails"
 import { getSnapshot, getWorkspaceUpdates } from "../../lib/storage"
 import authMiddleware from "../auth/auth.middleware"
 
@@ -21,8 +22,8 @@ const workspacesController = new Elysia({
   // .use(hitlimit({ limit: 100, window: "1m", store: memoryStore() }))
   .get(
     "/",
-    async ({ userId, query: { limit, offset } }) => {
-      return await db.query.workspaces.findMany({
+    async ({ userId, query: { limit, offset, recent } }) => {
+      const workspaces = await db.query.workspaces.findMany({
         where: (workspaces) =>
           inArray(
             workspaces.id,
@@ -31,7 +32,22 @@ const workspacesController = new Elysia({
               .from(workspaces__users)
               .where(eq(workspaces__users.userId, userId))
           ),
-        orderBy: (workspaces, { desc }) => desc(workspaces.updatedAt),
+        orderBy: (workspaces, { desc, sql }) => {
+          if (recent) {
+            return desc(
+              db
+                .select({ lastAccessedAt: workspaces__users.lastAccessedAt })
+                .from(workspaces__users)
+                .where(
+                  and(
+                    eq(workspaces__users.userId, userId),
+                    eq(workspaces__users.workspaceId, workspaces.id)
+                  )
+                )
+            )
+          }
+          return desc(workspaces.updatedAt)
+        },
         limit: limit ?? 20,
         offset: offset ?? 0,
         columns: {
@@ -41,11 +57,31 @@ const workspacesController = new Elysia({
           slug: true
         }
       })
+      const workspacesWithRoles = await Promise.all(
+        workspaces.map(async (workspace) => {
+          const membership = await db.query.workspaces__users.findFirst({
+            where: and(
+              eq(workspaces__users.userId, userId),
+              eq(workspaces__users.workspaceId, workspace.id)
+            ),
+            columns: {
+              role: true
+            }
+          })
+          return {
+            ...workspace,
+            role: membership?.role
+          }
+        })
+      )
+
+      return workspacesWithRoles
     },
     {
       query: t.Object({
         limit: t.Optional(t.Number()),
-        offset: t.Optional(t.Number())
+        offset: t.Optional(t.Number()),
+        recent: t.Optional(t.Boolean())
       })
     }
   )
@@ -85,6 +121,16 @@ const workspacesController = new Elysia({
     if (!user) {
       return status(404, { message: "Workspace not found" })
     }
+
+    await db
+      .update(workspaces__users)
+      .set({ lastAccessedAt: new Date() })
+      .where(
+        and(
+          eq(workspaces__users.userId, userId),
+          eq(workspaces__users.workspaceId, user.workspace.id)
+        )
+      )
 
     const workspace = user.workspace
 
@@ -132,20 +178,31 @@ const workspacesController = new Elysia({
   )
   .post(
     "/invite",
-    async ({ body: { users, role, workspaceId, ttl }, userId, status }) => {
-      const user = await db.query.workspaces__users.findFirst({
+    async ({
+      body: { users, role, workspaceId, ttl, isEmail },
+      userId,
+      status
+    }) => {
+      const workspaceUser = await db.query.workspaces__users.findFirst({
         where: (fields) =>
           and(eq(fields.userId, userId), eq(fields.workspaceId, workspaceId)),
         columns: {
           role: true
+        },
+        with: {
+          workspace: {
+            columns: {
+              name: true
+            }
+          }
         }
       })
 
-      if (!user) {
+      if (!workspaceUser) {
         return status(404, { message: "Workspace not found" })
       }
 
-      if (!["owner", "admin"].includes(user.role)) {
+      if (!["owner", "admin"].includes(workspaceUser.role)) {
         return status(403, { message: "You are not allowed to invite users" })
       }
 
@@ -163,6 +220,17 @@ const workspacesController = new Elysia({
         expiresAt: ttl ? new Date(Date.now() + ttl * 1000) : null
       })
 
+      if (isEmail && formatedUsers.length > 0) {
+        await sendEmail("workspaceInvite", {
+          subject: `Convite para o workspace ${workspaceUser.workspace.name}`,
+          to: formatedUsers,
+          data: {
+            code: token,
+            workspaceName: workspaceUser.workspace.name
+          }
+        })
+      }
+
       return token
     },
     {
@@ -175,7 +243,8 @@ const workspacesController = new Elysia({
           t.Literal("viewer")
         ]),
         workspaceId: t.String(),
-        ttl: t.Nullable(t.Number())
+        ttl: t.Nullable(t.Number()),
+        isEmail: t.Optional(t.Boolean())
       })
     }
   )
@@ -204,11 +273,16 @@ const workspacesController = new Elysia({
       }
 
       if (invite.users) {
+        const lowerEmail = user.email.toLowerCase()
+        const lowerUsername = user.username.toLowerCase()
+
         if (
-          !invite.users.includes(user.email) &&
-          invite.users.includes(user.username)
+          !invite.users.includes(lowerEmail) &&
+          !invite.users.includes(lowerUsername)
         ) {
-          return status(404, { message: "Invite invalid or expired" })
+          return status(403, {
+            message: "This invite is restricted to other users"
+          })
         }
       }
 
