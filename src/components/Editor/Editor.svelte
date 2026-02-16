@@ -105,7 +105,7 @@ $effect(() => {
             loroDoc,
             {
               ephemeral: ephemeralStore,
-              user: { name: "a", colorClassName: getRandomDarkColor() }
+              user: { name: editorState.username ?? "anonymous", colorClassName: "user1" }
             },
             undoManager,
             () => {
@@ -181,13 +181,13 @@ const duplicateFileNames = $derived(
   {#if editorState.tabs.length > 0}
 		<div class="flex w-full bg-base-300 shrink-0 overflow-x-auto">
 			{#each editorState.tabs as tab (tab.getItemData().path)}
-        <!-- svelte-ignore a11y_click_events_have_key_events -->
-        <!-- svelte-ignore a11y_no_static_element_interactions -->
 		    <div role="button" tabindex="0" class="py-1 px-3 flex gap-1 items-center justify-center hover:bg-base-200 text-sm group border-primery select-none" class:bg-base-200={editorState.currentTab === tab.getItemData().path} onclick={() => editorState.setCurrentTab(tab)}>
           <img src={getIcon(tab.getItemName(), "file")} alt="file icon" class="w-4 h-4" />
           <span class="text-nowrap">{tab.getItemName()}</span>
           {#if duplicateFileNames.includes(tab.getItemName())}
-            <span class="text-xs text-base-content group-hover:text-base-content/70">/{tab.getItemData().path.split("/").splice(-2, 1)}</span>
+            <span class="text-xs text-base-content group-hover:text-base-content/70">
+              /{tab.getItemData().path.split("/").splice(-2, 1)}
+            </span>
           {/if}
           <button
             type="button"
@@ -195,8 +195,8 @@ const duplicateFileNames = $derived(
             class="invisible group-hover:visible p-1 rounded-sm hover:bg-base-200 group-hover:hover:bg-base-300"
             class:visible={editorState.currentTab === tab.getItemData().path}
             onclick={(event) => {
-              event.stopPropagation()
-              editorState.closeTab(tab.getItemData().path)
+              event.stopPropagation();
+              editorState.closeTab(tab.getItemData().path);
             }}
           >
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
@@ -204,8 +204,8 @@ const duplicateFileNames = $derived(
             </svg>
           </button>
         </div>
-			{/each}
-		</div>
+      {/each}
+    </div>
   {/if}
   <div bind:this={editorContainer} class="flex-1 overflow-hidden" class:hidden={editorState.currentTab === null}></div>
   {#if editorState.currentTab === null}

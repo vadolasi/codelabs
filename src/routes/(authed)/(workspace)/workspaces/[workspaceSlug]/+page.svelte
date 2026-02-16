@@ -6,11 +6,16 @@ import { onMount } from "svelte"
 import { page } from "$app/state"
 import { startFsWatcher } from "$lib/fswatcher/start"
 import httpClient from "$lib/httpClient"
-import {
+import editorState, {
   filesMap,
   loroDoc
 } from "../../../../../components/Editor/editorState.svelte"
 import Editor from "../../../../../components/Editor/index.svelte"
+
+const { data } = $props()
+
+editorState.username = data.user.username
+console.log("Username set to:", editorState.username)
 
 function getFileTree(rootPath = "/"): FileSystemTree {
   const fileTree: FileSystemTree = {}
@@ -63,40 +68,42 @@ const query = createQuery({
 
 let webcontainer: WebContainer | null = $state(null)
 let stopFsWatcher: (() => void) | null = null
-
-$effect(() => {
-  if ($query.data !== undefined && webcontainer === null) {
-    if ($query.data.doc) {
-      loroDoc.import($query.data.doc)
-    }
-
-    if ($query.data.updates?.length) {
-      const updates = $query.data.updates
-        .filter((update): update is Uint8Array => Boolean(update))
-      if (updates.length > 0) {
-        loroDoc.importBatch(updates)
-      }
-    }
-
-    WebContainer.boot({
-      workdirName: "codelabs"
-    }).then(async (loadedWebcontainer) => {
-      const fileTree = getFileTree()
-      await loadedWebcontainer.mount(fileTree)
-      stopFsWatcher = await startFsWatcher(loadedWebcontainer, {
-        rootPath: "."
-      })
-      webcontainer = loadedWebcontainer
-    })}
-})
+let webcontainerPromise: Promise<WebContainer> | null = null
 
 onMount(() => {
+  webcontainerPromise = WebContainer.boot({ workdirName: "codelabs" })
   return () => {
     if (webcontainer) {
       stopFsWatcher?.()
       webcontainer.teardown()
     }
   }
+})
+
+$effect(() => {
+  (async () => {
+    if ($query.data !== undefined && webcontainer === null && webcontainerPromise) {
+      if ($query.data.doc) {
+        loroDoc.import($query.data.doc)
+      }
+
+      if ($query.data.updates?.length) {
+        const updates = $query.data.updates
+          .filter((update): update is Uint8Array => Boolean(update))
+        if (updates.length > 0) {
+          loroDoc.importBatch(updates)
+        }
+      }
+
+      const loadedWebcontainer = await webcontainerPromise
+      const fileTree = getFileTree()
+      await loadedWebcontainer.mount(fileTree)
+      stopFsWatcher = await startFsWatcher(loadedWebcontainer, {
+        rootPath: "."
+      })
+      webcontainer = loadedWebcontainer
+    }
+  })()
 })
 </script>
 

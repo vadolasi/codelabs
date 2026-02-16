@@ -1,6 +1,6 @@
 import { hitlimit } from "@joint-ops/hitlimit-bun/elysia"
 import { memoryStore } from "@joint-ops/hitlimit-bun/stores/memory"
-import { count } from "drizzle-orm"
+import { count, eq } from "drizzle-orm"
 import Elysia from "elysia"
 import { db, users, workspaces } from "../../database"
 import authMiddleware from "../auth/auth.middleware"
@@ -19,7 +19,7 @@ const adminController = new Elysia({
         [{ count: totalWorkspaces }],
         recentUsers
       ] = await Promise.all([
-        db.select({ count: count() }).from(users),
+        db.select({ count: count() }).from(users).where(eq(users.role, "user")),
         db.select({ count: count() }).from(workspaces),
         db.query.users.findMany({
           columns: {
@@ -29,6 +29,7 @@ const adminController = new Elysia({
             createdAt: true
           },
           orderBy: (users, { desc }) => desc(users.createdAt),
+          where: ({ role }, { eq }) => eq(role, "user"),
           limit: 5
         })
       ])
@@ -54,7 +55,8 @@ const adminController = new Elysia({
           role: true,
           createdAt: true
         },
-        orderBy: (users, { desc }) => desc(users.createdAt)
+        orderBy: (users, { desc }) => desc(users.createdAt),
+        where: ({ role }, { eq }) => eq(role, "user")
       })
 
       return users

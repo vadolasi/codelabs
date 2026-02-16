@@ -1,4 +1,4 @@
-## MODIFIED Requirements
+## ADDED Requirements
 
 ### Requirement: Bun server deployment
 The system SHALL deploy as a Bun server instead of Cloudflare Workers.

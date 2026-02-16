@@ -22,6 +22,7 @@ class EditorState {
   private states: Map<string, object> = new Map()
   private tabHistory: string[] = []
   private prewviewers: SvelteMap<number, string> = new SvelteMap()
+  username: string | null = null
 
   public setCurrentTab(item: ItemInstance<Item>) {
     const path = item.getItemData().path

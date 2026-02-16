@@ -58,3 +58,8 @@
 .title {
 	@apply text-2xl font-bold mb-10;
 }
+
+.user1 {
+  background-color: #ed4f47;
+  color: #e11d48;
+}

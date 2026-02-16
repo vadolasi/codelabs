@@ -177,7 +177,7 @@ function closeTerminal(terminal: string) {
         </Pane>
       </Splitpanes>
     </Pane>
-    {#if editorState.hasPreviewers }
+    {#if editorState.hasPreviewers}
       <Pane size={20}>
         <div class="h-full border-l border-base-200/60 bg-base-300">
           <Previewers />

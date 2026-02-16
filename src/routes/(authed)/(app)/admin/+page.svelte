@@ -6,7 +6,6 @@
   <title>Administração</title>
 </svelte:head>
 
-
 <section>
   <h1 class="text-2xl font-bold">Administração</h1>
   <div class="grid grid-cols-4 gap-5 my-10 w-full">

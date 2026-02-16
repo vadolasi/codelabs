@@ -8,6 +8,15 @@ import wasm from "vite-plugin-wasm"
 
 export default defineConfig({
   plugins: [
+    {
+      name: "resolve-bun",
+      enforce: "pre",
+      resolveId(id) {
+        if (id === "bun" || id.startsWith("bun:")) {
+          return { id, external: true }
+        }
+      }
+    },
     tailwindcss(),
     enhancedImages(),
     sveltekit(),

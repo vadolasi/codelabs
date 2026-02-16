@@ -3,24 +3,18 @@
 ## Purpose
 TBD - created by archiving change migrate-cloudflare-workers. Update Purpose after archive.
 ## Requirements
-### Requirement: Cloudflare Workers Deployment
-The system SHALL support deployment of the web application to Cloudflare Workers using Workers Assets configuration.
+### Requirement: Bun server deployment
+The system SHALL deploy as a Bun server instead of Cloudflare Workers.
 
-#### Scenario: Deploy using Workers configuration
-- **WHEN** a deployment is triggered with the configured build command
-- **THEN** the build output is deployed to Cloudflare Workers with static assets served from the configured assets directory
+#### Scenario: Production deployment on a server
+- **WHEN** a production build is created
+- **THEN** the app runs as a Bun server process
+- **AND** no Cloudflare Workers-specific artifacts are required
 
-### Requirement: SvelteKit Workers Adapter
-The system SHALL use a SvelteKit adapter compatible with Cloudflare Workers for production builds.
+### Requirement: Runtime configuration
+The system SHALL load runtime configuration from server-managed environment variables.
 
-#### Scenario: Production build targets Workers
-- **WHEN** the production build runs
-- **THEN** the generated output is compatible with the Cloudflare Workers runtime
-
-### Requirement: Environment and Binding Configuration
-The system SHALL provide a documented mechanism to configure runtime environment variables and bindings for the Workers deployment.
-
-#### Scenario: Runtime configuration available
-- **WHEN** the application starts in a Workers environment
-- **THEN** required environment variables and bindings are available to the server runtime
+#### Scenario: Server-provided environment variables
+- **WHEN** the server starts
+- **THEN** the runtime reads configuration from the host environment
 

@@ -17,6 +17,7 @@ try {
 
 console.log(`Connecting to database at: ${dbPath}`)
 const sqlite = new Database(dbPath)
+sqlite.run("PRAGMA journal_mode=WAL;")
 export const db = drizzle(sqlite, { schema })
 
 if (!config.BUILD && config.NODE_ENV === "production") {
@@ -27,14 +28,16 @@ if (!config.BUILD && config.NODE_ENV === "production") {
 
     const passwordHash = await Bun.password.hash(config.ADMIN_PASSWORD)
 
-    await db.insert(schema.users).values({
-      id: randomUUIDv7(),
-      email: config.ADMIN_EMAIL,
-      username: "#admin",
-      password: passwordHash,
-      emailVerified: true,
-      role: "admin"
-    })
+    await db
+      .insert(schema.users)
+      .values({
+        id: randomUUIDv7(),
+        email: config.ADMIN_EMAIL,
+        username: "#admin",
+        password: passwordHash,
+        emailVerified: true,
+        role: "admin"
+      })
       .onConflictDoUpdate({
         target: schema.users.email,
         set: {
@@ -50,7 +53,7 @@ if (!config.BUILD && config.NODE_ENV === "production") {
     console.error("CRITICAL: Database initialization failed:", error)
   }
 } else {
-  console.log("Skipping database initialization (build detected)")
+  console.log("Skipping database initialization")
 }
 
 export * from "./schema"
