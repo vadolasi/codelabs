@@ -1,0 +1,1 @@
+ALTER TABLE `workspace_users` ADD `last_accessed_at` integer;

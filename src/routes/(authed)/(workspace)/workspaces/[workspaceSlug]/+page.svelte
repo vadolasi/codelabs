@@ -15,7 +15,6 @@ import Editor from "../../../../../components/Editor/index.svelte"
 const { data } = $props()
 
 editorState.username = data.user.username
-console.log("Username set to:", editorState.username)
 
 function getFileTree(rootPath = "/"): FileSystemTree {
   const fileTree: FileSystemTree = {}
