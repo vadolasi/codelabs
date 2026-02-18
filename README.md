@@ -2,11 +2,22 @@
 
 IDE Online completa com colaboração em tempo real voltada para salas de aula.
 
-## Executando em ambiente de desenvolvimento
+## Executando o Codelabs
+
+O banco de dados é SQLite, portando, não é necessário configurar nenhum servidor de banco de dados.
+
+### Variáveis de ambiente
+
+Utilize [`.env.example`](./.env.example) como base. Criar um arquivo `.env` na raiz também é suportado.
+
+- `RESEND_API_KEY`: Chave de API do Resend. É necessário ter uma conta no [Resend](https://resend.com/) (é possível usar o serviço gratuitamente).
+- `DOMAIN`: Dominio em que o servidor está sendo executado (ex: localhost, codelabs.vitordaniel.is-a.dev)
+- `MAIL_FROM`: Dominio pelo qual os emails serão enviados (ex: codelabs@vitordaniel.is-a.dev). Configure pelo Resend.
+- `ADMIN_EMAIL` e `ADMIN_PASSWORD` (apenas para produção): Credenciais do usuário administrador que será criado automaticamente.
+
+### Executando em ambiente de desenvolvimento
 
 É necessário instalar o [Bun](https://bun.com).
-
-Crie um arquivo `.env` copiando o conteúdo de [`.env.example`](./.env.example) e substituindo os valores. É necessário ter uma conta no [Resend](https://resend.com/) (É possível usar o serviço gratuitamente).
 
 Antes de rodar o servidor, é necessário executar esses comandos:
 
@@ -27,6 +38,6 @@ Se precisar acessar o banco de dados (tornar um usuário administrador, etc), ba
 bun database:studio
 ```
 
-## Deploy em produção
+### Deploy em produção
 
 O arquivo [`Dockerfile`](./Dockerfile) contém a implementação de um servidor para produção.
