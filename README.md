@@ -1,48 +1,32 @@
-# sv
+# Codelabs
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+IDE Online completa com colaboração em tempo real voltada para salas de aula.
 
-## Creating a project
+## Executando em ambiente de desenvolvimento
 
-If you're seeing this, you've probably already done this step. Congrats!
+É necessário instalar o [Bun](https://bun.com).
 
-```sh
-# create a new project in the current directory
-npx sv create
+Crie um arquivo `.env` copiando o conteúdo de [`.env.example`](./.env.example) e substituindo os valores. É necessário ter uma conta no [Resend](https://resend.com/) (É possível usar o serviço gratuitamente).
 
-# create a new project in my-app
-npx sv create my-app
+Antes de rodar o servidor, é necessário executar esses comandos:
+
+```bash
+bun i # Instala as depêndencias
+bun database:migrate # Executa as migrações no banco de dados
 ```
 
-## Developing
+Bara executar o servidor de desenvolvimento, basta executar o comando abaixo, o servidor será acessível em http://localhost:5173.
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
-
-```sh
-npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
+```bash
+bun dev
 ```
 
-## Building
+Se precisar acessar o banco de dados (tornar um usuário administrador, etc), basta executar o comando abaixo, e acessar https://local.drizzle.studio.
 
-To create a production version of your app:
-
-```sh
-npm run build
+```bash
+bun database:studio
 ```
 
-You can preview the production build with `npm run preview`.
+## Deploy em produção
 
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
-## Deploying to Cloudflare Workers
-
-This project deploys to Cloudflare Workers using `@sveltejs/adapter-cloudflare` and Wrangler.
-
-```sh
-pnpm run build
-pnpm run deploy
-```
-
-Wrangler configuration lives in `web/wrangler.jsonc`.
+O arquivo [`Dockerfile`](./Dockerfile) contém a implementação de um servidor para produção.
