@@ -23,9 +23,11 @@ export async function saveSnapshot(
 }
 
 export async function getSnapshot(
-  workspaceId: string
+  workspaceId: string,
+  tx = db
 ): Promise<Uint8Array | null> {
-  const row = await db.query.workspaceSnapshots.findFirst({
+  // @ts-expect-error: tx.query is available on both db and transaction
+  const row = await tx.query.workspaceSnapshots.findFirst({
     where: (ws, { eq }) => eq(ws.workspaceId, workspaceId),
     orderBy: (ws, { desc }) => desc(ws.createdAt)
   })
@@ -60,9 +62,10 @@ export async function appendWorkspaceUpdate(
 }
 
 export async function getWorkspaceUpdates(
-  workspaceId: string
+  workspaceId: string,
+  tx = db
 ): Promise<Uint8Array[]> {
-  const rows = await db
+  const rows = await tx
     .select()
     .from(workspaceUpdates)
     .where(eq(workspaceUpdates.workspaceId, workspaceId))

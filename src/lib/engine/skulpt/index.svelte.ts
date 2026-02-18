@@ -1,4 +1,3 @@
-import type { LoroMap } from "loro-crdt"
 import editorState from "../../../components/Editor/editorState.svelte"
 import BaseEngine, {
   type EngineCapabilities,
@@ -34,8 +33,9 @@ export default class SkulptEngine extends BaseEngine {
     return {
       readFile: async (path: string) => {
         const item = editorState.filesMap.get(path)
-        const data = item?.get("data") as LoroMap | undefined
-        return (data?.get("content") as string) || ""
+        // biome-ignore lint/suspicious/noExplicitAny: Loro returns plain objects for map values
+        const data = item?.get("data") as any
+        return data?.content || ""
       },
       writeFile: async (path: string, data: string) => {
         const item = editorState.filesMap.get(path)
@@ -57,16 +57,19 @@ export default class SkulptEngine extends BaseEngine {
       const jquery = document.createElement("script")
       jquery.src =
         "https://ajax.googleapis.com/ajax/libs/jquery/1.9.0/jquery.min.js"
+      jquery.crossOrigin = "anonymous"
       jquery.onerror = () => reject(new Error("Falha ao carregar jQuery"))
       jquery.onload = () => {
         const skulpt = document.createElement("script")
         skulpt.src =
           "https://cdn.jsdelivr.net/npm/skulpt@1.2.0/dist/skulpt.min.js"
+        skulpt.crossOrigin = "anonymous"
         skulpt.onerror = () => reject(new Error("Falha ao carregar Skulpt"))
         skulpt.onload = () => {
           const stdlib = document.createElement("script")
           stdlib.src =
             "https://cdn.jsdelivr.net/npm/skulpt@1.2.0/dist/skulpt-stdlib.js"
+          stdlib.crossOrigin = "anonymous"
           stdlib.onerror = () =>
             reject(new Error("Falha ao carregar Skulpt Stdlib"))
           stdlib.onload = () => resolve()
@@ -95,8 +98,9 @@ export default class SkulptEngine extends BaseEngine {
         ) {
           const path = x.startsWith("/") ? x : `/${x}`
           const item = editorState.filesMap.get(path)
-          const data = item?.get("data") as LoroMap | undefined
-          const content = data?.get("content") as string | undefined
+          // biome-ignore lint/suspicious/noExplicitAny: Loro returns plain objects for map values
+          const data = item?.get("data") as any
+          const content = data?.content
           if (content !== undefined) return content
           throw `File not found: '${x}'`
         }

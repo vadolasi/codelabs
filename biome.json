@@ -10,6 +10,7 @@
 		"includes": [
 			"**",
 			"!src/lib/engine/webcontainer/fswatcher/fswatcher.bundle.cjs",
+			"!static/svelte-data.js",
 			"!src/backend/emails/templates.generated.ts"
 		]
 	},
