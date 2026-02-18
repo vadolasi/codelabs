@@ -1,55 +1,28 @@
 <script lang="ts">
 import { createQuery } from "@tanstack/svelte-query"
-import { type FileSystemTree, WebContainer } from "@webcontainer/api"
-import type { LoroList } from "loro-crdt"
-import { onMount } from "svelte"
+import { onMount, untrack } from "svelte"
 import { page } from "$app/state"
-import { startFsWatcher } from "$lib/fswatcher/start"
 import httpClient from "$lib/httpClient"
-import editorState, {
-  filesMap,
-  loroDoc
-} from "../../../../../components/Editor/editorState.svelte"
+import editorState from "../../../../../components/Editor/editorState.svelte"
 import Editor from "../../../../../components/Editor/index.svelte"
 
 const { data } = $props()
 
-editorState.username = data.user.username
-
-function getFileTree(rootPath = "/"): FileSystemTree {
-  const fileTree: FileSystemTree = {}
-
-  const rootChildren =
-    (filesMap.get(rootPath)?.get("children") as LoroList<string>)?.toArray() ||
-    []
-
-  for (const childId of rootChildren) {
-    const filename = childId.split("/").pop()!
-    const childData = filesMap.get(childId)
-    if (!childData || typeof childData.get !== "function") {
-      continue
-    }
-    const itemData = childData.get("data") as Item
-
-    if (itemData.type === "file") {
-      fileTree[filename] = {
-        file: {
-          contents: itemData.content
-        }
-      }
-    } else if (itemData.type === "directory") {
-      fileTree[filename] = {
-        directory: getFileTree(itemData.path)
-      }
-    }
+$effect(() => {
+  if (data.user && 'username' in data.user) {
+    editorState.username = data.user.username
   }
-
-  return fileTree
-}
+})
 
 const {
   params: { workspaceSlug }
 } = page
+
+$effect(() => {
+  return () => {
+    editorState.reset()
+  }
+})
 
 
 const query = createQuery({
@@ -65,54 +38,73 @@ const query = createQuery({
   }
 })
 
-let webcontainer: WebContainer | null = $state(null)
-let stopFsWatcher: (() => void) | null = null
-let webcontainerPromise: Promise<WebContainer> | null = null
+let engine: any | null = $state(null)
+let loadError: string | null = $state(null)
 
 onMount(() => {
-  webcontainerPromise = WebContainer.boot({ workdirName: "codelabs" })
   return () => {
-    if (webcontainer) {
-      stopFsWatcher?.()
-      webcontainer.teardown()
-    }
+    engine?.close()
   }
 })
 
 $effect(() => {
-  (async () => {
-    if ($query.data !== undefined && webcontainer === null && webcontainerPromise) {
-      if ($query.data.doc) {
-        loroDoc.import($query.data.doc)
-      }
+  if ($query.data !== undefined && engine === null && !loadError) {
+    (async () => {
+      console.log("[Workspace] Iniciando setup...");
+      try {
+        untrack(() => {
+          editorState.reset()
+          if ($query.data.doc) editorState.loroDoc.import(new Uint8Array($query.data.doc))
+          if ($query.data.updates) {
+            const updates = $query.data.updates
+              .filter((update): update is any => Boolean(update))
+              .map(u => new Uint8Array(u))
+            editorState.loroDoc.importBatch(updates)
+          }
+          editorState.loroDoc.commit();
+        })
 
-      if ($query.data.updates?.length) {
-        const updates = $query.data.updates
-          .filter((update): update is Uint8Array => Boolean(update))
-        if (updates.length > 0) {
-          loroDoc.importBatch(updates)
+        const engineType = ($query.data.workspace.engine || 'webcontainers') as 'webcontainers' | 'skulpt'
+        console.log("[Workspace] Engine selecionada:", engineType);
+
+        let instance;
+        if (engineType === 'webcontainers') {
+          const { default: WebcontainerEngine } = await import("$lib/engine/webcontainer/index.svelte")
+          instance = new WebcontainerEngine()
+        } else {
+          const { default: SkulptEngine } = await import("$lib/engine/skulpt/index.svelte")
+          instance = new SkulptEngine()
         }
-      }
 
-      const loadedWebcontainer = await webcontainerPromise
-      const fileTree = getFileTree()
-      await loadedWebcontainer.mount(fileTree)
-      stopFsWatcher = await startFsWatcher(loadedWebcontainer, {
-        rootPath: "."
-      })
-      webcontainer = loadedWebcontainer
-    }
-  })()
+        console.log("[Workspace] Preparando engine...");
+        await instance.prepare()
+        console.log("[Workspace] Inicializando engine...");
+        await instance.initialize()
+        
+        console.log("[Workspace] Engine pronta!");
+        engine = instance
+      } catch (err: any) {
+        console.error("[Workspace] Erro na inicialização:", err);
+        loadError = err.message || "Erro desconhecido";
+      }
+    })()
+  }
 })
 </script>
 
-{#if $query.isLoading || webcontainer === null}
+{#if loadError}
+  <div class="flex flex-col items-center justify-center h-screen gap-4">
+    <span class="text-error text-xl font-bold">Erro ao carregar</span>
+    <p class="text-base-content/70">{loadError}</p>
+    <button class="btn btn-primary" onclick={() => window.location.reload()}>Recarregar</button>
+  </div>
+{:else if $query.isLoading || engine === null || engine.readyState !== 'ready'}
   <div class="flex flex-col items-center justify-center h-screen gap-4">
     <div class="radial-progress animate-spin" style:--value={70} aria-valuenow="70" role="progressbar"></div>
     <span class="text-2xl text-base-content text-center">Carregando ambiente de<br />desenvolvimento</span>
   </div>
 {:else if $query.isError}
   <p>Error: {$query.error.message}</p>
-{:else if $query.isSuccess && webcontainer !== null}
-  <Editor webcontainer={webcontainer} workspace={$query.data.workspace} />
+{:else if $query.isSuccess && engine !== null}
+  <Editor {engine} workspace={$query.data.workspace} />
 {/if}

@@ -1,5 +1,5 @@
 {
-	"$schema": "https://biomejs.dev/schemas/2.4.1/schema.json",
+	"$schema": "https://biomejs.dev/schemas/2.4.2/schema.json",
 	"vcs": {
 		"enabled": true,
 		"clientKind": "git",
@@ -9,7 +9,7 @@
 		"ignoreUnknown": true,
 		"includes": [
 			"**",
-			"!src/lib/fswatcher/fswatcher.bundle.cjs",
+			"!src/lib/engine/webcontainer/fswatcher/fswatcher.bundle.cjs",
 			"!src/backend/emails/templates.generated.ts"
 		]
 	},

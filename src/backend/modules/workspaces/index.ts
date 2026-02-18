@@ -1,9 +1,7 @@
-// import { hitlimit } from "@joint-ops/hitlimit-bun/elysia"
-// import { memoryStore } from "@joint-ops/hitlimit-bun/stores/memory"
+import { randomUUIDv7 } from "bun"
 import { and, eq, inArray } from "drizzle-orm"
 import Elysia, { t } from "elysia"
 import { nanoid } from "nanoid"
-import { v7 as randomUUIDv7 } from "uuid"
 import {
   db,
   workspaceInvite,
@@ -32,7 +30,7 @@ const workspacesController = new Elysia({
               .from(workspaces__users)
               .where(eq(workspaces__users.userId, userId))
           ),
-        orderBy: (workspaces, { desc, sql }) => {
+        orderBy: (workspaces, { desc }) => {
           if (recent) {
             return desc(
               db
@@ -112,6 +110,7 @@ const workspacesController = new Elysia({
           columns: {
             id: true,
             name: true,
+            engine: true,
             updatedAt: true
           }
         }
@@ -138,14 +137,14 @@ const workspacesController = new Elysia({
     const updates = await getWorkspaceUpdates(workspace.id)
 
     return {
-      workspace,
+      workspace: user.workspace,
       doc: snapshot,
       updates
     }
   })
   .post(
     "/",
-    async ({ body: { name }, userId, status }) => {
+    async ({ body: { name, engine }, userId, status }) => {
       const id = randomUUIDv7()
 
       const [data] = await db
@@ -153,6 +152,7 @@ const workspacesController = new Elysia({
         .values({
           id,
           name,
+          engine,
           slug: `${name.toLowerCase().replace(/\s+/g, "-")}-${nanoid(8)}`
         })
         .returning()
@@ -172,7 +172,10 @@ const workspacesController = new Elysia({
     },
     {
       body: t.Object({
-        name: t.String()
+        name: t.String(),
+        engine: t.Optional(
+          t.Union([t.Literal("webcontainers"), t.Literal("skulpt")])
+        )
       })
     }
   )

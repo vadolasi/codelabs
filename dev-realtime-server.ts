@@ -5,7 +5,8 @@ Bun.serve({
   async fetch(req, server) {
     const res = await engine.handleRequest(req, server)
 
-    res.headers.set("Access-Control-Allow-Origin", "*")
+    const origin = req.headers.get("Origin") || "*"
+    res.headers.set("Access-Control-Allow-Origin", origin)
     res.headers.set("Access-Control-Allow-Credentials", "true")
     res.headers.set("Access-Control-Allow-Methods", "*")
     res.headers.set("Access-Control-Allow-Headers", "*")

@@ -1,8 +1,5 @@
-# fs-watcher Specification
+## MODIFIED Requirements
 
-## Purpose
-TBD - created by archiving change add-fswatcher-process. Update Purpose after archive.
-## Requirements
 ### Requirement: Bundled filesystem watcher process
 When using the WebContainer engine, the system SHALL bundle a chokidar-based watcher script and run it inside the WebContainer as a long-lived process for the workspace lifecycle.
 
@@ -30,4 +27,3 @@ The watcher SHALL observe ./codelabs and ignore known noisy paths to reduce over
 #### Scenario: Ignored paths do not emit events
 - **WHEN** files change under ignored paths (e.g., node_modules or .git)
 - **THEN** no watcher events are emitted for those changes
-

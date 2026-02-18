@@ -1,5 +1,4 @@
 import type { ItemInstance } from "@headless-tree/core"
-import type { WebContainer } from "@webcontainer/api"
 import {
   EphemeralStore,
   LoroDoc,
@@ -8,13 +7,7 @@ import {
   UndoManager
 } from "loro-crdt"
 import { SvelteMap } from "svelte/reactivity"
-
-export const loroDoc = new LoroDoc()
-export const filesMap = loroDoc.getMap("files") as LoroMap<
-  Record<string, LoroMap<Record<string, Item | LoroList>>>
->
-export const ephemeralStore = new EphemeralStore()
-export const undoManager = new UndoManager(loroDoc, {})
+import type BaseEngine from "$lib/engine/base.svelte"
 
 class EditorState {
   public currentTab: string | null = $state(null)
@@ -22,7 +15,37 @@ class EditorState {
   private states: Map<string, object> = new Map()
   private tabHistory: string[] = []
   private prewviewers: SvelteMap<number, string> = new SvelteMap()
-  username: string | null = null
+  username: string | null = $state(null)
+
+  // Instâncias dinâmicas do Loro
+  public loroDoc = $state(this.createDoc())
+  public filesMap = $derived(
+    this.loroDoc.getMap("files") as LoroMap<
+      Record<string, LoroMap<Record<string, Item | LoroList>>>
+    >
+  )
+  public ephemeralStore = $state(new EphemeralStore())
+  public undoManager = $state(new UndoManager(this.loroDoc, {}))
+
+  private createDoc() {
+    const doc = new LoroDoc()
+    // PeerID único é essencial para sincronização
+    doc.setPeerId(BigInt(Math.floor(Math.random() * 1000000000)))
+    return doc
+  }
+
+  public reset() {
+    this.currentTab = null
+    this.tabs = []
+    this.states.clear()
+    this.tabHistory = []
+    this.prewviewers.clear()
+
+    // Recriamos as instâncias do Loro com novas identidades
+    this.loroDoc = this.createDoc()
+    this.ephemeralStore = new EphemeralStore()
+    this.undoManager = new UndoManager(this.loroDoc, {})
+  }
 
   public setCurrentTab(item: ItemInstance<Item>) {
     const path = item.getItemData().path
@@ -75,8 +98,6 @@ class EditorState {
 }
 
 const editorState = new EditorState()
-export const webcontainer: { current: WebContainer } = {} as {
-  current: WebContainer
-}
+export const engine: { current: BaseEngine | null } = $state({ current: null })
 
 export default editorState

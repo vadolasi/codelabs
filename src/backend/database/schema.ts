@@ -58,6 +58,9 @@ export const workspaces = sqliteTable("workspaces", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
   slug: text("slug").notNull().unique(),
+  engine: text("engine", { enum: ["webcontainers", "skulpt"] })
+    .default("webcontainers")
+    .notNull(),
   config: text("config", { mode: "json" })
     .$type<{ initialTerminals: { command: string }[]; exclude: string[] }>()
     .default({ initialTerminals: [], exclude: [] })

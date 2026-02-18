@@ -8,4 +8,8 @@ export type ClientToServerEvents = {
   "disconnect-from-workspace": (workspaceId: string) => void
   "loro-update": (workspaceId: string, update: Uint8Array) => Promise<void>
   "ephemeral-update": (workspaceId: string, update: Uint8Array) => Promise<void>
+  sync: (
+    clientVersion: Uint8Array,
+    callback: (missing: Uint8Array) => void
+  ) => void
 }

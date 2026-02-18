@@ -1,6 +1,5 @@
 <script lang="ts">
 import { flavors } from "@catppuccin/palette"
-import type { WebContainerProcess } from "@webcontainer/api"
 import { ClipboardAddon } from "@xterm/addon-clipboard"
 import { FitAddon } from "@xterm/addon-fit"
 import { ImageAddon } from "@xterm/addon-image"
@@ -10,7 +9,8 @@ import { WebLinksAddon } from "@xterm/addon-web-links"
 import { WebglAddon } from "@xterm/addon-webgl"
 import { Terminal } from "@xterm/xterm"
 import { onMount } from "svelte"
-import { webcontainer } from "./editorState.svelte"
+import type { EngineProcess } from "$lib/engine/base.svelte"
+import { engine } from "./editorState.svelte"
 
 import "@xterm/xterm/css/xterm.css"
 
@@ -56,38 +56,43 @@ terminal.unicode.activeVersion = "11"
 
 let terminalContainer: HTMLDivElement
 
-let shellProcess: WebContainerProcess
+let shellProcess: EngineProcess
 
 function resize() {
   fitAddon.fit()
-  shellProcess?.resize({
-    cols: terminal.cols,
-    rows: terminal.rows
-  })
+  shellProcess?.resize?.({ cols: terminal.cols, rows: terminal.rows })
 }
+
+$effect(() => {
+  if (engine.current && terminalContainer) {
+    engine.current
+      .spawnTerminal?.({
+        cols: terminal.cols,
+        rows: terminal.rows
+      })
+      ?.then((process) => {
+        shellProcess = process
+        shellProcess.output.pipeTo(
+          new WritableStream({
+            write: (data) => terminal.write(data)
+          })
+        )
+        const input = shellProcess.input.getWriter()
+        const disposable = terminal.onData((data) => {
+          input.write(data)
+        })
+        resize()
+        return () => {
+          disposable.dispose()
+          shellProcess?.kill?.()
+        }
+      })
+  }
+})
 
 onMount(() => {
   terminal.open(terminalContainer)
-  webcontainer.current
-    .spawn("jsh", {
-      terminal: {
-        cols: terminal.cols,
-        rows: terminal.rows
-      }
-    })
-    .then((process) => {
-      shellProcess = process
-      shellProcess.output.pipeTo(
-        new WritableStream({
-          write: (data) => terminal.write(data)
-        })
-      )
-      const input = shellProcess.input.getWriter()
-      terminal.onData((data) => {
-        input.write(data)
-      })
-      resize()
-    })
+  resize()
 
   return () => terminal.dispose()
 })

@@ -1,5 +1,5 @@
-import { asc, desc, eq } from "drizzle-orm"
-import { v7 as randomUUIDv7 } from "uuid"
+import { randomUUIDv7 } from "bun"
+import { asc, eq } from "drizzle-orm"
 import { db } from "../database"
 import { workspaceSnapshots, workspaceUpdates } from "../database/schema"
 
@@ -26,8 +26,8 @@ export async function getSnapshot(
   workspaceId: string
 ): Promise<Uint8Array | null> {
   const row = await db.query.workspaceSnapshots.findFirst({
-    where: (ws) => eq(ws.workspaceId, workspaceId),
-    orderBy: (ws) => desc(ws.createdAt)
+    where: (ws, { eq }) => eq(ws.workspaceId, workspaceId),
+    orderBy: (ws, { desc }) => desc(ws.createdAt)
   })
   if (!row) return null
   return Uint8Array.from(row.snapshot)

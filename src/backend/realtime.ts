@@ -10,7 +10,7 @@ import {
   getWorkspaceUpdates,
   saveSnapshot
 } from "../backend/lib/storage"
-import { db, workspaces, workspaces__users, workspaceUpdates } from "./database"
+import { db, workspaces__users, workspaceUpdates } from "./database"
 import { validateSessionToken } from "./modules/auth/auth.service"
 
 const SNAPSHOT_INTERVAL_MS = 60_000
@@ -179,6 +179,33 @@ io.on("connection", (socket) => {
     joinedWorkspaces.clear()
   })
 
+  socket.on("sync", async (clientSnapshot, callback) => {
+    const { workspaceId } = socket.data
+    try {
+      const { snapshot, updates } = await db.transaction(async (tx) => {
+        const snapshot = await getSnapshot(workspaceId, tx)
+        const updates = await getWorkspaceUpdates(workspaceId, tx)
+        return { snapshot, updates }
+      })
+
+      const doc = new LoroDoc()
+      if (snapshot) doc.import(snapshot)
+      if (updates.length > 0) doc.importBatch(updates)
+
+      // Criamos um doc temporário para extrair a versão do cliente do snapshot
+      const tempDoc = new LoroDoc()
+      tempDoc.import(clientSnapshot)
+
+      const missing = doc.export({
+        mode: "update",
+        from: tempDoc.oplogVersion()
+      })
+      callback(missing)
+    } catch (err) {
+      console.error("[sync] Erro ao processar sincronização:", err)
+    }
+  })
+
   socket.on("loro-update", async (id, update) => {
     if (!id || id !== workspaceId) {
       return
@@ -191,17 +218,11 @@ io.on("connection", (socket) => {
 
     socket.to(id).emit("loro-update", update)
     try {
-      await db.transaction(async (tx) => {
-        await tx.insert(workspaceUpdates).values({
-          id: randomUUIDv7(),
-          workspaceId: id,
-          update: Buffer.from(update),
-          createdAt: new Date()
-        })
-        await tx
-          .update(workspaces)
-          .set({ updatedAt: new Date() })
-          .where(eq(workspaces.id, id))
+      await db.insert(workspaceUpdates).values({
+        id: randomUUIDv7(),
+        workspaceId: id,
+        update: Buffer.from(update),
+        createdAt: new Date()
       })
     } catch (err) {
       console.error("[loro-update] Erro ao inserir update:", err)

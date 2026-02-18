@@ -1,0 +1,1 @@
+ALTER TABLE `workspaces` ADD `engine` text DEFAULT 'webcontainers' NOT NULL;

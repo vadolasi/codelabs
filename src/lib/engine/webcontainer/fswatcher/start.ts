@@ -1,6 +1,6 @@
 import type { WebContainer, WebContainerProcess } from "@webcontainer/api"
-import fsWatcherScript from "$lib/fswatcher/fswatcher.bundle.cjs?raw"
 import { emitFsWatcherEvent } from "./bus"
+import fsWatcherScript from "./fswatcher.bundle.cjs?raw"
 
 const DEFAULT_IGNORE = ["**/node_modules/**", "**/.git/**"]
 

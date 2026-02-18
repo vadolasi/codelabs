@@ -40,10 +40,7 @@ import { LoroText } from "loro-crdt"
 import { onMount } from "svelte"
 import getIcon from "$lib/icons"
 import editorState, {
-  ephemeralStore,
-  filesMap,
-  loroDoc,
-  undoManager
+  engine,
 } from "./editorState.svelte"
 import { getLanguage } from "./language"
 
@@ -61,20 +58,8 @@ onMount(() => {
   view = new EditorView({ parent: editorContainer })
 })
 
-function getRandomDarkColor() {
-  function toHex(c: number) {
-    return c.toString(16).padStart(2, "0")
-  }
-
-  const r = Math.floor(Math.random() * 128)
-  const g = Math.floor(Math.random() * 128)
-  const b = Math.floor(Math.random() * 128)
-
-  return `#${toHex(r)}${toHex(g)}${toHex(b)}`
-}
-
 $effect(() => {
-  if (editorState.currentTab) {
+  if (editorState.currentTab && editorState.loroDoc) {
     async function setupEditor() {
       const previousTab = editorState.previousTab
       if (previousTab) {
@@ -102,14 +87,14 @@ $effect(() => {
           highlightActiveLine(),
           highlightSelectionMatches(),
           LoroExtensions(
-            loroDoc,
+            editorState.loroDoc,
             {
-              ephemeral: ephemeralStore,
+              ephemeral: editorState.ephemeralStore,
               user: { name: editorState.username ?? "anonymous", colorClassName: "user1" }
             },
-            undoManager,
+            editorState.undoManager,
             () => {
-              const item = filesMap.get(editorState.currentTab!)
+              const item = editorState.filesMap.get(editorState.currentTab!)
 
               const container = item.get("editableContent")
               if (container instanceof LoroText) {
@@ -120,6 +105,7 @@ $effect(() => {
               const data = item.get("data") as Item
               text.update(data.type === "file" ? data.content : "")
               item.setContainer("editableContent", text)
+              editorState.loroDoc.commit()
               return text
             }
           ),
@@ -134,17 +120,31 @@ $effect(() => {
           ]),
           editorTheme,
           catppuccinMocha,
+          EditorView.updateListener.of((update) => {
+            if (update.docChanged) {
+              editorState.loroDoc.commit()
+            }
+          }),
           Prec.highest(
             keymap.of([
               {
                 key: "Mod-s",
                 run(view) {
-                  filesMap.get(editorState.currentTab!).set("data", {
+                  const item = editorState.filesMap.get(editorState.currentTab!)
+                  const content = view.state.doc.toString()
+                  
+                  item.set("data", {
                     type: "file",
                     path: editorState.currentTab!,
-                    content: view.state.doc.toString()
+                    content
                   })
-                  loroDoc.commit()
+
+                  const container = item.get("editableContent")
+                  if (container instanceof LoroText) {
+                    container.update(content)
+                  }
+
+                  editorState.loroDoc.commit()
                   return true
                 }
               }
