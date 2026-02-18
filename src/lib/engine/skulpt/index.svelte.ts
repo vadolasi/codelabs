@@ -16,7 +16,8 @@ export default class SkulptEngine extends BaseEngine {
     preview: false,
     externalFsIngestion: false,
     runnable: true,
-    visualizer: true
+    visualizer: true,
+    dependencyManagement: false
   }
 
   private outputController: ReadableStreamDefaultController<EngineProcessChunk> | null =
@@ -54,30 +55,20 @@ export default class SkulptEngine extends BaseEngine {
     if (typeof Sk !== "undefined") return
 
     return new Promise((resolve, reject) => {
-      const jquery = document.createElement("script")
-      jquery.src =
-        "https://ajax.googleapis.com/ajax/libs/jquery/1.9.0/jquery.min.js"
-      jquery.crossOrigin = "anonymous"
-      jquery.onerror = () => reject(new Error("Falha ao carregar jQuery"))
-      jquery.onload = () => {
-        const skulpt = document.createElement("script")
-        skulpt.src =
-          "https://cdn.jsdelivr.net/npm/skulpt@1.2.0/dist/skulpt.min.js"
-        skulpt.crossOrigin = "anonymous"
-        skulpt.onerror = () => reject(new Error("Falha ao carregar Skulpt"))
-        skulpt.onload = () => {
-          const stdlib = document.createElement("script")
-          stdlib.src =
-            "https://cdn.jsdelivr.net/npm/skulpt@1.2.0/dist/skulpt-stdlib.js"
-          stdlib.crossOrigin = "anonymous"
-          stdlib.onerror = () =>
-            reject(new Error("Falha ao carregar Skulpt Stdlib"))
-          stdlib.onload = () => resolve()
-          document.head.appendChild(stdlib)
-        }
-        document.head.appendChild(skulpt)
+      const skulpt = document.createElement("script")
+      skulpt.src = "https://skulpt.org/js/skulpt.min.js"
+      skulpt.crossOrigin = "anonymous"
+      skulpt.onerror = () => reject(new Error("Falha ao carregar Skulpt"))
+      skulpt.onload = () => {
+        const stdlib = document.createElement("script")
+        stdlib.src = "https://skulpt.org/js/skulpt-stdlib.js"
+        stdlib.crossOrigin = "anonymous"
+        stdlib.onerror = () =>
+          reject(new Error("Falha ao carregar Skulpt Stdlib"))
+        stdlib.onload = () => resolve()
+        document.head.appendChild(stdlib)
       }
-      document.head.appendChild(jquery)
+      document.head.appendChild(skulpt)
     })
   }
 

@@ -64,16 +64,19 @@ $effect(() => {
           editorState.loroDoc.commit();
         })
 
-        const engineType = ($query.data.workspace.engine || 'webcontainers') as 'webcontainers' | 'skulpt'
+        const engineType = ($query.data.workspace.engine || 'webcontainers') as 'webcontainers' | 'skulpt' | 'pyodide'
         console.log("[Workspace] Engine selecionada:", engineType);
 
         let instance;
         if (engineType === 'webcontainers') {
           const { default: WebcontainerEngine } = await import("$lib/engine/webcontainer/index.svelte")
           instance = new WebcontainerEngine()
-        } else {
+        } else if (engineType === 'skulpt') {
           const { default: SkulptEngine } = await import("$lib/engine/skulpt/index.svelte")
           instance = new SkulptEngine()
+        } else {
+          const { default: PyodideEngine } = await import("$lib/engine/pyodide/index.svelte")
+          instance = new PyodideEngine()
         }
 
         console.log("[Workspace] Preparando engine...");

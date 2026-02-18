@@ -4,6 +4,7 @@ export type EngineCapabilities = {
   externalFsIngestion: boolean
   runnable: boolean
   visualizer: boolean
+  dependencyManagement: boolean
 }
 
 export type EnginePreviewOpenEvent = {

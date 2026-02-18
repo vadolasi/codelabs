@@ -10,7 +10,7 @@ import FormField from "../../../../../components/FormField.svelte"
 
 const schema = z.object({
   name: z.string().min(1, "Este campo é obrigatório"),
-  engine: z.enum(["webcontainers", "skulpt"])
+  engine: z.enum(["webcontainers", "skulpt", "pyodide"])
 })
 
 type FormData = z.infer<typeof schema>
@@ -74,8 +74,9 @@ const form = createForm(() => ({
           onchange={(e) => field.handleChange(e.currentTarget.value as any)}
           class="select select-bordered w-full"
         >
-          <option value="webcontainers">WebContainer (Full Node.js)</option>
-          <option value="skulpt">Skulpt (Python Browser)</option>
+          <option value="webcontainers">WebContainer (Node.js)</option>
+          <option value="skulpt">Skulpt (Python)</option>
+          <option value="pyodide">Pyodide (Python Standard)</option>
         </select>
         {#if field.state.meta.errors.length > 0}
           <label class="label" for={field.name}>

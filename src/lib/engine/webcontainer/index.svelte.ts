@@ -16,7 +16,8 @@ export default class WebcontainerEngine extends BaseEngine {
     preview: true,
     externalFsIngestion: true,
     runnable: false,
-    visualizer: false
+    visualizer: false,
+    dependencyManagement: true
   }
 
   webcontainerInstance: WebContainer | null = null

@@ -40,4 +40,38 @@ bun database:studio
 
 ### Deploy em produção
 
-O arquivo [`Dockerfile`](./Dockerfile) contém a implementação de um servidor para produção.
+O arquivo [`Dockerfile`](./Dockerfile) contém a implementação de um servidor para produção. Você pode realizar o deploy utilizando Docker ou compilando manualmente.
+
+#### Utilizando Docker
+
+1. Certifique-se de ter o Docker instalado.
+2. Construa a imagem:
+   ```bash
+   docker build -t codelabs .
+   ```
+3. Execute o container:
+   ```bash
+   docker run -p 3000:3000 --env-file .env codelabs
+   ```
+
+#### Deploy Manual
+
+1. Instale as dependências:
+   ```bash
+   bun install --frozen-lockfile
+   ```
+2. Prepare os assets e compile o projeto:
+   ```bash
+   bun run fswatcher:build
+   bun run icons:prepare
+   bun run emails:compile
+   bun run build
+   ```
+3. Execute as migrações do banco de dados:
+   ```bash
+   bun run database:migrate
+   ```
+4. Inicie o servidor:
+   ```bash
+   NODE_ENV=production bun run build/index.js
+   ```

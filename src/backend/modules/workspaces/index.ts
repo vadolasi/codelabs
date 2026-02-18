@@ -174,7 +174,11 @@ const workspacesController = new Elysia({
       body: t.Object({
         name: t.String(),
         engine: t.Optional(
-          t.Union([t.Literal("webcontainers"), t.Literal("skulpt")])
+          t.Union([
+            t.Literal("webcontainers"),
+            t.Literal("skulpt"),
+            t.Literal("pyodide")
+          ])
         )
       })
     }

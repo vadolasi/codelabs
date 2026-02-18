@@ -58,7 +58,7 @@ export const workspaces = sqliteTable("workspaces", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
   slug: text("slug").notNull().unique(),
-  engine: text("engine", { enum: ["webcontainers", "skulpt"] })
+  engine: text("engine", { enum: ["webcontainers", "skulpt", "pyodide"] })
     .default("webcontainers")
     .notNull(),
   config: text("config", { mode: "json" })
@@ -143,6 +143,20 @@ export const workspaceInviteRelations = relations(
     })
   })
 )
+
+export const workspaceTemplates = sqliteTable("workspace_templates", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  snapshot: blob("snapshot", { mode: "buffer" }).notNull(),
+  config: text("config", { mode: "json" }).notNull(),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .$defaultFn(() => new Date())
+})
+
+export const workspaceFiles = sqliteTable("workspace_files", {
+  hash: text("hash").primaryKey()
+})
 
 export const databases = sqliteTable("databases", {
   id: text("id").primaryKey(),
