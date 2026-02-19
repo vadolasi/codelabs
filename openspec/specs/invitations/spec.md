@@ -1,7 +1,8 @@
-# Capability: Workspace Invitations
+# invitations Specification
 
-## MODIFIED Requirements
-
+## Purpose
+TBD - created by archiving change add-workspace-sharing. Update Purpose after archive.
+## Requirements
 ### Requirement: Create Invitation
 Owners or admins SHALL be able to generate shareable invitation links with specific roles.
 
@@ -25,3 +26,4 @@ Users SHALL be able to join a workspace using a valid invitation token.
 - **When** I access `/invite/[token]` while logged in
 - **Then** I am added as a member of "Project Alpha"
 - **And** I am redirected to the workspace development environment.
+

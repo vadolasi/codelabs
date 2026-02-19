@@ -1,7 +1,8 @@
-# Capability: Home Recent Workspaces
+# home-recent-workspaces Specification
 
-## MODIFIED Requirements
-
+## Purpose
+TBD - created by archiving change add-workspace-sharing. Update Purpose after archive.
+## Requirements
 ### Requirement: Home Screen Listing
 The home screen SHALL display the workspaces the user has accessed most recently.
 
@@ -17,3 +18,4 @@ Accessing a workspace SHALL update the user's last access timestamp.
 - **Given** I am a member of "Project Alpha"
 - **When** I open "Project Alpha" in the editor
 - **Then** the `workspace_users` record for my user and that workspace is updated with the current timestamp.
+

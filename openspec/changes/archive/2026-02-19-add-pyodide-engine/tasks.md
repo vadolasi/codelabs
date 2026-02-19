@@ -10,4 +10,4 @@
 - [x] Implement `run` method with automatic package loading <!-- id: 7 -->
 - [x] Implement `spawnTerminal` for output handling <!-- id: 8 -->
 - [x] Integrate Pyodide engine into the engine selection UI/registry <!-- id: 9 -->
-- [ ] Verify execution with a script importing `numpy` <!-- id: 10 -->
+- [x] Verify execution with a script importing `numpy` <!-- id: 10 -->

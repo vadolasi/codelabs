@@ -1,5 +1,6 @@
 import { randomUUIDv7 } from "bun"
 import { asc, eq } from "drizzle-orm"
+import { LoroDoc, LoroList, LoroMap, LoroText } from "loro-crdt"
 import { db } from "../database"
 import { workspaceSnapshots, workspaceUpdates } from "../database/schema"
 
@@ -72,4 +73,61 @@ export async function getWorkspaceUpdates(
     .orderBy(asc(workspaceUpdates.createdAt))
 
   return rows.map((row) => Uint8Array.from(row.update))
+}
+
+export async function getMergedSnapshot(
+  workspaceId: string,
+  tx = db
+): Promise<Uint8Array | null> {
+  const snapshot = await getSnapshot(workspaceId, tx)
+  const updates = await getWorkspaceUpdates(workspaceId, tx)
+
+  if (!snapshot && updates.length === 0) return null
+
+  const doc = new LoroDoc()
+  if (snapshot) doc.import(snapshot)
+  if (updates.length > 0) doc.importBatch(updates)
+
+  return doc.export({ mode: "snapshot" })
+}
+
+export async function getCleanSnapshot(
+  workspaceId: string,
+  tx = db
+): Promise<Uint8Array | null> {
+  const mergedSnapshot = await getMergedSnapshot(workspaceId, tx)
+  if (!mergedSnapshot) return null
+
+  const sourceDoc = new LoroDoc()
+  sourceDoc.import(mergedSnapshot)
+
+  const cleanDoc = new LoroDoc()
+  const sourceFiles = sourceDoc.getMap("files")
+  const cleanFiles = cleanDoc.getMap("files")
+
+  // Reconstruct the files map to clear history
+  for (const [path, item] of Object.entries(sourceFiles.toJSON())) {
+    const itemMap = cleanFiles.setContainer(path, new LoroMap())
+
+    // Copy data
+    if (item.data) {
+      itemMap.set("data", item.data)
+    }
+
+    // Copy children if exists
+    if (item.children) {
+      const cleanChildren = itemMap.setContainer("children", new LoroList())
+      for (const child of item.children) {
+        cleanChildren.push(child)
+      }
+    }
+
+    // Copy editableContent if exists
+    if (item.editableContent) {
+      const cleanText = itemMap.setContainer("editableContent", new LoroText())
+      cleanText.insert(0, item.editableContent)
+    }
+  }
+
+  return cleanDoc.export({ mode: "snapshot" })
 }

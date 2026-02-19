@@ -20,7 +20,34 @@ export default defineConfig({
     },
     tailwindcss(),
     enhancedImages(),
-    SvelteKitPWA(),
+    SvelteKitPWA({
+      manifest: {
+        name: "Codelabs",
+        short_name: "Codelabs",
+        description:
+          "IDE Online completa com colaboração em tempo real voltada para salas de aula",
+        theme_color: "#1e1e2e",
+        icons: [
+          {
+            src: "web-app-manifest-192x192.png",
+            sizes: "192x192",
+            type: "image/png"
+          },
+          {
+            src: "web-app-manifest-512x512.png",
+            sizes: "512x512",
+            type: "image/png"
+          }
+        ]
+      },
+      workbox: {
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
+        globPatterns: ["**/*.{js,css,html,ico,png,svg,webmanifest}"]
+      },
+      devOptions: {
+        enabled: true
+      }
+    }),
     sveltekit(),
     wasm(),
     visualizer(),
@@ -29,7 +56,23 @@ export default defineConfig({
   build: {
     target: "esnext",
     rollupOptions: {
-      external: ["bun"]
+      external: ["bun"],
+      output: {
+        manualChunks: (id) => {
+          if (id.includes("node_modules")) {
+            if (id.includes("codemirror") || id.includes("@codemirror")) {
+              return "vendor-codemirror"
+            }
+            if (id.includes("pyodide")) {
+              return "vendor-pyodide"
+            }
+            if (id.includes("loro-crdt")) {
+              return "vendor-loro"
+            }
+            return "vendor"
+          }
+        }
+      }
     }
   },
   server: {

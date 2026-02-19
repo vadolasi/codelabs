@@ -61,6 +61,9 @@ export const workspaces = sqliteTable("workspaces", {
   engine: text("engine", { enum: ["webcontainers", "skulpt", "pyodide"] })
     .default("webcontainers")
     .notNull(),
+  visibility: text("visibility", { enum: ["private", "public"] })
+    .default("private")
+    .notNull(),
   config: text("config", { mode: "json" })
     .$type<{ initialTerminals: { command: string }[]; exclude: string[] }>()
     .default({ initialTerminals: [], exclude: [] })
@@ -147,6 +150,9 @@ export const workspaceInviteRelations = relations(
 export const workspaceTemplates = sqliteTable("workspace_templates", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
+  engine: text("engine", { enum: ["webcontainers", "skulpt", "pyodide"] })
+    .default("webcontainers")
+    .notNull(),
   snapshot: blob("snapshot", { mode: "buffer" }).notNull(),
   config: text("config", { mode: "json" }).notNull(),
   createdAt: integer("created_at", { mode: "timestamp" })

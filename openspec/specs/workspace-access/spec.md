@@ -1,7 +1,8 @@
-# Capability: Workspace Access Control
+# workspace-access Specification
 
-## MODIFIED Requirements
-
+## Purpose
+TBD - created by archiving change add-workspace-sharing. Update Purpose after archive.
+## Requirements
 ### Requirement: Restricted Access
 Only members of a workspace SHALL be able to view or interact with it.
 
@@ -31,3 +32,4 @@ The system SHALL track when a user last accessed a workspace to provide a "Recen
 - **Given** I am a member of "Project Alpha"
 - **When** I successfully fetch the workspace data via API
 - **Then** the `lastAccessedAt` timestamp for my membership record is updated to the current time.
+

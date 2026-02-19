@@ -5,6 +5,7 @@ import config from "./lib/config"
 import adminController from "./modules/admin"
 import authController from "./modules/auth"
 import filesController from "./modules/files"
+import templatesController from "./modules/templates"
 import usersController from "./modules/users"
 import workspacesController from "./modules/workspaces"
 
@@ -58,6 +59,7 @@ const app = new Elysia({
   .use(usersController)
   .use(workspacesController)
   .use(filesController)
+  .use(templatesController)
   .use(adminController)
 
 export default app

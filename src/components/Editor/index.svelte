@@ -1,10 +1,12 @@
 <script lang="ts">
-import { Home, MonitorPlay, Play, Save, Share2, Square } from "@lucide/svelte"
+import { GitFork, Home, MonitorPlay, Play, Save, Share2, Square } from "@lucide/svelte"
+import { createMutation } from "@tanstack/svelte-query"
 import { io, type Socket } from "socket.io-client"
 import type { Component } from "svelte"
 import { onMount, tick } from "svelte"
 import { Pane, Splitpanes } from "svelte-splitpanes"
   import { dev } from "$app/environment";
+import { goto } from "$app/navigation"
 import type BaseEngine from "$lib/engine/base.svelte"
 import httpClient from "$lib/httpClient"
 import parser from "$lib/socketio-msgpack-parser"
@@ -189,6 +191,24 @@ async function interruptExecution() {
 
 let showShareModal = $state(false)
 let showVisualizer = $state(false)
+
+const forkMutation = createMutation({
+  mutationFn: async (name: string) => {
+    const { data, error } = await httpClient.workspaces.id({ id: currentWorkspace.id }).fork.post({ name })
+    if (error) throw new Error("Erro ao criar fork")
+    return data
+  },
+  onSuccess: (data) => {
+    goto(`/workspaces/${data.slug}`)
+  }
+})
+
+function handleFork() {
+  const name = prompt("Nome do novo workspace:", `${currentWorkspace.name} (fork)`)
+  if (name !== null) {
+    $forkMutation.mutate(name)
+  }
+}
 </script>
 
 <div class="h-screen w-screen flex flex-col bg-base-300 text-base-content">
@@ -257,6 +277,19 @@ let showVisualizer = $state(false)
         <button type="button" class="btn btn-ghost btn-sm gap-2" onclick={() => (showShareModal = true)}>
           <Share2 class="w-4 h-4" />
           Compartilhar
+        </button>
+        <button 
+          type="button" 
+          class="btn btn-ghost btn-sm gap-2" 
+          onclick={handleFork}
+          disabled={$forkMutation.isPending}
+        >
+          {#if $forkMutation.isPending}
+            <span class="loading loading-spinner loading-xs"></span>
+          {:else}
+            <GitFork class="w-4 h-4" />
+          {/if}
+          Fork
         </button>
       </div>
     </div>
