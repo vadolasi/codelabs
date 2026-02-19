@@ -10,12 +10,18 @@ export const handle: Handle = async ({ event, resolve }) => {
     return app.handle(event.request)
   }
 
-  if (!dev && event.url.pathname === "/socket.io/") {
-    if (!event.platform) {
-      throw new Error("Platform is required for socket.io endpoint")
+  if (!dev && event.url.pathname.startsWith("/socket.io/")) {
+    if (!event.platform?.server) {
+      return new Response("Platform server is required for socket.io", {
+        status: 500
+      })
     }
 
-    return engine.handleRequest(event.platform.request, event.platform.server)
+    const response = await engine.handleRequest(
+      event.request,
+      event.platform.server
+    )
+    if (response) return response
   }
 
   const httpClient = getHttpClient(event.url.origin, event.fetch)
@@ -35,5 +41,4 @@ export const handle: Handle = async ({ event, resolve }) => {
   return response
 }
 
-export const websocket: Bun.WebSocketHandler<WebSocketData> =
-  engine.handler().websocket
+export const websocket = engine.handler().websocket

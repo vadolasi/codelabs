@@ -53,26 +53,13 @@ export default defineConfig({
     visualizer(),
     devtoolsJson()
   ],
+  ssr: {
+    external: ["bun", "bun:sqlite"]
+  },
   build: {
     target: "esnext",
     rollupOptions: {
-      external: ["bun"],
-      output: {
-        manualChunks: (id) => {
-          if (id.includes("node_modules")) {
-            if (id.includes("codemirror") || id.includes("@codemirror")) {
-              return "vendor-codemirror"
-            }
-            if (id.includes("pyodide")) {
-              return "vendor-pyodide"
-            }
-            if (id.includes("loro-crdt")) {
-              return "vendor-loro"
-            }
-            return "vendor"
-          }
-        }
-      }
+      external: ["bun"]
     }
   },
   server: {
