@@ -98,7 +98,7 @@ export default class PyodideEngine extends BaseEngine {
 
     try {
       // Sync files to Pyodide MEMFS
-      this.syncFilesToPyodide()
+      await this.syncFilesToPyodide()
 
       // Automatically load packages used in the code
       await this.pyodide.loadPackagesFromImports(code)
@@ -117,7 +117,7 @@ ${String(e)}
     }
   }
 
-  private syncFilesToPyodide() {
+  private async syncFilesToPyodide() {
     if (!this.pyodide) return
 
     for (const [path, item] of editorState.filesMap.entries()) {
@@ -131,6 +131,22 @@ ${String(e)}
           } catch {}
         }
         this.pyodide.FS.writeFile(path, data.content, { encoding: "utf8" })
+      } else if (data?.type === "binary") {
+        const dir = path.split("/").slice(0, -1).join("/")
+        if (dir && dir !== "/") {
+          try {
+            this.pyodide.FS.mkdirTree(dir)
+          } catch {}
+        }
+
+        // Fetch binary content from API and write to Pyodide FS
+        try {
+          const response = await fetch(`/api/files/${data.hash}`)
+          const buffer = await response.arrayBuffer()
+          this.pyodide.FS.writeFile(path, new Uint8Array(buffer))
+        } catch (e) {
+          console.error(`Failed to sync binary file ${path}:`, e)
+        }
       }
     }
   }

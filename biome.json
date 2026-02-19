@@ -11,7 +11,9 @@
 			"**",
 			"!src/lib/engine/webcontainer/fswatcher/fswatcher.bundle.cjs",
 			"!static/svelte-data.js",
-			"!src/backend/emails/templates.generated.ts"
+			"!src/backend/emails/templates.generated.ts",
+			"!static/skulpt.min.js",
+			"!static/skulpt-stdlib.js"
 		]
 	},
 	"formatter": {

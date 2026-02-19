@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { X, LayoutGrid, Eye, Code, Info, Save } from "@lucide/svelte";
+  import { Code, Eye, Info, LayoutGrid, Save, X } from "@lucide/svelte";
   import getIcon from "$lib/icons"
   import editorState from "./editorState.svelte";
 

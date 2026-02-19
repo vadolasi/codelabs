@@ -121,18 +121,37 @@ const contextMenuService = useMachine(menu.machine, {
 const contextMenuApi = $derived(
   menu.connect(contextMenuService, normalizeProps)
 )
+const contextTriggerProps = $derived(contextMenuApi.getContextTriggerProps())
 
-let dragOverPath = $state<string | null>(null)
-let dragOverTimer: Timer | null = null
+let dragCounter = 0
+
+function handleDragEnter(e: DragEvent) {
+  e.preventDefault()
+  dragCounter++
+  // Default to root if entering from outside
+  if (dragCounter === 1 && !editorState.dragOverPath) {
+    editorState.dragOverPath = "/"
+  }
+}
+
+function handleDragLeave(e: DragEvent) {
+  e.preventDefault()
+  dragCounter--
+  // Reset only if leaving the entire container
+  if (dragCounter === 0) {
+    editorState.dragOverPath = null
+  }
+}
 
 async function handleDrop(e: DragEvent) {
   e.preventDefault()
-  dragOverPath = null
+  dragCounter = 0
   
   const items = e.dataTransfer?.items
   if (!items) return
 
-  const targetPath = dragOverPath || "/"
+  const targetPath = editorState.dragOverPath || "/"
+  editorState.dragOverPath = null
 
   for (let i = 0; i < items.length; i++) {
     const entry = items[i].webkitGetAsEntry()
@@ -376,8 +395,10 @@ onMount(() => {
 	class="h-full p-3 overflow-auto bg-base-300"
 	use:registerTree
 	{...tree.getContainerProps()}
-  {...contextMenuApi.getContextTriggerProps()}
-  ondragover={handleDragOver}
+  {...contextTriggerProps}
+  ondragenter={handleDragEnter}
+  ondragover={(e) => e.preventDefault()}
+  ondragleave={handleDragLeave}
   ondrop={handleDrop}
 >
   {#if editorState.creatingItem && editorState.creatingItem.parentPath === '/'}

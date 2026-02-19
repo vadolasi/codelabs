@@ -37,7 +37,7 @@ import {
 } from "@codemirror/view"
 import { LoroExtensions } from "loro-codemirror"
 import { LoroText } from "loro-crdt"
-import { onMount, onDestroy } from "svelte"
+import { onDestroy, onMount } from "svelte"
 import editorState, {
   engine,
 } from "./editorState.svelte"

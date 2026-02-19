@@ -1,5 +1,5 @@
 <script lang="ts">
-import { Home, MonitorPlay, Play, Share2, Square, Save } from "@lucide/svelte"
+import { Home, MonitorPlay, Play, Save, Share2, Square } from "@lucide/svelte"
 import { io, type Socket } from "socket.io-client"
 import type { Component } from "svelte"
 import { onMount, tick } from "svelte"

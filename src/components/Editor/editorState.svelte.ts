@@ -31,6 +31,7 @@ class EditorState {
     parentPath: string
     type: "file" | "folder"
   } | null>(null)
+  public dragOverPath = $state<string | null>(null)
   public preferredViewers = new SvelteMap<string, string>()
   public unsavedPaths = new SvelteSet<string>()
   private states: Map<string, object> = new Map()
@@ -63,6 +64,7 @@ class EditorState {
     this.prewviewers.clear()
     this.preferredViewers.clear()
     this.unsavedPaths.clear()
+    this.dragOverPath = null
 
     // Recriamos as instâncias do Loro com novas identidades
     this.loroDoc = this.createDoc()

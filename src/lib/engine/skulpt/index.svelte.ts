@@ -34,8 +34,10 @@ export default class SkulptEngine extends BaseEngine {
     return {
       readFile: async (path: string) => {
         const item = editorState.filesMap.get(path)
-        // biome-ignore lint/suspicious/noExplicitAny: Loro returns plain objects for map values
-        const data = item?.get("data") as any
+        if (!item) return ""
+
+        const data = item.get("data") as any
+
         return data?.content || ""
       },
       writeFile: async (path: string, data: string) => {
@@ -44,7 +46,7 @@ export default class SkulptEngine extends BaseEngine {
           item.set("data", { type: "file", path, content: data })
         }
       },
-      readdir: async () => [], // Skulpt doesn't have a real FS readdir
+      readdir: async () => [],
       mkdir: async () => {},
       rm: async () => {},
       rename: async () => {}
@@ -56,13 +58,11 @@ export default class SkulptEngine extends BaseEngine {
 
     return new Promise((resolve, reject) => {
       const skulpt = document.createElement("script")
-      skulpt.src = "https://skulpt.org/js/skulpt.min.js"
-      skulpt.crossOrigin = "anonymous"
+      skulpt.src = "/skulpt.min.js"
       skulpt.onerror = () => reject(new Error("Falha ao carregar Skulpt"))
       skulpt.onload = () => {
         const stdlib = document.createElement("script")
-        stdlib.src = "https://skulpt.org/js/skulpt-stdlib.js"
-        stdlib.crossOrigin = "anonymous"
+        stdlib.src = "/skulpt-stdlib.js"
         stdlib.onerror = () =>
           reject(new Error("Falha ao carregar Skulpt Stdlib"))
         stdlib.onload = () => resolve()
@@ -79,6 +79,49 @@ export default class SkulptEngine extends BaseEngine {
 
   private configureSkulpt() {
     if (typeof Sk === "undefined") return
+
+    const resolveWorkspaceAsset = (url: string) => {
+      const decodedUrl = decodeURIComponent(url)
+      const cleanUrl = decodedUrl.replace(/\.gif$/, "")
+
+      const pathsToTry = [
+        decodedUrl,
+        cleanUrl,
+        decodedUrl.startsWith("/") ? decodedUrl : `/${decodedUrl}`,
+        cleanUrl.startsWith("/") ? cleanUrl : `/${cleanUrl}`,
+        // Remove / se existir para tentar caminhos relativos
+        decodedUrl.replace(/^\//, ""),
+        cleanUrl.replace(/^\//, "")
+      ]
+
+      for (const targetPath of pathsToTry) {
+        const item = editorState.filesMap.get(targetPath)
+        const data = item?.get("data") as any
+
+        if (data) {
+          if (data.type === "binary") {
+            return `/api/files/${data.hash}`
+          }
+          if (
+            data.type === "file" &&
+            targetPath.toLowerCase().endsWith(".svg")
+          ) {
+            const blob = new Blob([data.content], { type: "image/svg+xml" })
+            return URL.createObjectURL(blob)
+          }
+        }
+      }
+
+      return url
+    }
+
+    // Configuração CRÍTICA para a versão Trinket
+    Sk.TurtleGraphics = Sk.TurtleGraphics || {}
+    Sk.TurtleGraphics.target = "turtle-canvas"
+    Sk.TurtleGraphics.assets = resolveWorkspaceAsset // O segredo está aqui
+
+    Sk.canvas = "turtle-canvas"
+    Sk.imageProxy = resolveWorkspaceAsset
 
     Sk.configure({
       output: (text: string) => this.enqueueOutput(text),
@@ -99,16 +142,11 @@ export default class SkulptEngine extends BaseEngine {
       },
       inputfun: () =>
         new Promise((resolve) => {
-          // Removemos o log de "Input:" e códigos ANSI para manter a tela limpa
           this.inputResolve = resolve
         }),
       python3: true,
       __future__: Sk.python3
     })
-
-    // Configuração do Turtle - seguindo padrão Skulpt.org
-    Sk.TurtleGraphics = Sk.TurtleGraphics || {}
-    Sk.TurtleGraphics.target = "turtle-canvas"
   }
 
   private enqueueOutput(text: string) {
@@ -136,10 +174,8 @@ export default class SkulptEngine extends BaseEngine {
   }
 
   interrupt(): void {
-    // Skulpt doesn't have a built-in kill, but we can reset the state
     this.enqueueOutput("\nExecution interrupted.\n")
     this.isRunning = false
-    // Force reset Skulpt context
     this.configureSkulpt()
   }
 
@@ -147,6 +183,7 @@ export default class SkulptEngine extends BaseEngine {
     if (this.isRunning) return
 
     this.isRunning = true
+
     const code = await this.fs.readFile(path, "utf-8")
 
     // Resetamos o buffer e enviamos o sinal de limpeza explicitamente
@@ -155,22 +192,21 @@ export default class SkulptEngine extends BaseEngine {
 
     if (this.visualizerContainer) {
       this.visualizerContainer.innerHTML = ""
+      // Garante que o Skulpt saiba onde desenhar nesta execução
+      Sk.canvas = this.visualizerContainer.id || "turtle-canvas"
     }
 
     this.configureSkulpt()
 
-    this.enqueueOutput(`Running ${path}...\n`)
-
     try {
-      // Skulpt importMainWithBody já lida com a execução
       await Sk.misceval.asyncToPromise(() => {
         return Sk.importMainWithBody("<stdin>", false, code, true)
       })
-      if (this.isRunning) {
-        this.enqueueOutput("\nProcess finished.\n")
-      }
     } catch (e) {
-      this.enqueueOutput(`\n${String(e)}\n`)
+      this.enqueueOutput(
+        `\n\u001b[31mErro de Execução:\u001b[0m\n${String(e)}\n`
+      )
+      console.error("[Skulpt Error]", e)
     } finally {
       this.isRunning = false
     }

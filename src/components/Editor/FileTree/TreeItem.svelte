@@ -30,7 +30,6 @@ const contextMenuId = crypto.randomUUID()
 const contextMenuService = useMachine(menu.machine, {
   id: contextMenuId,
   onSelect: (event) => {
-    if (!engine.current) return
     const data = item.getItemData()
     const parentPath = data.type === "directory" ? data.path : (item.getParent()?.getItemData().path || "/")
 
@@ -75,6 +74,7 @@ const contextMenuService = useMachine(menu.machine, {
 const contextMenuApi = $derived(
   menu.connect(contextMenuService, normalizeProps)
 )
+const contextTriggerProps = $derived(contextMenuApi.getContextTriggerProps())
 
 const openWithViewers = $derived.by(() => {
   const path = itemData.path.toLowerCase()
@@ -95,11 +95,15 @@ const renameProps = $derived.by(() => item.getRenameInputProps())
 
 let hoverTimer: Timer | null = null
 
-function handleDragEnter() {
-  if (itemData.type === 'directory' && !item.isExpanded()) {
-    hoverTimer = setTimeout(() => {
-      item.expand()
-    }, 500)
+function handleDragEnter(e: DragEvent) {
+  if (itemData.type === 'directory') {
+    e.stopPropagation()
+    editorState.dragOverPath = itemData.path
+    if (!item.isExpanded()) {
+      hoverTimer = setTimeout(() => {
+        item.expand()
+      }, 500)
+    }
   }
 }
 
@@ -114,13 +118,14 @@ function handleDragLeave() {
 <button
   type="button"
   {...itemProps.rest}
-  {...contextMenuApi.getContextTriggerProps()}
+  {...contextTriggerProps}
   oncontextmenu={(e) => {
+    contextTriggerProps.onContextMenu(e);
     e.stopPropagation();
   }}
   use:registerItem
   style:padding-left={`${item.getItemMeta().level * 10}px`}
-  class="w-full cursor-pointer hover:text-primary flex items-center gap-1 text-sm text-ellipsis select-none"
+  class="w-full cursor-pointer hover:text-primary flex items-center gap-1 text-sm text-ellipsis select-none transition-colors duration-150 {editorState.dragOverPath === itemData.path ? 'bg-primary/10 text-primary' : ''}"
   onclick={itemProps.onClick}
   onkeydown={(e) => {
     if (e.key === 'Enter' || e.key === ' ') {
@@ -129,7 +134,6 @@ function handleDragLeave() {
   }}
   ondragenter={handleDragEnter}
   ondragleave={handleDragLeave}
-  ondrop={handleDragLeave}
 >
   <img
     src={
