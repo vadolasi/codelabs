@@ -10,10 +10,12 @@ O banco de dados é SQLite, portando, não é necessário configurar nenhum serv
 
 Utilize [`.env.example`](./.env.example) como base. Criar um arquivo `.env` na raiz também é suportado.
 
-- `RESEND_API_KEY`: Chave de API do Resend. É necessário ter uma conta no [Resend](https://resend.com/) (é possível usar o serviço gratuitamente).
+- `RESEND_API_KEY` (opicional durante o desenvolvimento): Chave de API do Resend. É necessário ter uma conta no [Resend](https://resend.com/) (é possível usar o serviço gratuitamente).
+- `MAIL_FROM` (opicional durante o desenvolvimento): Dominio pelo qual os emails serão enviados (ex: codelabs@vitordaniel.is-a.dev). Configure pelo Resend.
 - `DOMAIN`: Dominio em que o servidor está sendo executado (ex: localhost, codelabs.vitordaniel.is-a.dev)
-- `MAIL_FROM`: Dominio pelo qual os emails serão enviados (ex: codelabs@vitordaniel.is-a.dev). Configure pelo Resend.
 - `ADMIN_EMAIL` e `ADMIN_PASSWORD` (apenas para produção): Credenciais do usuário administrador que será criado automaticamente.
+
+Ao executar em ambiente desenvolvimento, apenas defina `DOMAIN=localhost`.
 
 ### Executando em ambiente de desenvolvimento
 
