@@ -17,8 +17,6 @@ import authMiddleware from "../auth/auth.middleware"
 import { generateToken, hashPassword } from "../auth/auth.service"
 import { generateOTPCode } from "./users.service"
 
-const resend = new Resend(config.RESEND_API_KEY)
-
 const matcherPwned = matcherPwnedFactory(fetch, zxcvbnOptions)
 zxcvbnOptions.addMatcher("pwned", matcherPwned)
 
@@ -86,18 +84,22 @@ const emailActions = new Elysia()
           to: email
         })
 
-        const { data: contact, error } = await resend.contacts.create({
-          email: emailNormalized,
-          unsubscribed: false
-        })
+        if (config.NODE_ENV === "production") {
+          const resend = new Resend(config.RESEND_API_KEY)
 
-        if (error) {
-          console.error("Failed to add contact to Resend:", error)
-        } else {
-          await resend.contacts.segments.add({
-            contactId: contact.id,
-            segmentId: "656dc7f2-37c4-4246-909a-1d66b56b7b80"
+          const { data: contact, error } = await resend.contacts.create({
+            email: emailNormalized,
+            unsubscribed: false
           })
+
+          if (error) {
+            console.error("Failed to add contact to Resend:", error)
+          } else {
+            await resend.contacts.segments.add({
+              contactId: contact.id,
+              segmentId: "656dc7f2-37c4-4246-909a-1d66b56b7b80"
+            })
+          }
         }
       })()
 

@@ -4,7 +4,7 @@ const envSource = process.env
 
 const configSchema = z.object({
   NODE_ENV: z.enum(["development", "production"]).default("development"),
-  RESEND_API_KEY: z.string().min(1),
+  RESEND_API_KEY: z.optional(z.string().min(1)),
   DOMAIN: z.string().min(1),
   MAIL_FROM: z.email(),
   ADMIN_EMAIL: z.email(),

@@ -70,7 +70,7 @@ export async function getWorkspaceUpdates(
     .select()
     .from(workspaceUpdates)
     .where(eq(workspaceUpdates.workspaceId, workspaceId))
-    .orderBy(asc(workspaceUpdates.createdAt))
+    .orderBy(asc(workspaceUpdates.id)) // Use ID (UUIDv7) for perfect chronological order
 
   return rows.map((row) => Uint8Array.from(row.update))
 }
@@ -109,12 +109,22 @@ export async function getCleanSnapshot(
   for (const [path, item] of Object.entries(sourceFiles.toJSON())) {
     const itemMap = cleanFiles.setContainer(path, new LoroMap())
 
-    // Copy data
-    if (item.data) {
-      itemMap.set("data", item.data)
+    // 1. Determine the latest content (prefer live editable content over saved content)
+    let finalContent = item.data?.content || ""
+    if (item.editableContent && typeof item.editableContent === "string") {
+      finalContent = item.editableContent
     }
 
-    // Copy children if exists
+    // 2. Copy data, ensuring content is synchronized with the live version
+    if (item.data) {
+      const data = { ...item.data }
+      if (data.type === "file") {
+        data.content = finalContent
+      }
+      itemMap.set("data", data)
+    }
+
+    // 3. Copy children if exists
     if (item.children) {
       const cleanChildren = itemMap.setContainer("children", new LoroList())
       for (const child of item.children) {
@@ -122,10 +132,10 @@ export async function getCleanSnapshot(
       }
     }
 
-    // Copy editableContent if exists
+    // 4. Copy editableContent if exists
     if (item.editableContent) {
       const cleanText = itemMap.setContainer("editableContent", new LoroText())
-      cleanText.insert(0, item.editableContent)
+      cleanText.insert(0, finalContent)
     }
   }
 
