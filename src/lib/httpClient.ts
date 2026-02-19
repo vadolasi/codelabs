@@ -8,10 +8,20 @@ const packr = new Packr({ bundleStrings: true })
 export function getHttpClient(url: string, fetch: typeof window.fetch) {
   const { api: httpClient } = treaty<App>(url, {
     fetcher: fetch,
-    onRequest: (_path, { body }) => {
-      if (body !== undefined && typeof body !== "string") {
+    onRequest: (_path, { body, headers }) => {
+      if (
+        body !== undefined &&
+        typeof body !== "string" &&
+        !(body instanceof FormData) &&
+        (headers as Record<string, string>)["content-type"] !==
+          "multipart/form-data"
+      ) {
         return {
-          body: new Uint8Array(packr.pack(body))
+          body: new Uint8Array(packr.pack(body)),
+          headers: {
+            ...headers,
+            "Content-Type": "application/x-msgpack"
+          }
         }
       }
     },

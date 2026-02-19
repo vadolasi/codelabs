@@ -1,5 +1,5 @@
 <script lang="ts">
-import { Home, MonitorPlay, Play, Share2, Square } from "@lucide/svelte"
+import { Home, MonitorPlay, Play, Share2, Square, Save } from "@lucide/svelte"
 import { io, type Socket } from "socket.io-client"
 import type { Component } from "svelte"
 import { onMount, tick } from "svelte"
@@ -8,7 +8,6 @@ import { Pane, Splitpanes } from "svelte-splitpanes"
 import type BaseEngine from "$lib/engine/base.svelte"
 import httpClient from "$lib/httpClient"
 import parser from "$lib/socketio-msgpack-parser"
-import Editor from "./Editor.svelte"
 import editorState, {
   engine,
 } from "./editorState.svelte"
@@ -19,6 +18,7 @@ import type {
   ClientToServerEvents,
   ServerToClientEvents
 } from "./socket-io-types"
+import ViewerHost from "./ViewerHost.svelte"
 import Visualizer from "./Visualizer.svelte"
 
 // Componentes carregados dinamicamente com tipagem correta
@@ -202,6 +202,34 @@ let showVisualizer = $state(false)
         <div class="text-sm font-medium text-base-content/90">{currentWorkspace.name}</div>
       </div>
       <div class="ml-auto flex items-center gap-2">
+        {#if editorState.viewerType === 'code' && editorState.isUnsaved}
+          <button 
+            type="button"
+            class="btn btn-primary btn-sm gap-2"
+            onclick={() => window.dispatchEvent(new CustomEvent('editor-save'))}
+          >
+            <Save class="w-4 h-4" />
+            Salvar
+          </button>
+        {/if}
+
+        {#if editorState.availableViewers.length > 1}
+          <div class="join bg-base-300 rounded-lg p-0.5 mr-2">
+            {#each editorState.availableViewers as viewer}
+              <button 
+                class="btn btn-xs join-item gap-1.5 border-none normal-case font-medium"
+                class:btn-primary={editorState.viewerType === viewer.id}
+                class:btn-ghost={editorState.viewerType !== viewer.id}
+                class:opacity-60={editorState.viewerType !== viewer.id}
+                onclick={() => editorState.setPreferredViewer(viewer.id)}
+              >
+                <viewer.icon class="w-3 h-3" />
+                {viewer.label}
+              </button>
+            {/each}
+          </div>
+        {/if}
+
         {#if engine.current?.canRun?.(editorState.currentTab || "")}
           {#if engine.current.isRunning}
             <button type="button" class="btn btn-error btn-sm gap-2" onclick={interruptExecution}>
@@ -249,7 +277,7 @@ let showVisualizer = $state(false)
         <Splitpanes theme="modern-theme" horizontal={true}>
           <Pane>
             <div class="h-full border-b border-base-200/60 bg-base-300">
-              <Editor />
+              <ViewerHost />
             </div>
           </Pane>
           <Pane class="flex flex-col">
@@ -313,7 +341,7 @@ let showVisualizer = $state(false)
         <Splitpanes theme="modern-theme" horizontal={true}>
           <Pane>
             <div class="h-full border-b border-base-200/60 bg-base-300">
-              <Editor />
+              <ViewerHost />
             </div>
           </Pane>
           <Pane size={30} class="flex flex-col">
@@ -331,7 +359,7 @@ let showVisualizer = $state(false)
         </Splitpanes>
       {:else}
         <div class="h-full bg-base-300">
-          <Editor />
+          <ViewerHost />
         </div>
       {/if}
     </Pane>

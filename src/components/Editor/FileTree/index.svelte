@@ -11,40 +11,15 @@ import { normalizeProps, useMachine } from "@zag-js/svelte"
 import { LoroList, LoroMap } from "loro-crdt"
 import picoMatch from "picomatch"
 import { onMount, tick } from "svelte"
+import resolveIcon from "$lib/icons"
 import editorState, {
   engine, 
 } from "../editorState.svelte"
 import TreeItem from "./TreeItem.svelte"
 
 let render = $state(0)
+
 const isMatch = picoMatch("**/node_modules/**", { dot: true })
-
-function ensureDirectory(path: string) {
-  const existing = editorState.filesMap.get(path)
-  if (!existing) {
-    const dirMap = new LoroMap<Record<string, Item | LoroList>>()
-    dirMap.set("data", { type: "directory", path })
-    dirMap.setContainer("children", new LoroList<string>())
-    editorState.filesMap.setContainer(path, dirMap)
-    return dirMap
-  }
-
-  const children = existing.get("children")
-  if (!(children instanceof LoroList)) {
-    existing.setContainer("children", new LoroList<string>())
-  }
-
-  return existing
-}
-
-function addChildToParent(parentPath: string, childPath: string) {
-  const parent = ensureDirectory(parentPath)
-  const children = parent.get("children") as LoroList<string>
-  const list = children.toArray()
-  if (!list.includes(childPath)) {
-    children.push(childPath)
-  }
-}
 
 function registerTree(node: HTMLElement) {
   tree.registerElement(node)
@@ -57,7 +32,7 @@ function registerTree(node: HTMLElement) {
   }
 }
 
-ensureDirectory("/")
+editorState.ensureDirectory("/")
 
 const tree = createTree<Item>({
   rootItemId: "/",
@@ -74,11 +49,7 @@ const tree = createTree<Item>({
   },
   canRename: () => true,
   onRename: async (item, newName) => {
-    const parentPath = item.getParent()!.getItemData().path
-    const newPath = `${parentPath}/${newName}`
-    if (engine.current) {
-      await engine.current.fs.rename(item.getItemData().path, newPath)
-    }
+    await editorState.renameItem(item.getItemData().path, newName)
   },
   dataLoader: {
     getItem: (itemId) => {
@@ -87,7 +58,7 @@ const tree = createTree<Item>({
         return entry.get("data") as Item
       }
       if (itemId === "/") {
-        return ensureDirectory("/").get("data") as Item
+        return editorState.ensureDirectory("/").get("data") as Item
       }
       return { type: "file", path: itemId, content: "" } as Item
     },
@@ -132,29 +103,15 @@ const contextMenuService = useMachine(menu.machine, {
 
     switch (event.value) {
       case "new-file": {
-        const name = prompt("Nome do arquivo:")
-        if (!name) return
-        const path = `${parentPath === "/" ? "" : parentPath}/${name}`
-        if (editorState.filesMap.get(path)) return alert("Arquivo já existe")
-        
-        const fileMap = new LoroMap<Record<string, Item>>()
-        fileMap.set("data", { type: "file", path, content: "" })
-        editorState.filesMap.setContainer(path, fileMap)
-        addChildToParent(parentPath, path)
-        editorState.loroDoc.commit()
-        tree.rebuildTree()
+        editorState.creatingItem = { parentPath, type: 'file' }
         break
       }
       case "new-folder": {
-        const name = prompt("Nome da pasta:")
-        if (!name) return
-        const path = `${parentPath === "/" ? "" : parentPath}/${name}`
-        if (editorState.filesMap.get(path)) return alert("Pasta já existe")
-        
-        ensureDirectory(path)
-        addChildToParent(parentPath, path)
-        editorState.loroDoc.commit()
-        tree.rebuildTree()
+        editorState.creatingItem = { parentPath, type: 'folder' }
+        break
+      }
+      case "download-zip": {
+        editorState.downloadWorkspace()
         break
       }
     }
@@ -164,6 +121,47 @@ const contextMenuService = useMachine(menu.machine, {
 const contextMenuApi = $derived(
   menu.connect(contextMenuService, normalizeProps)
 )
+
+let dragOverPath = $state<string | null>(null)
+let dragOverTimer: Timer | null = null
+
+async function handleDrop(e: DragEvent) {
+  e.preventDefault()
+  dragOverPath = null
+  
+  const items = e.dataTransfer?.items
+  if (!items) return
+
+  const targetPath = dragOverPath || "/"
+
+  for (let i = 0; i < items.length; i++) {
+    const entry = items[i].webkitGetAsEntry()
+    if (entry) {
+      await uploadEntry(entry, targetPath)
+    }
+  }
+}
+
+async function uploadEntry(entry: FileSystemEntry, parentPath: string) {
+  if (entry.isFile) {
+    const file = await new Promise<File>((resolve) => (entry as FileSystemFileEntry).file(resolve))
+    await editorState.uploadFile(file, parentPath)
+  } else if (entry.isDirectory) {
+    const newDirPath = editorState.createFolder(parentPath, entry.name)
+    if (!newDirPath) return
+    
+    const reader = (entry as FileSystemDirectoryEntry).createReader()
+    const entries = await new Promise<FileSystemEntry[]>((resolve) => reader.readEntries(resolve))
+    for (const childEntry of entries) {
+      await uploadEntry(childEntry, newDirPath)
+    }
+  }
+}
+
+function handleDragOver(e: DragEvent) {
+  e.preventDefault()
+  // Logic for hover auto-open could be added here by detecting which TreeItem is under the mouse
+}
 
 async function syncFromFs(rootFsPath: string) {
   if (!engine.current) return
@@ -204,25 +202,25 @@ async function syncFromFs(rootFsPath: string) {
       }
 
       if (entry.isDirectory()) {
-        ensureDirectory(nextStorePath)
-        addChildToParent(current.storePath, nextStorePath)
+        editorState.ensureDirectory(nextStorePath)
+        editorState.addChildToParent(current.storePath, nextStorePath)
         queue.push({ fsPath: nextFsPath, storePath: nextStorePath })
         continue
       }
 
       if (entry.isFile()) {
-        const content = await engine.current.fs.readFile(
-          nextFsPath,
-          "utf-8"
-        )
+        const fileContent = await engine.current.fs.readFile(nextFsPath, "utf-8")
+        // For syncFromFs, we assume it's mostly text files for now 
+        // as Skulpt/Pyodide usually deal with text. 
+        // But a more robust sync would check binary.
         const fileMap = new LoroMap<Record<string, Item>>()
         fileMap.set("data", {
           type: "file",
           path: nextStorePath,
-          content
+          content: fileContent
         })
         editorState.filesMap.setContainer(nextStorePath, fileMap)
-        addChildToParent(current.storePath, nextStorePath)
+        editorState.addChildToParent(current.storePath, nextStorePath)
       }
     }
   }
@@ -321,7 +319,7 @@ onMount(() => {
               .split("/")
               .slice(0, -1)
               .join("/")}`.replaceAll("//", "/")
-            addChildToParent(parent, event.path)
+            editorState.addChildToParent(parent, event.path)
           } else if (event.type === "file-remove" || event.type === "dir-remove") {
             editorState.filesMap.delete(event.path)
             const parent = `/${event.path.split("/").slice(0, -1).join("/")}`
@@ -355,7 +353,7 @@ onMount(() => {
                 .split("/")
                 .slice(0, -1)
                 .join("/")}`.replaceAll("//", "/")
-              addChildToParent(parent, event.path)
+              editorState.addChildToParent(parent, event.path)
             }
           }
 
@@ -379,10 +377,56 @@ onMount(() => {
 	use:registerTree
 	{...tree.getContainerProps()}
   {...contextMenuApi.getContextTriggerProps()}
+  ondragover={handleDragOver}
+  ondrop={handleDrop}
 >
+  {#if editorState.creatingItem && editorState.creatingItem.parentPath === '/'}
+    <div class="flex items-center gap-1 px-1 mb-1" style:padding-left="0px">
+      <img src={resolveIcon(editorState.creatingItem.type === 'file' ? 'f.txt' : 'folder', editorState.creatingItem.type === 'file' ? 'file' : 'folder-closed')} alt="" class="w-4 h-4 shrink-0" />
+      <input 
+        autofocus
+        class="border border-primary bg-base-100 rounded px-1 w-full outline-none text-sm"
+        onkeydown={(e) => {
+          if (e.key === 'Escape') editorState.creatingItem = null
+          if (e.key === 'Enter') {
+            const name = e.currentTarget.value
+            if (name) {
+              if (editorState.creatingItem?.type === 'file') editorState.createFile(editorState.creatingItem.parentPath, name)
+              else if (editorState.creatingItem?.type === 'folder') editorState.createFolder(editorState.creatingItem.parentPath, name)
+            }
+            editorState.creatingItem = null
+            tree.rebuildTree()
+          }
+        }}
+        onblur={() => editorState.creatingItem = null}
+      />
+    </div>
+  {/if}
   {#key render}
     {#each tree.getItems() as item (item.getId())}
       <TreeItem item={item} />
+      {#if editorState.creatingItem && editorState.creatingItem.parentPath === item.getItemData().path && item.isExpanded()}
+        <div class="flex items-center gap-1 px-1" style:padding-left={`${(item.getItemMeta().level + 1) * 10}px`}>
+          <img src={resolveIcon(editorState.creatingItem.type === 'file' ? 'f.txt' : 'folder', editorState.creatingItem.type === 'file' ? 'file' : 'folder-closed')} alt="" class="w-4 h-4 shrink-0" />
+          <input 
+            autofocus
+            class="border border-primary bg-base-100 rounded px-1 w-full outline-none text-sm"
+            onkeydown={(e) => {
+              if (e.key === 'Escape') editorState.creatingItem = null
+              if (e.key === 'Enter') {
+                const name = e.currentTarget.value
+                if (name) {
+                  if (editorState.creatingItem?.type === 'file') editorState.createFile(editorState.creatingItem.parentPath, name)
+                  else if (editorState.creatingItem?.type === 'folder') editorState.createFolder(editorState.creatingItem.parentPath, name)
+                }
+                editorState.creatingItem = null
+                tree.rebuildTree()
+              }
+            }}
+            onblur={() => editorState.creatingItem = null}
+          />
+        </div>
+      {/if}
     {/each}
   {/key}
 </div>
@@ -391,5 +435,7 @@ onMount(() => {
   <ul {...contextMenuApi.getContentProps()} class="bg-base-200 shadow-xl border border-base-content/10 py-1 min-w-[160px] rounded overflow-hidden">
     <li {...contextMenuApi.getItemProps({ value: "new-file" })} class="cursor-pointer py-1.5 px-4 hover:bg-primary hover:text-primary-content text-sm">Novo Arquivo</li>
     <li {...contextMenuApi.getItemProps({ value: "new-folder" })} class="cursor-pointer py-1.5 px-4 hover:bg-primary hover:text-primary-content text-sm">Nova Pasta</li>
+    <div class="border-t border-base-content/5 my-1"></div>
+    <li {...contextMenuApi.getItemProps({ value: "download-zip" })} class="cursor-pointer py-1.5 px-4 hover:bg-primary hover:text-primary-content text-sm">Baixar como ZIP</li>
   </ul>
 </div>

@@ -37,8 +37,7 @@ import {
 } from "@codemirror/view"
 import { LoroExtensions } from "loro-codemirror"
 import { LoroText } from "loro-crdt"
-import { onMount } from "svelte"
-import getIcon from "$lib/icons"
+import { onMount, onDestroy } from "svelte"
 import editorState, {
   engine,
 } from "./editorState.svelte"
@@ -56,6 +55,24 @@ const editorTheme = EditorView.theme({
 
 onMount(() => {
   view = new EditorView({ parent: editorContainer })
+  
+  const handleSave = () => {
+    if (!editorState.currentTab) return
+    const item = editorState.filesMap.get(editorState.currentTab)
+    const content = view.state.doc.toString()
+    
+    item.set("data", {
+      type: "file",
+      path: editorState.currentTab,
+      content
+    })
+    
+    editorState.unsavedPaths.delete(editorState.currentTab)
+    editorState.loroDoc.commit()
+  }
+
+  window.addEventListener('editor-save', handleSave)
+  return () => window.removeEventListener('editor-save', handleSave)
 })
 
 $effect(() => {
@@ -122,6 +139,16 @@ $effect(() => {
           catppuccinMocha,
           EditorView.updateListener.of((update) => {
             if (update.docChanged) {
+              const item = editorState.filesMap.get(editorState.currentTab!)
+              const data = item.get("data") as any
+              const currentContent = update.state.doc.toString()
+              
+              if (currentContent !== data.content) {
+                editorState.unsavedPaths.add(editorState.currentTab!)
+              } else {
+                editorState.unsavedPaths.delete(editorState.currentTab!)
+              }
+              
               editorState.loroDoc.commit()
             }
           }),
@@ -139,11 +166,7 @@ $effect(() => {
                     content
                   })
 
-                  const container = item.get("editableContent")
-                  if (container instanceof LoroText) {
-                    container.update(content)
-                  }
-
+                  editorState.unsavedPaths.delete(editorState.currentTab!)
                   editorState.loroDoc.commit()
                   return true
                 }
@@ -170,47 +193,8 @@ $effect(() => {
     setupEditor()
   }
 })
-
-const tabNames = $derived(editorState.tabs.map((tab) => tab.getItemName()))
-const duplicateFileNames = $derived(
-  tabNames.filter((item, index) => tabNames.indexOf(item) !== index)
-)
 </script>
 
 <div class="w-full h-full flex flex-col">
-  {#if editorState.tabs.length > 0}
-		<div class="flex w-full bg-base-300 shrink-0 overflow-x-auto">
-			{#each editorState.tabs as tab (tab.getItemData().path)}
-		    <div role="button" tabindex="0" class="py-1 px-3 flex gap-1 items-center justify-center hover:bg-base-200 text-sm group border-primery select-none" class:bg-base-200={editorState.currentTab === tab.getItemData().path} onclick={() => editorState.setCurrentTab(tab)}>
-          <img src={getIcon(tab.getItemName(), "file")} alt="file icon" class="w-4 h-4" />
-          <span class="text-nowrap">{tab.getItemName()}</span>
-          {#if duplicateFileNames.includes(tab.getItemName())}
-            <span class="text-xs text-base-content group-hover:text-base-content/70">
-              /{tab.getItemData().path.split("/").splice(-2, 1)}
-            </span>
-          {/if}
-          <button
-            type="button"
-            aria-label="Close tab"
-            class="invisible group-hover:visible p-1 rounded-sm hover:bg-base-200 group-hover:hover:bg-base-300"
-            class:visible={editorState.currentTab === tab.getItemData().path}
-            onclick={(event) => {
-              event.stopPropagation();
-              editorState.closeTab(tab.getItemData().path);
-            }}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-      {/each}
-    </div>
-  {/if}
-  <div bind:this={editorContainer} class="flex-1 overflow-hidden" class:hidden={editorState.currentTab === null}></div>
-  {#if editorState.currentTab === null}
-    <div class="w-full h-full flex items-center justify-center bg-base-300 select-none">
-      <span>Nenhum arquivo selecionado</span>
-    </div>
-  {/if}
+  <div bind:this={editorContainer} class="flex-1 overflow-hidden"></div>
 </div>

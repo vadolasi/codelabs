@@ -94,8 +94,7 @@ export default class PyodideEngine extends BaseEngine {
 
     this.outputBuffer = []
     this.enqueueOutput("\u001b[2J")
-    this.enqueueOutput(`Running ${path} (Pyodide)...
-`)
+    this.enqueueOutput(`Running ${path}...\n`)
 
     try {
       // Sync files to Pyodide MEMFS

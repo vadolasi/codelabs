@@ -4,6 +4,7 @@ import { Packr } from "msgpackr"
 import config from "./lib/config"
 import adminController from "./modules/admin"
 import authController from "./modules/auth"
+import filesController from "./modules/files"
 import usersController from "./modules/users"
 import workspacesController from "./modules/workspaces"
 
@@ -56,6 +57,7 @@ const app = new Elysia({
   .use(authController)
   .use(usersController)
   .use(workspacesController)
+  .use(filesController)
   .use(adminController)
 
 export default app

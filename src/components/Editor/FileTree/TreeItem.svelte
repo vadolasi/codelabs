@@ -25,33 +25,6 @@ function registerItem(node: HTMLElement) {
   }
 }
 
-function ensureDirectory(path: string) {
-  const existing = editorState.filesMap.get(path)
-  if (!existing) {
-    const dirMap = new LoroMap<Record<string, Item | LoroList>>()
-    dirMap.set("data", { type: "directory", path })
-    dirMap.setContainer("children", new LoroList<string>())
-    editorState.filesMap.setContainer(path, dirMap)
-    return dirMap
-  }
-
-  const children = existing.get("children")
-  if (!(children instanceof LoroList)) {
-    existing.setContainer("children", new LoroList<string>())
-  }
-
-  return existing
-}
-
-function addChildToParent(parentPath: string, childPath: string) {
-  const parent = ensureDirectory(parentPath)
-  const children = parent.get("children") as LoroList<string>
-  const list = children.toArray()
-  if (!list.includes(childPath)) {
-    children.push(childPath)
-  }
-}
-
 const contextMenuId = crypto.randomUUID()
 
 const contextMenuService = useMachine(menu.machine, {
@@ -66,28 +39,35 @@ const contextMenuService = useMachine(menu.machine, {
         item.startRenaming()
         break
       case "new-file": {
-        const name = prompt("Nome do arquivo:")
-        if (!name) return
-        const path = `${parentPath === "/" ? "" : parentPath}/${name}`
-        if (editorState.filesMap.get(path)) return alert("Arquivo já existe")
-        
-        const fileMap = new LoroMap<Record<string, Item>>()
-        fileMap.set("data", { type: "file", path, content: "" })
-        editorState.filesMap.setContainer(path, fileMap)
-        addChildToParent(parentPath, path)
-        editorState.loroDoc.commit()
+        editorState.creatingItem = { parentPath, type: 'file' }
+        if (data.type === 'directory') item.expand()
         break
       }
       case "new-folder": {
-        const name = prompt("Nome da pasta:")
-        if (!name) return
-        const path = `${parentPath === "/" ? "" : parentPath}/${name}`
-        if (editorState.filesMap.get(path)) return alert("Pasta já existe")
-        
-        ensureDirectory(path)
-        addChildToParent(parentPath, path)
-        editorState.loroDoc.commit()
+        editorState.creatingItem = { parentPath, type: 'folder' }
+        if (data.type === 'directory') item.expand()
         break
+      }
+      case "duplicate": {
+        editorState.duplicateItem(data.path)
+        break
+      }
+      case "download": {
+        editorState.downloadItem(data.path)
+        break
+      }
+      case "delete": {
+        if (confirm(`Excluir ${itemName}?`)) {
+          editorState.deleteItem(data.path)
+        }
+        break
+      }
+      default: {
+        if (event.value.startsWith('open-with:')) {
+          const viewerId = event.value.split(':')[1]
+          editorState.preferredViewers.set(data.path, viewerId)
+          editorState.setCurrentTab(item)
+        }
       }
     }
   }
@@ -95,13 +75,49 @@ const contextMenuService = useMachine(menu.machine, {
 const contextMenuApi = $derived(
   menu.connect(contextMenuService, normalizeProps)
 )
+
+const openWithViewers = $derived.by(() => {
+  const path = itemData.path.toLowerCase()
+  const viewers: { id: string, label: string }[] = []
+  
+  if (itemData.type === 'file') {
+    if (path.endsWith('.md')) viewers.push({ id: 'markdown', label: 'Markdown' })
+    if (path.endsWith('.svg')) viewers.push({ id: 'image', label: 'Imagem' })
+    viewers.push({ id: 'code', label: 'Editor de Código' })
+  } else if (itemData.type === 'binary') {
+    if (itemData.mimeType.startsWith('image/')) viewers.push({ id: 'image', label: 'Imagem' })
+    viewers.push({ id: 'binary', label: 'Informações' })
+  }
+  return viewers
+})
+
 const renameProps = $derived.by(() => item.getRenameInputProps())
+
+let hoverTimer: Timer | null = null
+
+function handleDragEnter() {
+  if (itemData.type === 'directory' && !item.isExpanded()) {
+    hoverTimer = setTimeout(() => {
+      item.expand()
+    }, 500)
+  }
+}
+
+function handleDragLeave() {
+  if (hoverTimer) {
+    clearTimeout(hoverTimer)
+    hoverTimer = null
+  }
+}
 </script>
 
 <button
   type="button"
   {...itemProps.rest}
   {...contextMenuApi.getContextTriggerProps()}
+  oncontextmenu={(e) => {
+    e.stopPropagation();
+  }}
   use:registerItem
   style:padding-left={`${item.getItemMeta().level * 10}px`}
   class="w-full cursor-pointer hover:text-primary flex items-center gap-1 text-sm text-ellipsis select-none"
@@ -111,6 +127,9 @@ const renameProps = $derived.by(() => item.getRenameInputProps())
       itemProps.onClick(e as any);
     }
   }}
+  ondragenter={handleDragEnter}
+  ondragleave={handleDragLeave}
+  ondrop={handleDragLeave}
 >
   <img
     src={
@@ -120,24 +139,53 @@ const renameProps = $derived.by(() => item.getRenameInputProps())
       )
     }
     alt="file icon"
-    class="w-4 h-4"
+    class="w-4 h-4 shrink-0"
   />
   {#if item.isRenaming()}
     <!-- svelte-ignore a11y_autofocus -->
-    <input onblur={renameProps.onBlur} onchange={renameProps.onChange} value={renameProps.value} autofocus class="border rounded" />
+    <input 
+      onblur={renameProps.onBlur} 
+      onkeydown={(e) => {
+        if (e.key === 'Escape') {
+          item.stopRenaming()
+        }
+        if (e.key === 'Enter') {
+          renameProps.onBlur()
+        }
+      }}
+      onchange={renameProps.onChange} 
+      value={renameProps.value} 
+      autofocus 
+      class="border border-primary bg-base-100 rounded px-1 w-full outline-none" 
+    />
   {:else}
-    <span>{itemName}</span>
+    <span class="truncate">{itemName}</span>
   {/if}
   {#if item.isLoading()}
     <span>Loading...</span>
   {/if}
 </button>
-<div {...contextMenuApi.getPositionerProps()} class="bg-secondary rounded overflow-hidden">
-  <ul {...contextMenuApi.getContentProps()} class="bg-base-200 shadow-xl border border-base-content/10 py-1 min-w-[160px]">
-    <li {...contextMenuApi.getItemProps({ value: "new-file" })} class="cursor-pointer py-1.5 px-4 hover:bg-primary hover:text-primary-content text-sm">Novo Arquivo</li>
-    <li {...contextMenuApi.getItemProps({ value: "new-folder" })} class="cursor-pointer py-1.5 px-4 hover:bg-primary hover:text-primary-content text-sm border-b border-base-content/5">Nova Pasta</li>
+<div {...contextMenuApi.getPositionerProps()} class="z-50">
+  <ul {...contextMenuApi.getContentProps()} class="bg-base-200 shadow-xl border border-base-content/10 py-1 min-w-[160px] rounded overflow-hidden">
+    {#if itemData.type === 'directory'}
+      <li {...contextMenuApi.getItemProps({ value: "new-file" })} class="cursor-pointer py-1.5 px-4 hover:bg-primary hover:text-primary-content text-sm">Novo Arquivo</li>
+      <li {...contextMenuApi.getItemProps({ value: "new-folder" })} class="cursor-pointer py-1.5 px-4 hover:bg-primary hover:text-primary-content text-sm border-b border-base-content/5 mb-1">Nova Pasta</li>
+    {/if}
+    {#if openWithViewers.length > 1}
+      <li class="cursor-default py-1.5 px-4 text-xs font-bold opacity-50 uppercase tracking-tight">Abrir com</li>
+      {#each openWithViewers as viewer}
+        <li {...contextMenuApi.getItemProps({ value: `open-with:${viewer.id}` })} class="cursor-pointer py-1.5 px-4 hover:bg-primary hover:text-primary-content text-sm">
+          {viewer.label}
+        </li>
+      {/each}
+      <div class="border-t border-base-content/5 my-1"></div>
+    {/if}
     <li {...contextMenuApi.getItemProps({ value: "rename" })} class="cursor-pointer py-1.5 px-4 hover:bg-primary hover:text-primary-content text-sm">Renomear</li>
     <li {...contextMenuApi.getItemProps({ value: "duplicate" })} class="cursor-pointer py-1.5 px-4 hover:bg-primary hover:text-primary-content text-sm">Duplicar</li>
+    <li {...contextMenuApi.getItemProps({ value: "download" })} class="cursor-pointer py-1.5 px-4 hover:bg-primary hover:text-primary-content text-sm">
+      {itemData.type === 'directory' ? 'Baixar como ZIP' : 'Baixar'}
+    </li>
+    <div class="border-t border-base-content/5 my-1"></div>
     <li {...contextMenuApi.getItemProps({ value: "delete" })} class="cursor-pointer py-1.5 px-4 hover:bg-primary hover:text-primary-content text-sm text-error hover:text-error-content">Excluir</li>
   </ul>
 </div>
