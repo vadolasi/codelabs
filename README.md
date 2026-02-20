@@ -2,20 +2,34 @@
 
 IDE Online completa com colaboração em tempo real voltada para salas de aula.
 
+## Linguagens suportadas
+
+Atualmente, é possível executar Node.js e Python, tudo diretamente no navegador. São suportados os seguintes runtimes:
+
+| Runtime | Funcionamento | Linguagens suportadas | Funcionalidades | Limitações |
+|---|---|---|---|---|
+| **Webcontainers** | Emula um mini sistema operacional POSIX completo através de Webassembly. | Javascript (Node.js) e Python | Ambiente completo com sistema de arquivos, terminal PTY real e suporte a servidores HTTP com preview. | Não há suporte para instalação de pacotes Python via `pip`. |
+| **Skulpt** | Interpretador Python escrito puramente em Javascript. | Python | Suporte à biblioteca `turtle`. | Suporte limitado à biblioteca padrão do Python, sem suporte a pacotes externos, e sem suporte a sintaxe completa (principalmente das versões mais recentes), é sabido que não há suporte para f-strings e pattern matching, além de não ser possível incluir acentos em nomes de variáveis. A implementação do `turtle` também diverge da implementação original. |
+| **Pyodide** | Interpretador CPython completo compilado para Webassembly. | Python | Runtime recomendado para Python. Suporte a bibliotecas científicas (numpy, pandas) e instalação de pacotes. | Não possui suporte ao módulo `turtle`. |
+
+Note que todos os runtimes vão ter limitações por serem executados diretamente no navegador.
+
+Os planos são de suportar vários outros runtimes.
+
 ## Executando o Codelabs
 
-O banco de dados é SQLite, portando, não é necessário configurar nenhum servidor de banco de dados.
+O banco de dados é SQLite, portanto, não é necessário configurar nenhum servidor de banco de dados.
 
 ### Variáveis de ambiente
 
 Utilize [`.env.example`](./.env.example) como base. Criar um arquivo `.env` na raiz também é suportado.
 
-- `RESEND_API_KEY` (opicional durante o desenvolvimento): Chave de API do Resend. É necessário ter uma conta no [Resend](https://resend.com/) (é possível usar o serviço gratuitamente).
-- `MAIL_FROM` (opicional durante o desenvolvimento): Dominio pelo qual os emails serão enviados (ex: codelabs@vitordaniel.is-a.dev). Configure pelo Resend.
-- `DOMAIN`: Dominio em que o servidor está sendo executado (ex: localhost, codelabs.vitordaniel.is-a.dev)
+- `RESEND_API_KEY` (opcional durante o desenvolvimento): Chave de API do Resend. É necessário ter uma conta no [Resend](https://resend.com/) (é possível usar o serviço gratuitamente).
+- `MAIL_FROM` (opcional durante o desenvolvimento): Domínio pelo qual os emails serão enviados (ex: codelabs@vitordaniel.is-a.dev). Configure pelo Resend.
+- `DOMAIN`: Domínio em que o servidor está sendo executado (ex: localhost, codelabs.vitordaniel.is-a.dev)
 - `ADMIN_EMAIL` e `ADMIN_PASSWORD` (apenas para produção): Credenciais do usuário administrador que será criado automaticamente.
 
-Ao executar em ambiente desenvolvimento, apenas defina `DOMAIN=localhost`.
+Ao executar em ambiente de desenvolvimento, apenas defina `DOMAIN=localhost`.
 
 ### Executando em ambiente de desenvolvimento
 
@@ -28,7 +42,7 @@ bun i # Instala as depêndencias
 bun database:migrate # Executa as migrações no banco de dados
 ```
 
-Bara executar o servidor de desenvolvimento, basta executar o comando abaixo, o servidor será acessível em http://localhost:5173.
+Para executar o servidor de desenvolvimento, basta executar o comando abaixo, o servidor será acessível em http://localhost:5173.
 
 ```bash
 bun dev
