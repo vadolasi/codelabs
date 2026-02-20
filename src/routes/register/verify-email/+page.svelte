@@ -99,7 +99,7 @@ const api = $derived(pinInput.connect(service, normalizeProps))
       <h2 class="card-title">Informe o código de verificação</h2>
       <div {...api.getRootProps()} class="flex gap-2">
         {#each Array.from({ length: 6 }, (_, i) => i) as index (index)}
-          <input {...api.getInputProps({ index })} class="input input-lg w-1/6" type="number" />
+          <input {...api.getInputProps({ index })} class="input input-lg w-1/6 text-center" type="text" inputmode="numeric" pattern="[0-9]*" />
         {/each}
       </div>
       <div class="card-actions">

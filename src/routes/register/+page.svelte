@@ -12,6 +12,7 @@ import { page } from "$app/state"
 import httpClient from "$lib/httpClient"
 import Button from "../../components/Button.svelte"
 import FormField from "../../components/FormField.svelte"
+import toaster from "../../components/Toaster/store"
 
 const matcherPwned = matcherPwnedFactory(fetch, zxcvbnOptions)
 zxcvbnOptions.addMatcher("pwned", matcherPwned)
@@ -48,6 +49,16 @@ const registerMutation = createMutation({
     })
 
     if (error) {
+      const message = error.value.message as string
+      if (message === "EMAIL_ALREADY_EXISTS") {
+        throw new Error("Este e-mail já está em uso")
+      }
+      if (message === "USERNAME_ALREADY_EXISTS") {
+        throw new Error("Este nome de usuário já está em uso")
+      }
+      if (message === "WEAK_PASSWORD") {
+        throw new Error("A senha escolhida é muito fraca")
+      }
       throw new Error(error.value.message ?? "Erro ao registrar usuário")
     }
 
@@ -56,6 +67,13 @@ const registerMutation = createMutation({
   onSuccess: (_, { email }) => {
     const redirectTo = page.url.searchParams.get("redirect")
     goto("/register/verify-email", { state: { email, redirectTo } })
+  },
+  onError: (error) => {
+    toaster.create({
+      title: "Erro ao registrar",
+      description: error.message,
+      type: "error"
+    })
   }
 })
 

@@ -5,7 +5,7 @@ import * as zxcvbnCommonPackage from "@zxcvbn-ts/language-common"
 import * as zxcvbnPtBrPackage from "@zxcvbn-ts/language-pt-br"
 import { matcherPwnedFactory } from "@zxcvbn-ts/matcher-pwned"
 import { randomUUIDv7 } from "bun"
-import { and, eq, gt } from "drizzle-orm"
+import { and, eq, gt, or } from "drizzle-orm"
 import Elysia, { t } from "elysia"
 import { normalizeEmail } from "email-normalizer"
 import { Resend } from "resend"
@@ -54,12 +54,15 @@ const emailActions = new Elysia()
         .select()
         .from(users)
         .where(
-          and(eq(users.email, emailNormalized), eq(users.username, username))
+          or(eq(users.email, emailNormalized), eq(users.username, username))
         )
         .limit(1)
 
       if (existingUser) {
-        return status(400, { message: "USER_ALREADY_EXISTS" })
+        if (existingUser.email === emailNormalized) {
+          return status(400, { message: "EMAIL_ALREADY_EXISTS" })
+        }
+        return status(400, { message: "USERNAME_ALREADY_EXISTS" })
       }
 
       if ((await zxcvbnAsync(password)).score < 3) {
@@ -78,28 +81,32 @@ const emailActions = new Elysia()
       })
 
       ;(async () => {
-        await sendEmail("emailVerification", {
-          subject: "Verifique o seu email",
-          data: { code: emailOTP },
-          to: email
-        })
-
-        if (config.NODE_ENV === "production") {
-          const resend = new Resend(config.RESEND_API_KEY)
-
-          const { data: contact, error } = await resend.contacts.create({
-            email: emailNormalized,
-            unsubscribed: false
+        try {
+          await sendEmail("emailVerification", {
+            subject: "Verifique o seu email",
+            data: { code: emailOTP },
+            to: email
           })
 
-          if (error) {
-            console.error("Failed to add contact to Resend:", error)
-          } else {
-            await resend.contacts.segments.add({
-              contactId: contact.id,
-              segmentId: "656dc7f2-37c4-4246-909a-1d66b56b7b80"
+          if (config.NODE_ENV === "production") {
+            const resend = new Resend(config.RESEND_API_KEY)
+
+            const { data: contact, error } = await resend.contacts.create({
+              email: emailNormalized,
+              unsubscribed: false
             })
+
+            if (error) {
+              console.error("Failed to add contact to Resend:", error)
+            } else {
+              await resend.contacts.segments.add({
+                contactId: contact.id,
+                segmentId: "656dc7f2-37c4-4246-909a-1d66b56b7b80"
+              })
+            }
           }
+        } catch (err) {
+          console.error("Background registration tasks failed:", err)
         }
       })()
 
