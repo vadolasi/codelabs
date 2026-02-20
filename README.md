@@ -72,6 +72,19 @@ Se precisar acessar o banco de dados (tornar um usuário administrador, etc), ba
 bun database:studio
 ```
 
+## Comandos principais
+
+Aqui estão os comandos mais utilizados no desenvolvimento do projeto:
+
+| Comando | Descrição |
+|---|---|
+| `bun dev` | Inicia o servidor de desenvolvimento e o servidor de tempo real. |
+| `bun build` | Gera o bunddle projeto para produção. |
+| `bun database:generate` | Gera arquivos de migração baseados nas mudanças do schema. |
+| `bun database:migrate` | Aplica as mudanças do schema diretamente no banco de dados. |
+| `bun database:studio` | Abre a interface visual para gerenciar o banco de dados SQLite. |
+| `bun format` | Formata o código utilizando o [Biome](https://biomejs.dev). |
+
 ### Deploy em produção
 
 O arquivo [`Dockerfile`](./Dockerfile) contém a implementação de um servidor para produção. Você pode realizar o deploy utilizando Docker ou compilando manualmente.
@@ -101,11 +114,7 @@ O arquivo [`Dockerfile`](./Dockerfile) contém a implementação de um servidor 
    bun run emails:compile
    bun run build
    ```
-3. Execute as migrações do banco de dados:
-   ```bash
-   bun run database:migrate
-   ```
-4. Inicie o servidor:
+3. Inicie o servidor:
    ```bash
    NODE_ENV=production bun run build/index.js
    ```

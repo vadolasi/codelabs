@@ -9,11 +9,7 @@ RUN bun install --frozen-lockfile
 
 COPY . .
 
-RUN bun svelte-kit sync && \
-  mkdir -p /app/data && \
-  bun run fswatcher:build && \
-  bun run icons:prepare && \
-  bun run emails:compile && \
+RUN mkdir -p /app/data && \
   BUILD=true bun run build
 
 FROM oven/bun:1 AS prod-deps
