@@ -31,6 +31,24 @@ Utilize [`.env.example`](./.env.example) como base. Criar um arquivo `.env` na r
 
 Ao executar em ambiente de desenvolvimento, apenas defina `DOMAIN=localhost`.
 
+Caso você não defina `RESEND_API_KEY` durante o desenvolvimento as mensagens aparecem no terminal:
+
+```
+[0] [Email Simulado]
+[0] Para: vitor@vitordaniel.is-a.dev
+[0] Assunto: Verifique o seu email
+[0] --- Conteúdo Texto ---
+[0] Logo [https://localhost/favicon-96x96.png]
+[0] 
+[0] Codelabs
+[0] 
+[0] Verifique seu endereço de e-mail
+[0] Utilize o código abaixo para verificar seu endereço de e-mail:
+[0] 703425
+[0] Se você não solicitou essa verificação, ignore este e-mail.
+[0] ----------------------
+```
+
 ### Executando em ambiente de desenvolvimento
 
 É necessário instalar o [Bun](https://bun.com).
