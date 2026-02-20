@@ -6,7 +6,7 @@ import {
   closeBracketsKeymap,
   completionKeymap
 } from "@codemirror/autocomplete"
-import { defaultKeymap, history, historyKeymap } from "@codemirror/commands"
+import { defaultKeymap, historyKeymap, indentWithTab } from "@codemirror/commands"
 import {
   bracketMatching,
   defaultHighlightStyle,
@@ -25,7 +25,6 @@ import {
 } from "@codemirror/state"
 import {
   crosshairCursor,
-  drawSelection,
   dropCursor,
   EditorView,
   highlightActiveLine,
@@ -33,7 +32,8 @@ import {
   highlightSpecialChars,
   keymap,
   lineNumbers,
-  rectangularSelection
+  rectangularSelection,
+  drawSelection
 } from "@codemirror/view"
 import { LoroExtensions } from "loro-codemirror"
 import { LoroText } from "loro-crdt"
@@ -42,6 +42,7 @@ import editorState, {
   engine,
 } from "./editorState.svelte"
 import { getLanguage } from "./language"
+import { getEditorSettings, getSettingsExtensions } from "./settings"
 
 let view: EditorView
 let editorContainer: HTMLDivElement
@@ -83,13 +84,14 @@ $effect(() => {
         editorState.saveState(previousTab, view.state.toJSON())
       }
 
+      const settings = getEditorSettings(editorState.currentTab!)
+      const settingsExtensions = getSettingsExtensions(settings)
+
       const config: EditorStateConfig = {
         extensions: [
-          keymap.of(defaultKeymap),
           lineNumbers(),
           highlightActiveLineGutter(),
           highlightSpecialChars(),
-          history(),
           foldGutter(),
           drawSelection(),
           dropCursor(),
@@ -103,6 +105,7 @@ $effect(() => {
           crosshairCursor(),
           highlightActiveLine(),
           highlightSelectionMatches(),
+          ...settingsExtensions,
           LoroExtensions(
             editorState.loroDoc,
             {
@@ -112,6 +115,7 @@ $effect(() => {
             editorState.undoManager,
             () => {
               const item = editorState.filesMap.get(editorState.currentTab!)
+              if (!item) return new LoroText()
 
               const container = item.get("editableContent")
               if (container instanceof LoroText) {
@@ -127,28 +131,55 @@ $effect(() => {
             }
           ),
           keymap.of([
+            {
+              key: "Mod-z",
+              run: () => {
+                editorState.undoManager.undo()
+                return true
+              },
+              preventDefault: true
+            },
+            {
+              key: "Mod-y",
+              run: () => {
+                editorState.undoManager.redo()
+                return true
+              },
+              preventDefault: true
+            },
+            {
+              key: "Mod-Shift-z",
+              run: () => {
+                editorState.undoManager.redo()
+                return true
+              },
+              preventDefault: true
+            },
             ...closeBracketsKeymap,
             ...defaultKeymap,
             ...searchKeymap,
             ...historyKeymap,
             ...foldKeymap,
             ...completionKeymap,
-            ...lintKeymap
+            ...lintKeymap,
+            indentWithTab
           ]),
           editorTheme,
           catppuccinMocha,
           EditorView.updateListener.of((update) => {
             if (update.docChanged) {
               const item = editorState.filesMap.get(editorState.currentTab!)
+              if (!item) return
+
               const data = item.get("data") as any
               const currentContent = update.state.doc.toString()
-              
+
               if (currentContent !== data.content) {
                 editorState.unsavedPaths.add(editorState.currentTab!)
               } else {
                 editorState.unsavedPaths.delete(editorState.currentTab!)
               }
-              
+
               editorState.loroDoc.commit()
             }
           }),
