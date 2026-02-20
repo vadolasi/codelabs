@@ -2,25 +2,25 @@ import { randomUUIDv7 } from "bun"
 import { asc, eq } from "drizzle-orm"
 import { LoroDoc, LoroList, LoroMap, LoroText } from "loro-crdt"
 import { db } from "../database"
-import { workspaceSnapshots, workspaceUpdates } from "../database/schema"
+import { workspaces, workspaceUpdates } from "../database/schema"
 
 export async function saveSnapshot(
   workspaceId: string,
   data: Uint8Array
-): Promise<string> {
-  const id = randomUUIDv7()
+): Promise<void> {
   await db.transaction(async (tx) => {
-    await tx.insert(workspaceSnapshots).values({
-      id,
-      workspaceId,
-      snapshot: Buffer.from(data),
-      createdAt: new Date()
-    })
+    await tx
+      .update(workspaces)
+      .set({
+        snapshot: Buffer.from(data),
+        updatedAt: new Date()
+      })
+      .where(eq(workspaces.id, workspaceId))
+
     await tx
       .delete(workspaceUpdates)
       .where(eq(workspaceUpdates.workspaceId, workspaceId))
   })
-  return id
 }
 
 export async function getSnapshot(
@@ -28,18 +28,21 @@ export async function getSnapshot(
   tx = db
 ): Promise<Uint8Array | null> {
   // @ts-expect-error: tx.query is available on both db and transaction
-  const row = await tx.query.workspaceSnapshots.findFirst({
-    where: (ws, { eq }) => eq(ws.workspaceId, workspaceId),
-    orderBy: (ws, { desc }) => desc(ws.createdAt)
+  const row = await tx.query.workspaces.findFirst({
+    where: (ws, { eq }) => eq(ws.id, workspaceId),
+    columns: {
+      snapshot: true
+    }
   })
-  if (!row) return null
+  if (!row?.snapshot) return null
   return Uint8Array.from(row.snapshot)
 }
 
 export async function deleteSnapshot(workspaceId: string): Promise<void> {
   await db
-    .delete(workspaceSnapshots)
-    .where(eq(workspaceSnapshots.workspaceId, workspaceId))
+    .update(workspaces)
+    .set({ snapshot: null })
+    .where(eq(workspaces.id, workspaceId))
 }
 
 export async function clearWorkspaceUpdates(

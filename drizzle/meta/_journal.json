@@ -50,6 +50,13 @@
 			"when": 1771471970607,
 			"tag": "0006_slimy_spiral",
 			"breakpoints": true
+		},
+		{
+			"idx": 7,
+			"version": "6",
+			"when": 1771558832415,
+			"tag": "0007_lying_thunderbolts",
+			"breakpoints": true
 		}
 	]
 }

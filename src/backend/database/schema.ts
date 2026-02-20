@@ -2,27 +2,6 @@ import { relations } from "drizzle-orm"
 import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core"
 import { blob } from "drizzle-orm/sqlite-core/columns/blob"
 
-export const workspaceSnapshots = sqliteTable("workspace_snapshots", {
-  id: text("id").primaryKey().notNull(),
-  workspaceId: text("workspace_id")
-    .notNull()
-    .references(() => workspaces.id, { onDelete: "cascade" }),
-  snapshot: blob("snapshot", { mode: "buffer" }).notNull(),
-  createdAt: integer("created_at", { mode: "timestamp" })
-    .notNull()
-    .$defaultFn(() => new Date())
-})
-
-export const workspaceSnapshotsRelations = relations(
-  workspaceSnapshots,
-  ({ one }) => ({
-    workspace: one(workspaces, {
-      fields: [workspaceSnapshots.workspaceId],
-      references: [workspaces.id]
-    })
-  })
-)
-
 export const users = sqliteTable("users", {
   id: text("id").primaryKey(),
   email: text("email").notNull().unique(),
@@ -64,6 +43,7 @@ export const workspaces = sqliteTable("workspaces", {
   visibility: text("visibility", { enum: ["private", "public"] })
     .default("private")
     .notNull(),
+  snapshot: blob("snapshot", { mode: "buffer" }),
   config: text("config", { mode: "json" })
     .$type<{ initialTerminals: { command: string }[]; exclude: string[] }>()
     .default({ initialTerminals: [], exclude: [] })
