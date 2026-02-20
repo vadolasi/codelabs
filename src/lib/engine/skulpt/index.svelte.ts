@@ -25,6 +25,7 @@ export default class SkulptEngine extends BaseEngine {
   private inputResolve: ((val: string) => void) | null = null
   private outputBuffer: string[] = []
   private visualizerContainer: HTMLElement | null = null
+  private currentPath: string | null = null
 
   canRun(path: string): boolean {
     return path.endsWith(".py")
@@ -115,10 +116,9 @@ export default class SkulptEngine extends BaseEngine {
       return url
     }
 
-    // Configuração CRÍTICA para a versão Trinket
     Sk.TurtleGraphics = Sk.TurtleGraphics || {}
     Sk.TurtleGraphics.target = "turtle-canvas"
-    Sk.TurtleGraphics.assets = resolveWorkspaceAsset // O segredo está aqui
+    Sk.TurtleGraphics.assets = resolveWorkspaceAsset
 
     Sk.canvas = "turtle-canvas"
     Sk.imageProxy = resolveWorkspaceAsset
@@ -127,18 +127,23 @@ export default class SkulptEngine extends BaseEngine {
       output: (text: string) => this.enqueueOutput(text),
       read: (x: string) => {
         if (
-          Sk.builtinFiles === undefined ||
-          Sk.builtinFiles.files[x] === undefined
+          Sk.builtinFiles !== undefined &&
+          Sk.builtinFiles.files[x] !== undefined
         ) {
-          const path = x.startsWith("/") ? x : `/${x}`
-          const item = editorState.filesMap.get(path)
-          // biome-ignore lint/suspicious/noExplicitAny: Loro returns plain objects for map values
-          const data = item?.get("data") as any
-          const content = data?.content
-          if (content !== undefined) return content
-          throw `File not found: '${x}'`
+          return Sk.builtinFiles.files[x]
         }
-        return Sk.builtinFiles.files[x]
+
+        let targetPath = x.startsWith("/") ? x : `/${x}`
+        targetPath = targetPath.replace(/\/\.\//g, "/").replace(/\/+/g, "/")
+
+        const item = editorState.filesMap.get(targetPath)
+        // biome-ignore lint/suspicious/noExplicitAny: Loro returns plain objects for map values
+        const data = item?.get("data") as any
+        const content = data?.content
+
+        if (content !== undefined) return content
+
+        throw `File not found: '${x}'`
       },
       inputfun: () =>
         new Promise((resolve) => {
@@ -147,6 +152,15 @@ export default class SkulptEngine extends BaseEngine {
       python3: true,
       __future__: Sk.python3
     })
+
+    Sk.syspath = ["."]
+    if (this.currentPath) {
+      const dir = this.currentPath.split("/").slice(0, -1).join("/") || "/"
+      if (dir !== "/") {
+        Sk.syspath.push(dir)
+      }
+    }
+    Sk.syspath.push("/")
   }
 
   private enqueueOutput(text: string) {
@@ -183,16 +197,15 @@ export default class SkulptEngine extends BaseEngine {
     if (this.isRunning) return
 
     this.isRunning = true
+    this.currentPath = path
 
     const code = await this.fs.readFile(path, "utf-8")
 
-    // Resetamos o buffer e enviamos o sinal de limpeza explicitamente
     this.outputBuffer = []
     this.enqueueOutput("\u001b[2J")
 
     if (this.visualizerContainer) {
       this.visualizerContainer.innerHTML = ""
-      // Garante que o Skulpt saiba onde desenhar nesta execução
       Sk.canvas = this.visualizerContainer.id || "turtle-canvas"
     }
 
@@ -203,9 +216,7 @@ export default class SkulptEngine extends BaseEngine {
         return Sk.importMainWithBody("<stdin>", false, code, true)
       })
     } catch (e) {
-      this.enqueueOutput(
-        `\n\u001b[31mErro de Execução:\u001b[0m\n${String(e)}\n`
-      )
+      this.enqueueOutput(`Erro de Execução:\n${String(e)}\n`)
       console.error("[Skulpt Error]", e)
     } finally {
       this.isRunning = false
