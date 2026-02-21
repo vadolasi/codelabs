@@ -133,15 +133,23 @@ export default class SkulptEngine extends BaseEngine {
           return Sk.builtinFiles.files[x]
         }
 
-        let targetPath = x.startsWith("/") ? x : `/${x}`
-        targetPath = targetPath.replace(/\/\.\//g, "/").replace(/\/+/g, "/")
+        let normalized = x.replace(/^\.\//, "/")
+        if (!normalized.startsWith("/")) {
+          normalized = `/${normalized}`
+        }
+        normalized = normalized.replace(/\/+/g, "/")
 
-        const item = editorState.filesMap.get(targetPath)
-        // biome-ignore lint/suspicious/noExplicitAny: Loro returns plain objects for map values
+        if (normalized.length > 1 && normalized.endsWith("/")) {
+          normalized = normalized.slice(0, -1)
+        }
+
+        const item = editorState.filesMap.get(normalized)
+        // biome-ignore lint/suspicious/noExplicitAny: Skulpt doesn't have types
         const data = item?.get("data") as any
-        const content = data?.content
 
-        if (content !== undefined) return content
+        if (data?.type === "file") {
+          return data.content ?? ""
+        }
 
         throw `File not found: '${x}'`
       },
