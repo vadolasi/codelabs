@@ -16,7 +16,7 @@ const service = useMachine(Toast.machine, () => machineProps)
 const api = $derived(Toast.connect(service, normalizeProps))
 </script>
 
-<div {...api.getRootProps()} class="toast">
+<div {...api.getRootProps()}>
   <div role="alert" class="alert alert-vertical sm:alert-horizontal" class:alert-info={toast.type === "info"} class:alert-success={toast.type === "success"} class:alert-error={toast.type === "error"}>
     {#if toast.type === "info"}
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current h-6 w-6 shrink-0">

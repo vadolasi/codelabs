@@ -39,6 +39,7 @@ const schema = z.object({
 type FormData = z.infer<typeof schema>
 
 let emailSuggestion: string | null = $state(null)
+let errorMessage: string | null = $state(null)
 
 const registerMutation = createMutation({
   mutationFn: async ({ email, username, password }: FormData) => {
@@ -69,11 +70,7 @@ const registerMutation = createMutation({
     goto("/register/verify-email", { state: { email, redirectTo } })
   },
   onError: (error) => {
-    toaster.create({
-      title: "Erro ao registrar",
-      description: error.message,
-      type: "error"
-    })
+    errorMessage = error.message
   }
 })
 
@@ -97,7 +94,15 @@ function acceptEmailSuggestion() {
 }
 </script>
 
-<div class="flex w-full min-h-screen items-center justify-center">
+<div class="flex flex-col gap-8 w-full min-h-screen items-center justify-center">
+  {#if errorMessage}
+    <div role="alert" class="alert alert-error w-full max-w-md">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 shrink-0 stroke-current" fill="none" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+      <span>{errorMessage}</span>
+    </div>
+  {/if}
   <div class="card bg-base-200 shadow-lg w-full m-10 md:m-0 md:w-2/3 lg:w-1/3 xl:w-1/4">
     <form
       class="card-body space-y-3"
