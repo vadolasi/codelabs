@@ -6,10 +6,20 @@ import { LoroList, LoroMap } from "loro-crdt"
 import getIcon from "$lib/icons"
 import editorState, { engine } from "../editorState.svelte"
 
-const { item, tree }: { item: ItemInstance<Item>, tree: any } = $props()
+const { item, tree, treeState }: { item: ItemInstance<Item>, tree: any, treeState: any } = $props()
 
 const itemName = $derived.by(() => item.getItemName())
 const itemData = $derived.by(() => item.getItemData())
+// Agora acessamos treeState diretamente. Quando treeState.expandedItems mudar,
+// o Svelte 5 disparará o recálculo deste rune automaticamente.
+const isExpanded = $derived(treeState.expandedItems.includes(item.getId()))
+
+const iconSrc = $derived.by(() => {
+  if (itemData.type !== "directory") {
+    return getIcon(itemName, "file")
+  }
+  return getIcon(itemName, isExpanded ? "folder-open" : "folder-closed")
+})
 
 const itemProps = $derived.by(() => {
   const { onClick, ...rest } = item.getProps()
@@ -147,12 +157,7 @@ function handleDragLeave() {
   ondragleave={handleDragLeave}
 >
   <img
-    src={
-      getIcon(
-        itemName,
-        itemData.type === "directory" ? item.isExpanded() ? "folder-open" : "folder-closed" : "file"
-      )
-    }
+    src={iconSrc}
     alt="file icon"
     class="w-4 h-4 shrink-0"
   />

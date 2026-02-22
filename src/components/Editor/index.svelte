@@ -191,6 +191,7 @@ async function interruptExecution() {
 
 let showShareModal = $state(false)
 let showVisualizer = $state(false)
+let isNavigating = $state(false)
 
 const forkMutation = createMutation({
   mutationFn: async (name: string) => {
@@ -198,8 +199,10 @@ const forkMutation = createMutation({
     if (error) throw new Error("Erro ao criar fork")
     return data
   },
-  onSuccess: (data) => {
-    goto(`/workspaces/${data.slug}`)
+  onSuccess: async (data) => {
+    isNavigating = true
+    await goto(`/workspaces/${data.slug}`)
+    isNavigating = false
   }
 })
 
@@ -282,9 +285,9 @@ function handleFork() {
           type="button" 
           class="btn btn-ghost btn-sm gap-2" 
           onclick={handleFork}
-          disabled={$forkMutation.isPending}
+          disabled={$forkMutation.isPending || isNavigating}
         >
-          {#if $forkMutation.isPending}
+          {#if $forkMutation.isPending || isNavigating}
             <span class="loading loading-spinner loading-xs"></span>
           {:else}
             <GitFork class="w-4 h-4" />

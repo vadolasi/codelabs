@@ -20,25 +20,6 @@ import TreeItem from "./TreeItem.svelte"
 
 let render = $state(0)
 const creatingItem = $derived(editorState.creatingItem)
-const items = $derived.by(() => {
-  render
-  return tree.getItems()
-})
-
-const isMatch = picoMatch("**/node_modules/**", { dot: true })
-
-function registerTree(node: HTMLElement) {
-  tree.registerElement(node)
-  tree.setMounted(true)
-  return {
-    destroy() {
-      tree.registerElement(null)
-      tree.setMounted(false)
-    }
-  }
-}
-
-editorState.ensureDirectory("/")
 
 const tree = createTree<Item>({
   rootItemId: "/",
@@ -89,9 +70,6 @@ const tree = createTree<Item>({
       })
     }
   },
-  setState: () => {
-    render++
-  },
   features: [
     syncDataLoaderFeature,
     selectionFeature,
@@ -99,6 +77,45 @@ const tree = createTree<Item>({
     hotkeysCoreFeature
   ]
 })
+
+// Sincronização de estado estilo Svelte 5 / React useTree
+let treeState = $state(tree.getState())
+
+$effect.pre(() => {
+  tree.setConfig((prev) => ({
+    ...prev,
+    state: treeState,
+    setState: (newState) => {
+      treeState = typeof newState === 'function' ? (newState as any)(treeState) : newState
+    }
+  }))
+})
+
+const items = $derived.by(() => {
+  // Ao acessar treeState aqui, o Svelte passará a rastrear as mudanças da árvore
+  treeState
+  return tree.getItems()
+})
+
+const creatingItemIcon = $derived.by(() => {
+  if (!creatingItem) return ""
+  return resolveIcon(creatingItem.type === 'file' ? 'f.txt' : 'folder', creatingItem.type === 'file' ? 'file' : 'folder-closed')
+})
+
+const isMatch = picoMatch("**/node_modules/**", { dot: true })
+
+function registerTree(node: HTMLElement) {
+  tree.registerElement(node)
+  tree.setMounted(true)
+  return {
+    destroy() {
+      tree.registerElement(null)
+      tree.setMounted(false)
+    }
+  }
+}
+
+editorState.ensureDirectory("/")
 
 const contextMenuService = useMachine(menu.machine, {
   id: "tree-container-menu",
@@ -437,7 +454,7 @@ onMount(() => {
 >
   {#if creatingItem && (creatingItem.parentPath === '/' || creatingItem.parentPath === '')}
     <div class="flex items-center gap-1 px-1 mb-1" style:padding-left="0px">
-      <img src={resolveIcon(creatingItem.type === 'file' ? 'f.txt' : 'folder', creatingItem.type === 'file' ? 'file' : 'folder-closed')} alt="" class="w-4 h-4 shrink-0" />
+      <img src={creatingItemIcon} alt="" class="w-4 h-4 shrink-0" />
       <input 
         autofocus
         class="border border-primary bg-base-100 rounded px-1 w-full outline-none text-sm"
@@ -461,10 +478,10 @@ onMount(() => {
     </div>
   {/if}
   {#each items as item (item.getId())}
-    <TreeItem {item} {tree} />
+    <TreeItem {item} {tree} treeState={treeState} />
     {#if creatingItem && (creatingItem.parentPath === item.getId() || (item.getItemData().type === 'directory' && creatingItem.parentPath === item.getItemData().path))}
       <div class="flex items-center gap-1 px-1" style:padding-left={`${(item.getItemMeta().level + 1) * 10}px`}>
-        <img src={resolveIcon(creatingItem.type === 'file' ? 'f.txt' : 'folder', creatingItem.type === 'file' ? 'file' : 'folder-closed')} alt="" class="w-4 h-4 shrink-0" />
+        <img src={creatingItemIcon} alt="" class="w-4 h-4 shrink-0" />
         <input 
           autofocus
           class="border border-primary bg-base-100 rounded px-1 w-full outline-none text-sm"

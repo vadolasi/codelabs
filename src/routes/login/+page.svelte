@@ -16,6 +16,7 @@ const schema = z.object({
 type FormData = z.infer<typeof schema>
 
 let errorMessage: string | null = $state(null)
+let isNavigating = $state(false)
 
 const messageCodes: Record<string, string> = {
   "INVALID_PASSWORD": "Senha incorreta"
@@ -38,20 +39,24 @@ const loginMutation = createMutation({
 
     return data
   },
-  onSuccess: () => {
+  onSuccess: async () => {
+    isNavigating = true
     const redirectTo = page.url.searchParams.get("redirect")
 
     if (redirectTo && !redirectTo.startsWith("/")) {
-      goto("/")
+      await goto("/")
     }
 
-    goto(redirectTo || "/")
+    await goto(redirectTo || "/")
+    isNavigating = false
   },
-  onError: (error) => {
+  onError: async (error) => {
     if (error.message === "EMAIL_NOT_VERIFIED") {
+      isNavigating = true
       const email = (error as { cause: { data: { email: string } } }).cause.data
         .email
-      goto("/register/verify-email", { state: { email } })
+      await goto("/register/verify-email", { state: { email } })
+      isNavigating = false
     } else {
       errorMessage = messageCodes[error.message] || "Ocorreu um erro ao tentar entrar. Tente novamente."
     }
@@ -103,7 +108,7 @@ const form = createForm(() => ({
       </form.Field>
 
       <div class="card-actions">
-        <Button type="submit" class="btn btn-primary btn-block" loading={$loginMutation.isPending}>Entrar</Button>
+        <Button type="submit" class="btn btn-primary btn-block" loading={$loginMutation.isPending || isNavigating}>Entrar</Button>
         <div class="flex flex-col items-center w-full gap-3">
           <span class="text-base-content">
             Não tem uma conta?

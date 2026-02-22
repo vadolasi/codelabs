@@ -7,6 +7,8 @@ import Button from "../../components/Button.svelte"
 import FormField from "../../components/FormField.svelte"
 import toaster from "../../components/Toaster/store"
 
+let isNavigating = $state(false)
+
 const resetPasswordMutation = createMutation({
   mutationFn: async (email: string) => {
     const { data, error } = await httpClient.users["reset-password"].post({
@@ -21,13 +23,15 @@ const resetPasswordMutation = createMutation({
 
     return data
   },
-  onSuccess: () => {
+  onSuccess: async () => {
     toaster.create({
       title: "E-mail enviado",
       description: "Verifique sua caixa de entrada para redefinir sua senha.",
       type: "success"
     })
-    goto("/login")
+    isNavigating = true
+    await goto("/login")
+    isNavigating = false
   }
 })
 
@@ -60,7 +64,7 @@ const form = createForm(() => ({
       </form.Field>
  
       <div class="card-actions">
-        <Button class="btn-primary btn-block" type="submit" loading={$resetPasswordMutation.isPending}>Continuar</Button>
+        <Button class="btn-primary btn-block" type="submit" loading={$resetPasswordMutation.isPending || isNavigating}>Continuar</Button>
       </div>
     </form>
   </div>

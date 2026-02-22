@@ -40,6 +40,7 @@ type FormData = z.infer<typeof schema>
 
 let emailSuggestion: string | null = $state(null)
 let errorMessage: string | null = $state(null)
+let isNavigating = $state(false)
 
 const registerMutation = createMutation({
   mutationFn: async ({ email, username, password }: FormData) => {
@@ -65,9 +66,11 @@ const registerMutation = createMutation({
 
     return data
   },
-  onSuccess: (_, { email }) => {
+  onSuccess: async (_, { email }) => {
+    isNavigating = true
     const redirectTo = page.url.searchParams.get("redirect")
-    goto("/register/verify-email", { state: { email, redirectTo } })
+    await goto("/register/verify-email", { state: { email, redirectTo } })
+    isNavigating = false
   },
   onError: (error) => {
     errorMessage = error.message
@@ -230,7 +233,7 @@ function acceptEmailSuggestion() {
       </form.Field>
 
       <div class="card-actions">
-        <Button type="submit" class="btn-primary btn-block" loading={$registerMutation.isPending}>Registrar</Button>
+        <Button type="submit" class="btn-primary btn-block" loading={$registerMutation.isPending || isNavigating}>Registrar</Button>
         <span class="text-center text-base-content w-full">
           Já tem uma conta?
           <a href={`/login${page.url.search}`} class="link">Entrar</a>

@@ -9,6 +9,8 @@
 
   const { id } = page.params;
 
+  let isNavigating = $state(false);
+
   const templateQuery = createQuery({
     queryKey: ["templates", id],
     queryFn: async () => {
@@ -24,8 +26,10 @@
       if (error) throw new Error("Falha ao criar workspace do template");
       return data;
     },
-    onSuccess: (data) => {
-      goto(`/workspaces/${data.slug}`);
+    onSuccess: async (data) => {
+      isNavigating = true;
+      await goto(`/workspaces/${data.slug}`);
+      isNavigating = false;
     }
   });
 
@@ -80,7 +84,7 @@
         <Button 
           class="btn-primary btn-lg w-full gap-3 shadow-lg shadow-primary/20"
           onclick={handleUseTemplate}
-          loading={$forkMutation.isPending}
+          loading={$forkMutation.isPending || isNavigating}
         >
           <GitFork class="w-5 h-5" />
           Usar este Template

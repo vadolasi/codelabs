@@ -4,6 +4,8 @@ import { goto } from "$app/navigation"
 import httpClient from "$lib/httpClient"
 import Button from "../../../components/Button.svelte"
 
+let isNavigating = $state(false)
+
 const logoutMutation = createMutation({
   mutationFn: async () => {
     const { data, error } = await httpClient.auth.logout.post()
@@ -14,8 +16,10 @@ const logoutMutation = createMutation({
 
     return data
   },
-  onSuccess: () => {
-    goto("/login")
+  onSuccess: async () => {
+    isNavigating = true
+    await goto("/login")
+    isNavigating = false
   },
   onError: (error) => {
     console.error("Logout error:", error)
@@ -39,7 +43,7 @@ const { data, children } = $props()
       <Button
         class="btn-ghost"
         onclick={() => $logoutMutation.mutate()}
-        loading={$logoutMutation.isPending}
+        loading={$logoutMutation.isPending || isNavigating}
       >
         Sair
       </Button>

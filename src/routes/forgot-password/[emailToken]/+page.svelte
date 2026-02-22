@@ -30,6 +30,7 @@ const email = page.data.email
 const username = page.data.username
 
 let score: number | null = $state(null)
+let isNavigating = $state(false)
 
 const resetPasswordMutation = createMutation({
   mutationFn: async (newPassword: string) => {
@@ -48,8 +49,10 @@ const resetPasswordMutation = createMutation({
 
     return data
   },
-  onSuccess: () => {
-    goto("/login")
+  onSuccess: async () => {
+    isNavigating = true
+    await goto("/login")
+    isNavigating = false
   }
 })
 
@@ -155,7 +158,7 @@ const form = createForm(() => ({
       </form.Field>
  
       <div class="card-actions">
-        <Button class="btn-primary btn-block" type="submit" loading={$resetPasswordMutation.isPending}>Confirmar</Button>
+        <Button class="btn-primary btn-block" type="submit" loading={$resetPasswordMutation.isPending || isNavigating}>Confirmar</Button>
       </div>
     </form>
   </div>

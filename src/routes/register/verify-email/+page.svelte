@@ -11,9 +11,13 @@ import toaster from "../../../components/Toaster/store"
 
 const { email, redirectTo } = page.state as { email: string; redirectTo?: string }
 
-onMount(() => {
+let isNavigating = $state(false)
+
+onMount(async () => {
   if (!email) {
-    goto("/login")
+    isNavigating = true
+    await goto("/login")
+    isNavigating = false
   }
 })
 
@@ -32,17 +36,19 @@ const verifyEmailMutation = createMutation({
 
     return data
   },
-  onSuccess: () => {
+  onSuccess: async () => {
     toaster.create({
       title: "E-mail verificado com sucesso",
       type: "success"
     })
     
+    isNavigating = true
     if (redirectTo) {
-      goto(`/login?redirect=${encodeURIComponent(redirectTo)}`)
+      await goto(`/login?redirect=${encodeURIComponent(redirectTo)}`)
     } else {
-      goto("/login")
+      await goto("/login")
     }
+    isNavigating = false
   },
   onError: (error) => {
     toaster.create({
@@ -103,10 +109,10 @@ const api = $derived(pinInput.connect(service, normalizeProps))
         {/each}
       </div>
       <div class="card-actions">
-        <Button class="btn-primary btn-block" loading={$verifyEmailMutation.isPending}>Continuar</Button>
+        <Button class="btn-primary btn-block" loading={$verifyEmailMutation.isPending || isNavigating}>Continuar</Button>
         <Button
           class="btn-ghost btn-block"
-          disabled={$verifyEmailMutation.isPending || $resendCodeMutation.isPending}
+          disabled={$verifyEmailMutation.isPending || $resendCodeMutation.isPending || isNavigating}
           onclick={() => $resendCodeMutation.mutate()}
         >
           Reenviar código
