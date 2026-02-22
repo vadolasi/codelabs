@@ -6,7 +6,7 @@ import { LoroList, LoroMap } from "loro-crdt"
 import getIcon from "$lib/icons"
 import editorState, { engine } from "../editorState.svelte"
 
-const { item }: { item: ItemInstance<Item> } = $props()
+const { item, tree }: { item: ItemInstance<Item>, tree: any } = $props()
 
 const itemName = $derived.by(() => item.getItemName())
 const itemData = $derived.by(() => item.getItemData())
@@ -31,20 +31,31 @@ const contextMenuService = useMachine(menu.machine, {
   id: contextMenuId,
   onSelect: (event) => {
     const data = item.getItemData()
-    const parentPath = data.type === "directory" ? data.path : (item.getParent()?.getItemData().path || "/")
+    const parentPath = data.type === "directory" ? item.getId() : (item.getParent()?.getId() || "/")
 
+    // Removed setTimeout - it was not fixing the issue and added unnecessary complexity.
     switch (event.value) {
       case "rename":
         item.startRenaming()
         break
       case "new-file": {
         editorState.creatingItem = { parentPath, type: 'file' }
-        if (data.type === 'directory') item.expand()
+        if (data.type === 'directory') {
+          item.expand()
+        } else {
+          item.getParent()?.expand()
+        }
+        tree.rebuildTree()
         break
       }
       case "new-folder": {
         editorState.creatingItem = { parentPath, type: 'folder' }
-        if (data.type === 'directory') item.expand()
+        if (data.type === 'directory') {
+          item.expand()
+        } else {
+          item.getParent()?.expand()
+        }
+        tree.rebuildTree()
         break
       }
       case "duplicate": {
@@ -120,7 +131,7 @@ function handleDragLeave() {
   {...itemProps.rest}
   {...contextTriggerProps}
   oncontextmenu={(e) => {
-    contextTriggerProps.onContextMenu(e);
+    contextTriggerProps.oncontextmenu(e); 
     e.stopPropagation();
   }}
   use:registerItem
@@ -151,7 +162,7 @@ function handleDragLeave() {
       onblur={renameProps.onBlur} 
       onkeydown={(e) => {
         if (e.key === 'Escape') {
-          item.stopRenaming()
+          renameProps.onBlur()
         }
         if (e.key === 'Enter') {
           renameProps.onBlur()

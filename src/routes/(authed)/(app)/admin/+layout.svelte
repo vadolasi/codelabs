@@ -1,6 +1,6 @@
 <script>
+  import { Mail, Users } from '@lucide/svelte';
   import { page } from '$app/state';
-  import { Users, Mail } from '@lucide/svelte';
 </script>
 
 <div class="drawer lg:drawer-open h-[calc(100vh-4rem)]">

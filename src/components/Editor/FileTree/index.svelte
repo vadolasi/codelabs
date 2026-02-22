@@ -1,4 +1,5 @@
 <script lang="ts">
+import type { ItemInstance } from "@headless-tree/core"
 import {
   createTree,
   hotkeysCoreFeature,
@@ -10,7 +11,7 @@ import * as menu from "@zag-js/menu"
 import { normalizeProps, useMachine } from "@zag-js/svelte"
 import { LoroList, LoroMap } from "loro-crdt"
 import picoMatch from "picomatch"
-import { onMount, tick } from "svelte"
+import { onMount } from "svelte"
 import resolveIcon from "$lib/icons"
 import editorState, {
   engine, 
@@ -18,6 +19,11 @@ import editorState, {
 import TreeItem from "./TreeItem.svelte"
 
 let render = $state(0)
+const creatingItem = $derived(editorState.creatingItem)
+const items = $derived.by(() => {
+  render
+  return tree.getItems()
+})
 
 const isMatch = picoMatch("**/node_modules/**", { dot: true })
 
@@ -36,7 +42,7 @@ editorState.ensureDirectory("/")
 
 const tree = createTree<Item>({
   rootItemId: "/",
-  state: {
+  initialState: {
     expandedItems: ["/"]
   },
   getItemName: (item) => item.getItemData().path?.split("/")?.pop() || "",
@@ -84,9 +90,7 @@ const tree = createTree<Item>({
     }
   },
   setState: () => {
-    tick().then(() => {
-      render++
-    })
+    render++
   },
   features: [
     syncDataLoaderFeature,
@@ -99,7 +103,37 @@ const tree = createTree<Item>({
 const contextMenuService = useMachine(menu.machine, {
   id: "tree-container-menu",
   onSelect: (event) => {
-    const parentPath = "/"
+    let parentPath = "/" // Default to root
+    
+    // Try to get the target item from selection
+    let targetItem: ItemInstance<Item> | null = null
+    const selectedItemIds = tree.getState().selectedItems
+
+    if (selectedItemIds.length === 1) {
+      targetItem = tree.getItemInstance(selectedItemIds[0])
+    }
+    
+    if (targetItem) {
+      // If the target item is the root itself, treat it as root creation
+      if (targetItem.getId() === "/") {
+        parentPath = "/"
+      } else {
+        const data = targetItem.getItemData()
+        if (data.type === "directory") {
+          parentPath = targetItem.getId()
+          targetItem.expand()
+        } else {
+          // If a file is targeted, create in its parent directory
+          const parent = targetItem.getParent()
+          parentPath = parent?.getId() || "/"
+          parent?.expand()
+        }
+      }
+      tree.rebuildTree()
+    } else {
+      // If no specific item is selected, parentPath remains "/" (default)
+      parentPath = "/"
+    }
 
     switch (event.value) {
       case "new-file": {
@@ -401,55 +435,59 @@ onMount(() => {
   ondragleave={handleDragLeave}
   ondrop={handleDrop}
 >
-  {#if editorState.creatingItem && editorState.creatingItem.parentPath === '/'}
+  {#if creatingItem && (creatingItem.parentPath === '/' || creatingItem.parentPath === '')}
     <div class="flex items-center gap-1 px-1 mb-1" style:padding-left="0px">
-      <img src={resolveIcon(editorState.creatingItem.type === 'file' ? 'f.txt' : 'folder', editorState.creatingItem.type === 'file' ? 'file' : 'folder-closed')} alt="" class="w-4 h-4 shrink-0" />
+      <img src={resolveIcon(creatingItem.type === 'file' ? 'f.txt' : 'folder', creatingItem.type === 'file' ? 'file' : 'folder-closed')} alt="" class="w-4 h-4 shrink-0" />
       <input 
         autofocus
         class="border border-primary bg-base-100 rounded px-1 w-full outline-none text-sm"
         onkeydown={(e) => {
-          if (e.key === 'Escape') editorState.creatingItem = null
+          if (e.key === 'Escape') {
+            editorState.creatingItem = null
+            tree.rebuildTree()
+          }
           if (e.key === 'Enter') {
             const name = e.currentTarget.value
             if (name) {
-              if (editorState.creatingItem?.type === 'file') editorState.createFile(editorState.creatingItem.parentPath, name)
-              else if (editorState.creatingItem?.type === 'folder') editorState.createFolder(editorState.creatingItem.parentPath, name)
+              if (creatingItem?.type === 'file') editorState.createFile(creatingItem.parentPath, name)
+              else if (creatingItem?.type === 'folder') editorState.createFolder(creatingItem.parentPath, name)
             }
             editorState.creatingItem = null
             tree.rebuildTree()
           }
         }}
-        onblur={() => editorState.creatingItem = null}
+        onblur={() => { editorState.creatingItem = null; tree.rebuildTree(); }}
       />
     </div>
   {/if}
-  {#key render}
-    {#each tree.getItems() as item (item.getId())}
-      <TreeItem item={item} />
-      {#if editorState.creatingItem && editorState.creatingItem.parentPath === item.getItemData().path && item.isExpanded()}
-        <div class="flex items-center gap-1 px-1" style:padding-left={`${(item.getItemMeta().level + 1) * 10}px`}>
-          <img src={resolveIcon(editorState.creatingItem.type === 'file' ? 'f.txt' : 'folder', editorState.creatingItem.type === 'file' ? 'file' : 'folder-closed')} alt="" class="w-4 h-4 shrink-0" />
-          <input 
-            autofocus
-            class="border border-primary bg-base-100 rounded px-1 w-full outline-none text-sm"
-            onkeydown={(e) => {
-              if (e.key === 'Escape') editorState.creatingItem = null
-              if (e.key === 'Enter') {
-                const name = e.currentTarget.value
-                if (name) {
-                  if (editorState.creatingItem?.type === 'file') editorState.createFile(editorState.creatingItem.parentPath, name)
-                  else if (editorState.creatingItem?.type === 'folder') editorState.createFolder(editorState.creatingItem.parentPath, name)
-                }
-                editorState.creatingItem = null
-                tree.rebuildTree()
+  {#each items as item (item.getId())}
+    <TreeItem {item} {tree} />
+    {#if creatingItem && (creatingItem.parentPath === item.getId() || (item.getItemData().type === 'directory' && creatingItem.parentPath === item.getItemData().path))}
+      <div class="flex items-center gap-1 px-1" style:padding-left={`${(item.getItemMeta().level + 1) * 10}px`}>
+        <img src={resolveIcon(creatingItem.type === 'file' ? 'f.txt' : 'folder', creatingItem.type === 'file' ? 'file' : 'folder-closed')} alt="" class="w-4 h-4 shrink-0" />
+        <input 
+          autofocus
+          class="border border-primary bg-base-100 rounded px-1 w-full outline-none text-sm"
+          onkeydown={(e) => {
+            if (e.key === 'Escape') {
+              editorState.creatingItem = null
+              tree.rebuildTree()
+            }
+            if (e.key === 'Enter') {
+              const name = e.currentTarget.value
+              if (name) {
+                if (creatingItem?.type === 'file') editorState.createFile(creatingItem.parentPath, name)
+                else if (creatingItem?.type === 'folder') editorState.createFolder(creatingItem.parentPath, name)
               }
-            }}
-            onblur={() => editorState.creatingItem = null}
-          />
-        </div>
-      {/if}
-    {/each}
-  {/key}
+              editorState.creatingItem = null
+              tree.rebuildTree()
+            }
+          }}
+          onblur={() => { editorState.creatingItem = null; tree.rebuildTree(); }}
+        />
+      </div>
+    {/if}
+  {/each}
 </div>
 
 <div {...contextMenuApi.getPositionerProps()} class="z-50">

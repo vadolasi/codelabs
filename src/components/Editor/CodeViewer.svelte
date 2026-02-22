@@ -25,6 +25,7 @@ import {
 } from "@codemirror/state"
 import {
   crosshairCursor,
+  drawSelection, 
   dropCursor,
   EditorView,
   highlightActiveLine,
@@ -32,15 +33,12 @@ import {
   highlightSpecialChars,
   keymap,
   lineNumbers,
-  rectangularSelection,
-  drawSelection
+  rectangularSelection
 } from "@codemirror/view"
 import { LoroExtensions } from "loro-codemirror"
 import { LoroText } from "loro-crdt"
-import { onDestroy, onMount } from "svelte"
-import editorState, {
-  engine,
-} from "./editorState.svelte"
+import { onMount } from "svelte"
+import editorState from "./editorState.svelte"
 import { getLanguage } from "./language"
 import { getEditorSettings, getSettingsExtensions } from "./settings"
 

@@ -109,9 +109,6 @@ O arquivo [`Dockerfile`](./Dockerfile) contém a implementação de um servidor 
    ```
 2. Prepare os assets e compile o projeto:
    ```bash
-   bun run fswatcher:build
-   bun run icons:prepare
-   bun run emails:compile
    bun run build
    ```
 3. Inicie o servidor:

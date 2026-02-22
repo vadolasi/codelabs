@@ -50,7 +50,6 @@ onMount(() => {
 $effect(() => {
   if ($query.data !== undefined && engine === null && !loadError) {
     (async () => {
-      console.log("[Workspace] Iniciando setup...");
       try {
         untrack(() => {
           editorState.reset()
@@ -65,7 +64,6 @@ $effect(() => {
         })
 
         const engineType = ($query.data.workspace.engine || 'webcontainers') as 'webcontainers' | 'skulpt' | 'pyodide'
-        console.log("[Workspace] Engine selecionada:", engineType);
 
         let instance;
         if (engineType === 'webcontainers') {
@@ -79,15 +77,11 @@ $effect(() => {
           instance = new PyodideEngine()
         }
 
-        console.log("[Workspace] Preparando engine...");
         await instance.prepare()
-        console.log("[Workspace] Inicializando engine...");
         await instance.initialize()
         
-        console.log("[Workspace] Engine pronta!");
         engine = instance
       } catch (err: any) {
-        console.error("[Workspace] Erro na inicialização:", err);
         loadError = err.message || "Erro desconhecido";
       }
     })()
