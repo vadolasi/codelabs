@@ -18,7 +18,6 @@ import editorState, {
 } from "../editorState.svelte"
 import TreeItem from "./TreeItem.svelte"
 
-let render = $state(0)
 const creatingItem = $derived(editorState.creatingItem)
 
 const tree = createTree<Item>({
@@ -78,7 +77,6 @@ const tree = createTree<Item>({
   ]
 })
 
-// Sincronização de estado estilo Svelte 5 / React useTree
 let treeState = $state(tree.getState())
 
 $effect.pre(() => {
@@ -92,7 +90,6 @@ $effect.pre(() => {
 })
 
 const items = $derived.by(() => {
-  // Ao acessar treeState aqui, o Svelte passará a rastrear as mudanças da árvore
   treeState
   return tree.getItems()
 })
@@ -120,9 +117,8 @@ editorState.ensureDirectory("/")
 const contextMenuService = useMachine(menu.machine, {
   id: "tree-container-menu",
   onSelect: (event) => {
-    let parentPath = "/" // Default to root
+    let parentPath = "/"
     
-    // Try to get the target item from selection
     let targetItem: ItemInstance<Item> | null = null
     const selectedItemIds = tree.getState().selectedItems
 
@@ -131,7 +127,6 @@ const contextMenuService = useMachine(menu.machine, {
     }
     
     if (targetItem) {
-      // If the target item is the root itself, treat it as root creation
       if (targetItem.getId() === "/") {
         parentPath = "/"
       } else {
@@ -140,7 +135,6 @@ const contextMenuService = useMachine(menu.machine, {
           parentPath = targetItem.getId()
           targetItem.expand()
         } else {
-          // If a file is targeted, create in its parent directory
           const parent = targetItem.getParent()
           parentPath = parent?.getId() || "/"
           parent?.expand()
@@ -148,7 +142,6 @@ const contextMenuService = useMachine(menu.machine, {
       }
       tree.rebuildTree()
     } else {
-      // If no specific item is selected, parentPath remains "/" (default)
       parentPath = "/"
     }
 
@@ -179,7 +172,6 @@ let dragCounter = 0
 function handleDragEnter(e: DragEvent) {
   e.preventDefault()
   dragCounter++
-  // Default to root if entering from outside
   if (dragCounter === 1 && !editorState.dragOverPath) {
     editorState.dragOverPath = "/"
   }
@@ -188,7 +180,6 @@ function handleDragEnter(e: DragEvent) {
 function handleDragLeave(e: DragEvent) {
   e.preventDefault()
   dragCounter--
-  // Reset only if leaving the entire container
   if (dragCounter === 0) {
     editorState.dragOverPath = null
   }
@@ -226,11 +217,6 @@ async function uploadEntry(entry: FileSystemEntry, parentPath: string) {
       await uploadEntry(childEntry, newDirPath)
     }
   }
-}
-
-function handleDragOver(e: DragEvent) {
-  e.preventDefault()
-  // Logic for hover auto-open could be added here by detecting which TreeItem is under the mouse
 }
 
 async function syncFromFs(rootFsPath: string) {
@@ -280,9 +266,6 @@ async function syncFromFs(rootFsPath: string) {
 
       if (entry.isFile()) {
         const fileContent = await engine.current.fs.readFile(nextFsPath, "utf-8")
-        // For syncFromFs, we assume it's mostly text files for now 
-        // as Skulpt/Pyodide usually deal with text. 
-        // But a more robust sync would check binary.
         const fileMap = new LoroMap<Record<string, Item>>()
         fileMap.set("data", {
           type: "file",

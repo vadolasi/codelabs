@@ -1,9 +1,6 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
-@plugin "daisyui" {
-	/* biome-ignore lint/correctness/noUnknownProperty */
-	themes: false;
-}
+@plugin "daisyui";
 @plugin "./catppuccinTheme.mocha.ts";
 
 .splitpanes.modern-theme {

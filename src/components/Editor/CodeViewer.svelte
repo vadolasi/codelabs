@@ -9,23 +9,21 @@ import {
 import { defaultKeymap, historyKeymap, indentWithTab } from "@codemirror/commands"
 import {
   bracketMatching,
-  defaultHighlightStyle,
   foldGutter,
   foldKeymap,
-  indentOnInput,
-  syntaxHighlighting
+  indentOnInput
 } from "@codemirror/language"
 import { lintKeymap } from "@codemirror/lint"
 import { highlightSelectionMatches, searchKeymap } from "@codemirror/search"
 import {
+  Compartment,
   EditorState,
   type EditorStateConfig,
-  type Extension,
   Prec
 } from "@codemirror/state"
 import {
   crosshairCursor,
-  drawSelection, 
+  drawSelection,
   dropCursor,
   EditorView,
   highlightActiveLine,
@@ -44,6 +42,8 @@ import { getEditorSettings, getSettingsExtensions } from "./settings"
 
 let view: EditorView
 let editorContainer: HTMLDivElement
+const languageCompartment = new Compartment()
+
 const editorTheme = EditorView.theme({
   "&": {
     width: "100%",
@@ -76,9 +76,9 @@ onMount(() => {
 
 $effect(() => {
   if (editorState.currentTab && editorState.loroDoc) {
-    async function setupEditor() {
+    function setupEditor() {
       const previousTab = editorState.previousTab
-      if (previousTab) {
+      if (previousTab && view.state) {
         editorState.saveState(previousTab, view.state.toJSON())
       }
 
@@ -95,7 +95,6 @@ $effect(() => {
           dropCursor(),
           EditorState.allowMultipleSelections.of(true),
           indentOnInput(),
-          syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
           bracketMatching(),
           closeBrackets(),
           autocompletion(),
@@ -104,6 +103,8 @@ $effect(() => {
           highlightActiveLine(),
           highlightSelectionMatches(),
           ...settingsExtensions,
+          catppuccinMocha,
+          languageCompartment.of([]),
           LoroExtensions(
             editorState.loroDoc,
             {
@@ -121,7 +122,7 @@ $effect(() => {
               }
 
               const text = new LoroText()
-              const data = item.get("data") as Item
+              const data = item.get("data") as any
               text.update(data.type === "file" ? data.content : "")
               item.setContainer("editableContent", text)
               editorState.loroDoc.commit()
@@ -163,7 +164,6 @@ $effect(() => {
             indentWithTab
           ]),
           editorTheme,
-          catppuccinMocha,
           EditorView.updateListener.of((update) => {
             if (update.docChanged) {
               const item = editorState.filesMap.get(editorState.currentTab!)
@@ -205,18 +205,20 @@ $effect(() => {
         ]
       }
 
-      const languageSupport = await getLanguage(editorState.currentTab!)
-
-      if (languageSupport) {
-        ;(config.extensions as Extension[]).push(languageSupport)
-      }
-
       const previousState = editorState.getState(editorState.currentTab!)
       view.setState(
         previousState
           ? EditorState.fromJSON(previousState, config)
           : EditorState.create(config)
       )
+
+      getLanguage(editorState.currentTab!).then(languageSupport => {
+        if (languageSupport && view) {
+          view.dispatch({
+            effects: languageCompartment.reconfigure(languageSupport)
+          })
+        }
+      })
     }
 
     setupEditor()

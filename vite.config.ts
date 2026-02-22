@@ -2,10 +2,12 @@ import { enhancedImages } from "@sveltejs/enhanced-img"
 import { sveltekit } from "@sveltejs/kit/vite"
 import tailwindcss from "@tailwindcss/vite"
 import { SvelteKitPWA } from "@vite-pwa/sveltekit"
+import daisyui from "daisyui"
 import { visualizer } from "rollup-plugin-visualizer"
 import { defineConfig } from "vite"
 import devtoolsJson from "vite-plugin-devtools-json"
 import wasm from "vite-plugin-wasm"
+import catppuccin from "./src/catppuccinTheme.mocha"
 
 export default defineConfig({
   plugins: [
@@ -18,7 +20,16 @@ export default defineConfig({
         }
       }
     },
-    tailwindcss(),
+    tailwindcss({
+      plugins: [daisyui, catppuccin],
+      daisyui: {
+        themes: [
+          {
+            catppuccin: catppuccin
+          }
+        ]
+      }
+    }),
     enhancedImages(),
     SvelteKitPWA({
       manifest: {
