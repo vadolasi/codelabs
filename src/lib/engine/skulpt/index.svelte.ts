@@ -34,18 +34,17 @@ export default class SkulptEngine extends BaseEngine {
   get fs(): EngineFs {
     return {
       readFile: async (path: string) => {
-        const item = editorState.filesMap.get(path)
-        if (!item) return ""
-
-        const data = item.get("data") as any
-
-        return data?.content || ""
+        const item = editorState.state.files[path]
+        return item?.data.content || ""
       },
       writeFile: async (path: string, data: string) => {
-        const item = editorState.filesMap.get(path)
-        if (item) {
-          item.set("data", { type: "file", path, content: data })
-        }
+        editorState.mirror.setState((s) => {
+          const item = s.files[path]
+          if (item) {
+            item.data.content = data
+          }
+        })
+        editorState.loroDoc.commit()
       },
       readdir: async () => [],
       mkdir: async () => {},
@@ -96,8 +95,8 @@ export default class SkulptEngine extends BaseEngine {
       ]
 
       for (const targetPath of pathsToTry) {
-        const item = editorState.filesMap.get(targetPath)
-        const data = item?.get("data") as any
+        const item = editorState.state.files[targetPath]
+        const data = item?.data
 
         if (data) {
           if (data.type === "binary") {
@@ -107,7 +106,9 @@ export default class SkulptEngine extends BaseEngine {
             data.type === "file" &&
             targetPath.toLowerCase().endsWith(".svg")
           ) {
-            const blob = new Blob([data.content], { type: "image/svg+xml" })
+            const blob = new Blob([data.content || ""], {
+              type: "image/svg+xml"
+            })
             return URL.createObjectURL(blob)
           }
         }
@@ -143,9 +144,8 @@ export default class SkulptEngine extends BaseEngine {
           normalized = normalized.slice(0, -1)
         }
 
-        const item = editorState.filesMap.get(normalized)
-        // biome-ignore lint/suspicious/noExplicitAny: Skulpt doesn't have types
-        const data = item?.get("data") as any
+        const item = editorState.state.files[normalized]
+        const data = item?.data
 
         if (data?.type === "file") {
           return data.content ?? ""

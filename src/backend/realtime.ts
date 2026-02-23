@@ -90,7 +90,15 @@ async function markWorkspaceInactive(workspaceId: string) {
   activeWorkspaceCounts.set(workspaceId, nextCount)
 }
 
-const io = new Server({ parser: msgpackParser })
+const io = new Server({
+  parser: msgpackParser,
+  connectionStateRecovery: {},
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"],
+    credentials: true
+  }
+})
 
 io.use(async (socket, next) => {
   const cookieString = socket.handshake.headers.cookie || ""

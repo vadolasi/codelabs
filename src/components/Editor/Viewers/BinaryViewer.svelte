@@ -4,11 +4,11 @@
 
   let item = $derived.by(() => {
     if (!editorState.currentTab) return null;
-    return editorState.filesMap.get(editorState.currentTab);
+    return editorState.state.files[editorState.currentTab];
   });
 
   let data = $derived.by(() => {
-    return item?.get('data') as any;
+    return item?.data;
   });
 
   function formatSize(bytes: number) {

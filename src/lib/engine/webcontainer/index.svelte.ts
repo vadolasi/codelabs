@@ -118,23 +118,21 @@ export default class WebcontainerEngine extends BaseEngine {
   private getFileTree(rootPath = "/"): FileSystemTree {
     const fileTree: FileSystemTree = {}
 
-    const rootChildren =
-      (
-        editorState.filesMap.get(rootPath)?.get("children") as LoroList<string>
-      )?.toArray() || []
+    const rootItem = editorState.state.files[rootPath]
+    const rootChildren = rootItem?.children || []
 
     for (const childId of rootChildren) {
       const filename = childId.split("/").pop() || ""
-      const childData = editorState.filesMap.get(childId)
-      if (!childData || typeof childData.get !== "function") {
+      const childItem = editorState.state.files[childId]
+      if (!childItem) {
         continue
       }
-      const itemData = childData.get("data") as Item
+      const itemData = childItem.data
 
       if (itemData.type === "file") {
         fileTree[filename] = {
           file: {
-            contents: itemData.content
+            contents: itemData.content || ""
           }
         }
       } else if (itemData.type === "directory") {

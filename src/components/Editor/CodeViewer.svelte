@@ -57,13 +57,13 @@ onMount(() => {
   
   const handleSave = () => {
     if (!editorState.currentTab) return
-    const item = editorState.filesMap.get(editorState.currentTab)
     const content = view.state.doc.toString()
     
-    item.set("data", {
-      type: "file",
-      path: editorState.currentTab,
-      content
+    editorState.mirror.setState((s) => {
+      const item = s.files[editorState.currentTab!]
+      if (item) {
+        item.data.content = content
+      }
     })
     
     editorState.unsavedPaths.delete(editorState.currentTab)
@@ -113,7 +113,7 @@ $effect(() => {
             },
             editorState.undoManager,
             () => {
-              const item = editorState.filesMap.get(editorState.currentTab!)
+              const item = (editorState.loroDoc.getMap("files") as LoroMap).get(editorState.currentTab!) as LoroMap
               if (!item) return new LoroText()
 
               const container = item.get("editableContent")
@@ -123,7 +123,7 @@ $effect(() => {
 
               const text = new LoroText()
               const data = item.get("data") as any
-              text.update(data.type === "file" ? data.content : "")
+              text.update(data?.type === "file" ? data.content : "")
               item.setContainer("editableContent", text)
               editorState.loroDoc.commit()
               return text
@@ -166,10 +166,10 @@ $effect(() => {
           editorTheme,
           EditorView.updateListener.of((update) => {
             if (update.docChanged) {
-              const item = editorState.filesMap.get(editorState.currentTab!)
+              const item = editorState.state.files[editorState.currentTab!]
               if (!item) return
 
-              const data = item.get("data") as any
+              const data = item.data
               const currentContent = update.state.doc.toString()
 
               if (currentContent !== data.content) {
@@ -186,13 +186,13 @@ $effect(() => {
               {
                 key: "Mod-s",
                 run(view) {
-                  const item = editorState.filesMap.get(editorState.currentTab!)
                   const content = view.state.doc.toString()
                   
-                  item.set("data", {
-                    type: "file",
-                    path: editorState.currentTab!,
-                    content
+                  editorState.mirror.setState((s) => {
+                    const item = s.files[editorState.currentTab!]
+                    if (item) {
+                      item.data.content = content
+                    }
                   })
 
                   editorState.unsavedPaths.delete(editorState.currentTab!)

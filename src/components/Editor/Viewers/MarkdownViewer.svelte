@@ -12,9 +12,8 @@
   let container: HTMLDivElement;
   let content = $derived.by(() => {
     if (!editorState.currentTab) return '';
-    const item = editorState.filesMap.get(editorState.currentTab);
-    const data = item?.get('data') as any;
-    return data?.content || '';
+    const item = editorState.state.files[editorState.currentTab];
+    return item?.data.content || '';
   });
 
   async function renderMarkdown(text: string) {

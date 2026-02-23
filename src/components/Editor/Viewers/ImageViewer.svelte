@@ -3,17 +3,17 @@
 
   let item = $derived.by(() => {
     if (!editorState.currentTab) return null;
-    return editorState.filesMap.get(editorState.currentTab);
+    return editorState.state.files[editorState.currentTab];
   });
 
   let data = $derived.by(() => {
-    return item?.get('data') as any;
+    return item?.data;
   });
 
   let imageUrl = $derived.by(() => {
     if (!data) return '';
     if (data.type === 'file' && data.path.endsWith('.svg')) {
-      const blob = new Blob([data.content], { type: 'image/svg+xml' });
+      const blob = new Blob([data.content || ""], { type: 'image/svg+xml' });
       return URL.createObjectURL(blob);
     }
     if (data.type === 'binary' && data.mimeType.startsWith('image/')) {

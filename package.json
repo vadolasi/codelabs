@@ -102,6 +102,7 @@
 		"juice": "^11.1.1",
 		"loro-codemirror": "^0.3.3",
 		"loro-crdt": "^1.10.6",
+		"loro-mirror": "^1.2.1",
 		"material-icon-theme": "^5.31.0",
 		"msgpackr": "^1.11.8",
 		"nanoid": "^5.1.6",

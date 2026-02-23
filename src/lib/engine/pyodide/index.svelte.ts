@@ -31,16 +31,17 @@ export default class PyodideEngine extends BaseEngine {
   get fs(): EngineFs {
     return {
       readFile: async (path: string) => {
-        const item = editorState.filesMap.get(path)
-        // biome-ignore lint/suspicious/noExplicitAny: Loro returns plain objects for map values
-        const data = item?.get("data") as any
-        return data?.content || ""
+        const item = editorState.state.files[path]
+        return item?.data.content || ""
       },
       writeFile: async (path: string, data: string) => {
-        const item = editorState.filesMap.get(path)
-        if (item) {
-          item.set("data", { type: "file", path, content: data })
-        }
+        editorState.mirror.setState((s) => {
+          const item = s.files[path]
+          if (item) {
+            item.data.content = data
+          }
+        })
+        editorState.loroDoc.commit()
       },
       readdir: async () => [],
       mkdir: async () => {},
@@ -120,9 +121,8 @@ ${String(e)}
   private async syncFilesToPyodide() {
     if (!this.pyodide) return
 
-    for (const [path, item] of editorState.filesMap.entries()) {
-      // biome-ignore lint/suspicious/noExplicitAny: Loro returns plain objects
-      const data = item?.get("data") as any
+    for (const [path, item] of Object.entries(editorState.state.files)) {
+      const data = item.data
       if (data?.type === "file") {
         const dir = path.split("/").slice(0, -1).join("/")
         if (dir && dir !== "/") {

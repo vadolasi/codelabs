@@ -124,6 +124,8 @@ const addMemberMutation = createMutation({
   }
 })
 
+let templateLink = $state<string | null>(null)
+
 const createTemplateMutation = createMutation({
   mutationFn: async () => {
     const { data, error } = await httpClient.workspaces.id({ id: workspace.id }).template.post()
@@ -132,6 +134,7 @@ const createTemplateMutation = createMutation({
   },
   onSuccess: (data) => {
     const url = `${window.location.origin}/templates/${data.id}`
+    templateLink = url
     navigator.clipboard.writeText(url)
     toaster.create({ 
       title: "Template Criado!", 
@@ -142,12 +145,20 @@ const createTemplateMutation = createMutation({
 })
 
 let copiedRole = $state<string | null>(null)
+let isTemplateCopied = $state(false)
 
 function copyLink(token: string, role: string) {
   const url = `${window.location.origin}/invite/${token}`
   navigator.clipboard.writeText(url)
   copiedRole = role
   setTimeout(() => (copiedRole = null), 2000)
+}
+
+function copyTemplateLink() {
+  if (!templateLink) return
+  navigator.clipboard.writeText(templateLink)
+  isTemplateCopied = true
+  setTimeout(() => (isTemplateCopied = false), 2000)
 }
 
 const isOwner = $derived(workspace.role === "owner")
@@ -391,27 +402,63 @@ const updateVisibilityMutation = createMutation({
 
       <!-- Template Section (Owners Only) -->
       {#if isOwner}
-        <section class="pt-4 border-t border-base-200">
-          <div class="p-4 bg-primary/5 rounded-2xl border border-primary/10 space-y-3">
+        <section class="pt-4 border-t border-base-200 space-y-3">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-base-content/50">Template do Workspace</h4>
+          
+          {#if templateLink}
+            <div class="space-y-2">
+              <div 
+                role="button"
+                tabindex="0"
+                class="relative flex items-center gap-3 p-2 bg-primary/5 hover:bg-primary/10 rounded-xl border border-primary/20 cursor-pointer transition-all group overflow-hidden"
+                onclick={copyTemplateLink}
+                onkeydown={(e) => e.key === 'Enter' && copyTemplateLink()}
+              >
+                <div class="p-2 bg-primary/10 text-primary rounded-lg">
+                  <LayoutTemplate class="w-4 h-4" />
+                </div>
+                <div class="flex-1 min-w-0 font-mono text-[10px] text-primary/80 truncate">
+                  {templateLink}
+                </div>
+                <div class="shrink-0 px-2">
+                  {#if isTemplateCopied}
+                    <Check class="w-4 h-4 text-success" />
+                  {:else}
+                    <Copy class="w-4 h-4 opacity-40 group-hover:opacity-100 transition-opacity" />
+                  {/if}
+                </div>
+                {#if isTemplateCopied}
+                  <div class="absolute inset-0 bg-success/10 flex items-center justify-center backdrop-blur-[1px] animate-in fade-in">
+                    <span class="text-[10px] font-bold text-success uppercase tracking-widest">Copiado!</span>
+                  </div>
+                {/if}
+              </div>
+              <p class="text-[10px] text-base-content/40 text-center">
+                Este link permite que qualquer pessoa crie uma cópia deste projeto.
+              </p>
+            </div>
+          {/if}
+
+          <div class="p-4 bg-base-200/50 rounded-2xl border border-base-content/5 space-y-3">
             <div class="flex items-center gap-3">
-              <div class="p-2 bg-primary/10 text-primary rounded-lg">
+              <div class="p-2 bg-base-300 text-base-content/70 rounded-lg">
                 <LayoutTemplate class="w-4 h-4" />
               </div>
-              <h4 class="text-sm font-bold">Publicar como Template</h4>
+              <h4 class="text-sm font-bold">Publicar Novo Template</h4>
             </div>
             <p class="text-xs text-base-content/60 leading-relaxed">
               Cria uma versão "blue-print" do seu projeto sem o histórico de edições. 
-              Ideal para exercícios ou projetos base.
+              {templateLink ? 'Gerar um novo substituirá o link anterior.' : 'Ideal para exercícios ou projetos base.'}
             </p>
             <button 
-              class="btn btn-primary btn-sm w-full gap-2"
+              class="btn {templateLink ? 'btn-ghost btn-sm border-base-content/10' : 'btn-primary btn-sm'} w-full gap-2"
               onclick={() => $createTemplateMutation.mutate()}
               disabled={$createTemplateMutation.isPending}
             >
               {#if $createTemplateMutation.isPending}
                 <span class="loading loading-spinner loading-xs"></span>
               {/if}
-              Gerar Link de Template
+              {templateLink ? 'Atualizar Template' : 'Gerar Link de Template'}
             </button>
           </div>
         </section>

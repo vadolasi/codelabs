@@ -13,7 +13,7 @@ const service = useMachine(toast.group.machine, {
 const api = $derived(toast.group.connect(service, normalizeProps))
 </script>
 
-<div {...api.getGroupProps()} class="toast toast-top toast-center z-[100]">
+<div {...api.getGroupProps()} class="toast toast-top toast-center z-[100] !fixed !top-4 !left-1/2 !-translate-x-1/2 !right-auto !bottom-auto !flex !flex-col !items-center !gap-2 !w-max !max-w-[90vw]">
   {#each api.getToasts() as toast, index (toast.id)}
   <Toast toast={toast} index={index} parent={service} />
   {/each}

@@ -1,3 +1,4 @@
+import { count, desc } from "drizzle-orm"
 import Elysia, { t } from "elysia"
 import { convert } from "html-to-text"
 import juice from "juice"
@@ -6,7 +7,7 @@ import remarkParse from "remark-parse"
 import remarkRehype from "remark-rehype"
 import { Resend } from "resend"
 import { unified } from "unified"
-import { db, users } from "../../database"
+import { db, users, workspaces } from "../../database"
 import config from "../../lib/config"
 import authMiddleware from "../auth/auth.middleware"
 
@@ -15,6 +16,34 @@ const adminController = new Elysia({
   prefix: "/admin"
 })
   .use(authMiddleware)
+  .get(
+    "/stats",
+    async () => {
+      const [userCount] = await db.select({ value: count() }).from(users)
+      const [workspaceCount] = await db
+        .select({ value: count() })
+        .from(workspaces)
+      const recentUsers = await db
+        .select({
+          id: users.id,
+          email: users.email,
+          username: users.username,
+          createdAt: users.createdAt
+        })
+        .from(users)
+        .orderBy(desc(users.createdAt))
+        .limit(10)
+
+      return {
+        totalUsers: userCount.value,
+        totalWorkspaces: workspaceCount.value,
+        recentUsers
+      }
+    },
+    {
+      user: "admin"
+    }
+  )
   .post(
     "/broadcast",
     async ({ body: { subject, markdown } }) => {

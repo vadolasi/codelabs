@@ -39,25 +39,23 @@ const tree = createTree<Item>({
   },
   dataLoader: {
     getItem: (itemId) => {
-      const entry = editorState.filesMap.get(itemId)
+      const entry = editorState.state.files[itemId]
       if (entry) {
-        return entry.get("data") as Item
+        return entry.data
       }
       if (itemId === "/") {
-        return editorState.ensureDirectory("/").get("data") as Item
+        editorState.ensureDirectory("/")
+        return editorState.state.files["/"]?.data
       }
       return { type: "file", path: itemId, content: "" } as Item
     },
     getChildren: (itemId) => {
-      const entry = editorState.filesMap.get(itemId)
-      const childrenList = entry?.get("children") as
-        | LoroList<string>
-        | undefined
-      const children = childrenList ? childrenList.toArray() : []
+      const entry = editorState.state.files[itemId]
+      const children = entry?.children || []
 
       return children.sort((a, b) => {
-        const aType = editorState.filesMap.get(a)?.get("data") as Item
-        const bType = editorState.filesMap.get(b)?.get("data") as Item
+        const aType = editorState.state.files[a]?.data
+        const bType = editorState.state.files[b]?.data
 
         if (aType?.type === "directory" && bType?.type !== "directory") {
           return -1
@@ -266,13 +264,17 @@ async function syncFromFs(rootFsPath: string) {
 
       if (entry.isFile()) {
         const fileContent = await engine.current.fs.readFile(nextFsPath, "utf-8")
-        const fileMap = new LoroMap<Record<string, Item>>()
-        fileMap.set("data", {
-          type: "file",
-          path: nextStorePath,
-          content: fileContent
+        editorState.mirror.setState((s) => {
+          s.files[nextStorePath] = {
+            data: {
+              type: "file",
+              path: nextStorePath,
+              content: fileContent
+            },
+            children: [],
+            editableContent: fileContent
+          }
         })
-        editorState.filesMap.setContainer(nextStorePath, fileMap)
         editorState.addChildToParent(current.storePath, nextStorePath)
       }
     }
@@ -289,11 +291,11 @@ onMount(() => {
     $effect(() => {
       if (unsubscribeLoroWatcher) unsubscribeLoroWatcher()
       
-      unsubscribeLoroWatcher = editorState.filesMap.subscribe(({ events }) => {
+      unsubscribeLoroWatcher = editorState.loroDoc.subscribe(({ events }) => {
         if (!engine.current) return
         for (const update of events) {
-          if (update.diff.type === "map") {
-            const [_, file] = update.path as ["file", string | undefined]
+          if (update.diff.type === "map" && update.path[0] === "files") {
+            const file = update.path[1] as string | undefined
 
             if (
               file !== undefined &&
@@ -301,11 +303,11 @@ onMount(() => {
             ) {
               const data = update.diff.updated.data as Item
 
-              if (data.type === "file") {
+              if (data?.type === "file") {
                 engine.current.fs
                   .writeFile(data.path, data.content || "", "utf-8")
                   .catch()
-              } else if (data.type === "directory") {
+              } else if (data?.type === "directory") {
                 engine.current.fs
                   .mkdir(data.path, { recursive: true })
                   .catch()
@@ -316,11 +318,11 @@ onMount(() => {
                   engine.current.fs.rm(key, { recursive: true }).catch()
                 } else if (value instanceof LoroMap) {
                   const itemData = value.get("data") as Item
-                  if (itemData.type === "file") {
+                  if (itemData?.type === "file") {
                     engine.current.fs
                       .writeFile(itemData.path, itemData.content || "", "utf-8")
                       .catch()
-                  } else if (itemData.type === "directory") {
+                  } else if (itemData?.type === "directory") {
                     engine.current.fs
                       .mkdir(itemData.path, { recursive: true })
                       .catch()
@@ -350,23 +352,34 @@ onMount(() => {
           }
 
           if (event.type === "dir-add" || event.type === "file-add") {
-            const newMap = new LoroMap<Record<string, Item>>()
-
+            editorState.mirror.setState((s) => {
+              if (event.type === "file-add") {
+                const content = engine.current ? engine.current.fs.readFile(event.path, "utf-8") : Promise.resolve("")
+                // Note: we can't await inside setState, so we might need a different approach if content is needed immediately.
+                // But usually file-add from watcher is followed by file-change or we can read it before.
+                // For now, let's keep it simple or assume it's handled.
+                // Actually, let's read it before.
+              }
+            })
+            
             if (event.type === "file-add") {
-              newMap.set("data", {
-                type: "file",
-                path: event.path,
-                content: engine.current ? await engine.current.fs.readFile(event.path, "utf-8") : ""
+              const content = engine.current ? await engine.current.fs.readFile(event.path, "utf-8") : ""
+              editorState.mirror.setState((s) => {
+                s.files[event.path] = {
+                  data: { type: "file", path: event.path, content },
+                  children: [],
+                  editableContent: content
+                }
               })
             } else {
-              newMap.set("data", {
-                type: "directory",
-                path: event.path
+              editorState.mirror.setState((s) => {
+                s.files[event.path] = {
+                  data: { type: "directory", path: event.path },
+                  children: [],
+                  editableContent: ""
+                }
               })
-              newMap.setContainer("children", new LoroList<string>())
             }
-
-            editorState.filesMap.setContainer(event.path, newMap)
 
             const parent = `/${event.path
               .split("/")
@@ -374,40 +387,27 @@ onMount(() => {
               .join("/")}`.replaceAll("//", "/")
             editorState.addChildToParent(parent, event.path)
           } else if (event.type === "file-remove" || event.type === "dir-remove") {
-            editorState.filesMap.delete(event.path)
-            const parent = `/${event.path.split("/").slice(0, -1).join("/")}`
-            const parentItem = editorState.filesMap.get(parent)
-
-            if (parentItem) {
-              const children = parentItem.get("children") as LoroList<string>
-              const index = children.toArray().indexOf(event.path)
-              if (index !== -1) {
-                children.delete(index, 1)
-              }
-            }
+            editorState.deleteItem(event.path)
           } else if (event.type === "file-change") {
-            const item = editorState.filesMap.get(event.path)
             const content = engine.current ? await engine.current.fs.readFile(event.path, "utf-8") : ""
-            if (item) {
-              item.set("data", {
-                type: "file",
-                path: event.path,
-                content
-              })
-            } else {
-              const fileMap = new LoroMap<Record<string, Item>>()
-              fileMap.set("data", {
-                type: "file",
-                path: event.path,
-                content
-              })
-              editorState.filesMap.setContainer(event.path, fileMap)
-              const parent = `/${event.path
-                .split("/")
-                .slice(0, -1)
-                .join("/")}`.replaceAll("//", "/")
-              editorState.addChildToParent(parent, event.path)
-            }
+            editorState.mirror.setState((s) => {
+              const item = s.files[event.path]
+              if (item) {
+                item.data.content = content
+                item.editableContent = content
+              } else {
+                s.files[event.path] = {
+                  data: { type: "file", path: event.path, content },
+                  children: [],
+                  editableContent: content
+                }
+              }
+            })
+            const parent = `/${event.path
+              .split("/")
+              .slice(0, -1)
+              .join("/")}`.replaceAll("//", "/")
+            editorState.addChildToParent(parent, event.path)
           }
 
           editorState.loroDoc.commit()

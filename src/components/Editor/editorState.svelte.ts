@@ -9,6 +9,7 @@ import {
   type LoroText,
   UndoManager
 } from "loro-crdt"
+import { Mirror, type MirrorState, schema } from "loro-mirror"
 import { SvelteMap, SvelteSet } from "svelte/reactivity"
 import type BaseEngine from "$lib/engine/base.svelte"
 import httpClient from "$lib/httpClient"
@@ -23,6 +24,31 @@ export type ViewerInfo = {
   icon: any
   component: any
 }
+
+export type WorkspaceItemData = {
+  type: "file" | "directory" | "binary"
+  path: string
+  content?: string
+  hash?: string
+  size?: number
+  mimeType?: string
+}
+
+const itemSchema = schema.LoroMap({
+  data: schema.Any<WorkspaceItemData>(),
+  children: schema.LoroMovableList(schema.String(), (t) => t),
+  editableContent: schema.LoroText()
+})
+
+export const workspaceSchema = schema({
+  files: schema.LoroMapRecord(
+    schema.LoroMap({
+      data: schema.Any<WorkspaceItemData>(),
+      children: schema.LoroMovableList(schema.String(), (t) => t),
+      editableContent: schema.LoroText()
+    })
+  )
+})
 
 class EditorState {
   public currentTab: string | null = $state(null)
@@ -41,13 +67,29 @@ class EditorState {
 
   // Instâncias dinâmicas do Loro
   public loroDoc = $state(this.createDoc())
-  public filesMap = $derived(
-    this.loroDoc.getMap("files") as LoroMap<
-      Record<string, LoroMap<Record<string, Item | LoroList>>>
-    >
-  )
+  public mirror: Mirror<typeof workspaceSchema>
+  public state = $state<MirrorState<typeof workspaceSchema>>({ files: {} })
+
   public ephemeralStore = $state(new EphemeralStore())
   public undoManager = $state(new UndoManager(this.loroDoc, {}))
+
+  constructor() {
+    this.mirror = this.createMirror()
+  }
+
+  private createMirror() {
+    const mirror = new Mirror({
+      doc: this.loroDoc,
+      schema: workspaceSchema,
+      initialState: { files: {} }
+    })
+
+    mirror.subscribe((state) => {
+      this.state = state
+    })
+
+    return mirror
+  }
 
   private createDoc() {
     const doc = new LoroDoc()
@@ -68,6 +110,7 @@ class EditorState {
 
     // Recriamos as instâncias do Loro com novas identidades
     this.loroDoc = this.createDoc()
+    this.mirror = this.createMirror()
     this.ephemeralStore = new EphemeralStore()
     this.undoManager = new UndoManager(this.loroDoc, {})
   }
@@ -124,7 +167,7 @@ class EditorState {
 
   public get activeData() {
     if (!this.currentTab) return null
-    return this.filesMap.get(this.currentTab)?.get("data") as any
+    return this.state.files[this.currentTab]?.data
   }
 
   public get availableViewers() {
@@ -202,50 +245,65 @@ class EditorState {
   }
 
   public ensureDirectory(path: string) {
-    const existing = this.filesMap.get(path)
-    if (!existing) {
-      const dirMap = new LoroMap<Record<string, Item | LoroList>>()
-      dirMap.set("data", { type: "directory", path })
-      dirMap.setContainer("children", new LoroList<string>())
-      this.filesMap.setContainer(path, dirMap)
-      return dirMap
-    }
+    if (this.state.files[path]) return
 
-    const children = existing.get("children")
-    if (!(children instanceof LoroList)) {
-      existing.setContainer("children", new LoroList<string>())
-    }
-
-    return existing
+    this.mirror.setState((s) => {
+      s.files[path] = {
+        data: { type: "directory", path },
+        children: [],
+        editableContent: ""
+      }
+    })
   }
 
   public addChildToParent(parentPath: string, childPath: string) {
-    const parent = this.ensureDirectory(parentPath)
-    const children = parent.get("children") as LoroList<string>
-    const list = children.toArray()
-    if (!list.includes(childPath)) {
-      children.push(childPath)
-    }
+    this.ensureDirectory(parentPath)
+    this.mirror.setState((s) => {
+      const parent = s.files[parentPath]
+      if (parent && parent.children.indexOf(childPath) === -1) {
+        parent.children.splice(parent.children.length, 0, childPath)
+      }
+    })
   }
 
   public createFile(parentPath: string, name: string, content = "") {
     const path = `${parentPath === "/" ? "" : parentPath}/${name}`
-    if (this.filesMap.get(path)) return null
+    if (this.state.files[path]) return null
 
-    const fileMap = new LoroMap<Record<string, Item | LoroText>>()
-    fileMap.set("data", { type: "file", path, content })
-    this.filesMap.setContainer(path, fileMap)
-    this.addChildToParent(parentPath, path)
+    this.mirror.setState((s) => {
+      s.files[path] = {
+        data: { type: "file", path, content },
+        children: [],
+        editableContent: content
+      }
+
+      const parent = s.files[parentPath]
+      if (parent && parent.children.indexOf(path) === -1) {
+        parent.children.splice(parent.children.length, 0, path)
+      }
+    })
+
     this.loroDoc.commit()
     return path
   }
 
   public createFolder(parentPath: string, name: string) {
     const path = `${parentPath === "/" ? "" : parentPath}/${name}`
-    if (this.filesMap.get(path)) return null
+    if (this.state.files[path]) return null
 
-    this.ensureDirectory(path)
-    this.addChildToParent(parentPath, path)
+    this.mirror.setState((s) => {
+      s.files[path] = {
+        data: { type: "directory", path },
+        children: [],
+        editableContent: ""
+      }
+
+      const parent = s.files[parentPath]
+      if (parent && parent.children.indexOf(path) === -1) {
+        parent.children.splice(parent.children.length, 0, path)
+      }
+    })
+
     this.loroDoc.commit()
     return path
   }
@@ -255,7 +313,7 @@ class EditorState {
     const parentPath = oldPath.split("/").slice(0, -1).join("/") || "/"
     const newPath = `${parentPath === "/" ? "" : parentPath}/${newName}`
 
-    if (this.filesMap.get(newPath)) return
+    if (this.state.files[newPath]) return
 
     await engine.current.fs.rename(oldPath, newPath)
     // The engine's fs event will trigger the Loro update if capabilities.externalFsIngestion is true
@@ -264,26 +322,26 @@ class EditorState {
   }
 
   public deleteItem(path: string) {
-    this.filesMap.delete(path)
-    const parent = `/${path.split("/").slice(0, -1).join("/")}`.replaceAll(
-      "//",
-      "/"
-    )
-    const parentItem = this.filesMap.get(parent)
-
-    if (parentItem) {
-      const children = parentItem.get("children") as LoroList<string>
-      const index = children.toArray().indexOf(path)
-      if (index !== -1) {
-        children.delete(index, 1)
+    this.mirror.setState((s) => {
+      delete s.files[path]
+      const parent = `/${path.split("/").slice(0, -1).join("/")}`.replaceAll(
+        "//",
+        "/"
+      )
+      const parentItem = s.files[parent]
+      if (parentItem) {
+        const index = parentItem.children.indexOf(path)
+        if (index !== -1) {
+          parentItem.children.splice(index, 1)
+        }
       }
-    }
+    })
     this.loroDoc.commit()
   }
 
   public duplicateItem(path: string) {
-    const item = this.filesMap.get(path)
-    const data = item?.get("data") as any
+    const item = this.state.files[path]
+    const data = item?.data
     if (!data) return
 
     const name = data.path.split("/").pop() || ""
@@ -299,8 +357,8 @@ class EditorState {
     newParentPath: string,
     newName: string
   ) {
-    const item = this.filesMap.get(oldPath)
-    const data = item?.get("data") as any
+    const item = this.state.files[oldPath]
+    const data = item?.data
     if (!data) return
 
     const newPath = `${newParentPath === "/" ? "" : newParentPath}/${newName}`
@@ -308,15 +366,23 @@ class EditorState {
     if (data.type === "file") {
       this.createFile(newParentPath, newName, data.content)
     } else if (data.type === "binary") {
-      const fileMap = new LoroMap<Record<string, Item>>()
-      fileMap.set("data", { ...data, path: newPath })
-      this.filesMap.setContainer(newPath, fileMap)
-      this.addChildToParent(newParentPath, newPath)
+      this.mirror.setState((s) => {
+        s.files[newPath] = {
+          data: { ...data, path: newPath },
+          children: [],
+          editableContent: ""
+        }
+
+        const parent = s.files[newParentPath]
+        if (parent && parent.children.indexOf(newPath) === -1) {
+          parent.children.splice(parent.children.length, 0, newPath)
+        }
+      })
     } else if (data.type === "directory") {
       this.createFolder(newParentPath, newName)
-      const children = item.get("children") as LoroList<string>
+      const children = item.children
       if (children) {
-        for (const childPath of children.toArray()) {
+        for (const childPath of children) {
           const childName = childPath.split("/").pop() || ""
           this.copyItemRecursive(childPath, newPath, childName)
         }
@@ -327,8 +393,8 @@ class EditorState {
   public async downloadWorkspace() {
     const files: Record<string, Uint8Array> = {}
 
-    for (const [_, item] of this.filesMap.entries()) {
-      const data = item?.get("data") as any
+    for (const [_, item] of Object.entries(this.state.files)) {
+      const data = item?.data
       if (data.type === "file") {
         files[data.path.startsWith("/") ? data.path.slice(1) : data.path] =
           new TextEncoder().encode(data.content)
@@ -354,8 +420,8 @@ class EditorState {
   }
 
   public async downloadItem(path: string) {
-    const item = this.filesMap.get(path)
-    const data = item?.get("data") as any
+    const item = this.state.files[path]
+    const data = item?.data
     if (!data) return
 
     if (data.type === "file") {
@@ -375,9 +441,9 @@ class EditorState {
       const folderFiles: Record<string, Uint8Array> = {}
       const prefix = path.endsWith("/") ? path : `${path}/`
 
-      for (const [filePath, fileItem] of this.filesMap.entries()) {
+      for (const [filePath, fileItem] of Object.entries(this.state.files)) {
         if (filePath.startsWith(prefix)) {
-          const fileData = fileItem.get("data") as any
+          const fileData = fileItem.data
           const relativePath = filePath.slice(prefix.length)
 
           if (fileData.type === "file") {
@@ -435,23 +501,40 @@ class EditorState {
         throw new Error("Failed to upload binary file")
       }
 
-      const fileMap = new LoroMap<Record<string, Item>>()
-      fileMap.set("data", {
-        type: "binary",
-        path,
-        hash,
-        size: file.size,
-        mimeType: file.type
+      this.mirror.setState((s) => {
+        s.files[path] = {
+          data: {
+            type: "binary",
+            path,
+            hash,
+            size: file.size,
+            mimeType: file.type
+          },
+          children: [],
+          editableContent: ""
+        }
+
+        const parent = s.files[parentPath]
+        if (parent && parent.children.indexOf(path) === -1) {
+          parent.children.splice(parent.children.length, 0, path)
+        }
       })
-      this.filesMap.setContainer(path, fileMap)
     } else {
       const content = await file.text()
-      const fileMap = new LoroMap<Record<string, Item>>()
-      fileMap.set("data", { type: "file", path, content })
-      this.filesMap.setContainer(path, fileMap)
+      this.mirror.setState((s) => {
+        s.files[path] = {
+          data: { type: "file", path, content },
+          children: [],
+          editableContent: content
+        }
+
+        const parent = s.files[parentPath]
+        if (parent && parent.children.indexOf(path) === -1) {
+          parent.children.splice(parent.children.length, 0, path)
+        }
+      })
     }
 
-    this.addChildToParent(parentPath, path)
     this.loroDoc.commit()
   }
 

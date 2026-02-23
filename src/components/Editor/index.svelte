@@ -82,9 +82,10 @@ $effect(() => {
     {
       parser,
       withCredentials: true,
-      query: {
-        workspaceId: currentWorkspace.id
-      }
+      transports: ["polling", "websocket"],
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
+      upgrade: true
     }
   )
 
@@ -167,8 +168,8 @@ async function runCurrentFile() {
   }
 
   // Detecção inteligente de Turtle: Abre apenas se houver 'import turtle'
-  const item = editorState.filesMap.get(editorState.currentTab!)
-  const itemData = item?.get("data") as any;
+  const item = editorState.state.files[editorState.currentTab!]
+  const itemData = item?.data;
   const content = itemData?.content || "";
   const usesTurtle = content.includes('import turtle') || content.includes('from turtle import');
 
@@ -221,7 +222,7 @@ function handleFork() {
         <Home class="h-4 w-4" />
       </a>
       <div class="flex items-center gap-2">
-        <div class="badge badge-primary badge-outline">Workspace</div>
+        <div class="badge badge-primary badge-soft">{currentWorkspace.engine}</div>
         <div class="text-sm font-medium text-base-content/90">{currentWorkspace.name}</div>
       </div>
       <div class="ml-auto flex items-center gap-2">
