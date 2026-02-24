@@ -85,7 +85,10 @@ $effect(() => {
       transports: ["polling", "websocket"],
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
-      upgrade: true
+      upgrade: true,
+      query: {
+        workspaceId: currentWorkspace.id
+      }
     }
   )
 
