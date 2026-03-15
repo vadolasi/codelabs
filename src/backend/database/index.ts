@@ -21,6 +21,13 @@ sqlite.run("PRAGMA journal_mode=WAL;")
 export const db = drizzle(sqlite, { schema })
 
 if (!config.BUILD && config.NODE_ENV === "production") {
+  if (!config.ADMIN_EMAIL || !config.ADMIN_PASSWORD) {
+    console.error(
+      "CRITICAL: ADMIN_EMAIL and ADMIN_PASSWORD must be set in production"
+    )
+    process.exit(1)
+  }
+
   try {
     const migrationsPath = path.resolve(process.cwd(), "drizzle")
     console.log(`Running migrations from: ${migrationsPath}`)

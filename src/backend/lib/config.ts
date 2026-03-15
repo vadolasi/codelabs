@@ -5,11 +5,11 @@ const envSource = process.env
 const configSchema = z
   .object({
     NODE_ENV: z.enum(["development", "production"]).default("development"),
-    RESEND_API_KEY: z.optional(z.string().min(1)),
+    RESEND_API_KEY: z.optional(z.string().min(1)).nullable().default(null),
     DOMAIN: z.string().min(1),
-    MAIL_FROM: z.optional(z.email()),
-    ADMIN_EMAIL: z.optional(z.email()),
-    ADMIN_PASSWORD: z.optional(z.string().min(8)),
+    MAIL_FROM: z.optional(z.email()).nullable().default(null),
+    ADMIN_EMAIL: z.optional(z.email()).optional().nullable().default(null),
+    ADMIN_PASSWORD: z.optional(z.string().min(8)).nullable().default(null),
     BUILD: z
       .enum(["true", "false"])
       .default("false")
