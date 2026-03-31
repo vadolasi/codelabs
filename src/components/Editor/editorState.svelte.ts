@@ -1,15 +1,9 @@
 import type { ItemInstance } from "@headless-tree/core"
 import { Code, Eye, Info } from "@lucide/svelte"
-import { zip, zipSync } from "fflate"
-import {
-  EphemeralStore,
-  LoroDoc,
-  LoroList,
-  LoroMap,
-  type LoroText,
-  UndoManager
-} from "loro-crdt"
-import { Mirror, type MirrorState, schema } from "loro-mirror"
+import { zip } from "fflate"
+import { EphemeralStore, LoroDoc, UndoManager } from "loro-crdt"
+import { Mirror, schema } from "loro-mirror"
+import type { Component } from "svelte"
 import { SvelteMap, SvelteSet } from "svelte/reactivity"
 import type BaseEngine from "$lib/engine/base.svelte"
 import httpClient from "$lib/httpClient"
@@ -21,8 +15,8 @@ import MarkdownViewer from "./Viewers/MarkdownViewer.svelte"
 export type ViewerInfo = {
   id: string
   label: string
-  icon: any
-  component: any
+  icon: Component
+  component: Component
 }
 
 export type WorkspaceItemData = {
@@ -34,11 +28,15 @@ export type WorkspaceItemData = {
   mimeType?: string
 }
 
-const itemSchema = schema.LoroMap({
-  data: schema.Any<WorkspaceItemData>(),
-  children: schema.LoroMovableList(schema.String(), (t) => t),
-  editableContent: schema.LoroText()
-})
+type WorkspaceMirrorFile = {
+  data: WorkspaceItemData
+  children: string[]
+  editableContent: string
+}
+
+type WorkspaceMirrorState = {
+  files: Record<string, WorkspaceMirrorFile>
+}
 
 export const workspaceSchema = schema({
   files: schema.LoroMapRecord(
@@ -68,7 +66,7 @@ class EditorState {
   // Instâncias dinâmicas do Loro
   public loroDoc = $state(this.createDoc())
   public mirror: Mirror<typeof workspaceSchema>
-  public state = $state<MirrorState<typeof workspaceSchema>>({ files: {} })
+  public state = $state<WorkspaceMirrorState>({ files: {} })
 
   public ephemeralStore = $state(new EphemeralStore())
   public undoManager = $state(new UndoManager(this.loroDoc, {}))
@@ -85,7 +83,7 @@ class EditorState {
     })
 
     mirror.subscribe((state) => {
-      this.state = state
+      this.state = state as WorkspaceMirrorState
     })
 
     return mirror
@@ -146,6 +144,10 @@ class EditorState {
     return this.states.get(path)
   }
 
+  public clearState(path: string) {
+    this.states.delete(path)
+  }
+
   public addPreviewer(port: number, url: string) {
     this.prewviewers.set(port, url)
   }
@@ -200,7 +202,7 @@ class EditorState {
         component: CodeViewer
       })
     } else if (data.type === "binary") {
-      if (data.mimeType.startsWith("image/")) {
+      if (data.mimeType?.startsWith("image/")) {
         viewers.push({
           id: "image",
           label: "Imagem",
@@ -222,8 +224,9 @@ class EditorState {
   public get viewerType() {
     const viewers = this.availableViewers
     if (viewers.length === 0) return "none"
+    if (!this.currentTab) return viewers[0].id
 
-    const path = this.currentTab!
+    const path = this.currentTab
     const preferred = this.preferredViewers.get(path)
 
     if (preferred && viewers.some((v) => v.id === preferred)) {
@@ -231,6 +234,17 @@ class EditorState {
     }
 
     return viewers[0].id
+  }
+
+  private isBlobLike(value: unknown): value is Blob {
+    return !!value && typeof (value as Blob).arrayBuffer === "function"
+  }
+
+  private toArrayBuffer(data: Uint8Array): ArrayBuffer {
+    return data.buffer.slice(
+      data.byteOffset,
+      data.byteOffset + data.byteLength
+    ) as ArrayBuffer
   }
 
   public get isUnsaved() {
@@ -397,10 +411,10 @@ class EditorState {
       const data = item?.data
       if (data.type === "file") {
         files[data.path.startsWith("/") ? data.path.slice(1) : data.path] =
-          new TextEncoder().encode(data.content)
-      } else if (data.type === "binary") {
+          new TextEncoder().encode(data.content ?? "")
+      } else if (data.type === "binary" && data.hash) {
         const { data: blob } = await httpClient.files({ hash: data.hash }).get()
-        if (blob) {
+        if (this.isBlobLike(blob)) {
           files[data.path.startsWith("/") ? data.path.slice(1) : data.path] =
             new Uint8Array(await blob.arrayBuffer())
         }
@@ -409,7 +423,9 @@ class EditorState {
 
     zip(files, (err, data) => {
       if (err) throw err
-      const blob = new Blob([data], { type: "application/zip" })
+      const blob = new Blob([this.toArrayBuffer(data)], {
+        type: "application/zip"
+      })
       const url = URL.createObjectURL(blob)
       const a = document.createElement("a")
       a.href = url
@@ -425,7 +441,7 @@ class EditorState {
     if (!data) return
 
     if (data.type === "file") {
-      const blob = new Blob([data.content], { type: "text/plain" })
+      const blob = new Blob([data.content ?? ""], { type: "text/plain" })
       const url = URL.createObjectURL(blob)
       const a = document.createElement("a")
       a.href = url
@@ -433,6 +449,7 @@ class EditorState {
       a.click()
       URL.revokeObjectURL(url)
     } else if (data.type === "binary") {
+      if (!data.hash) return
       const a = document.createElement("a")
       a.href = `/api/files/${data.hash}`
       a.download = path.split("/").pop() || "file"
@@ -448,13 +465,13 @@ class EditorState {
 
           if (fileData.type === "file") {
             folderFiles[relativePath] = new TextEncoder().encode(
-              fileData.content
+              fileData.content ?? ""
             )
-          } else if (fileData.type === "binary") {
+          } else if (fileData.type === "binary" && fileData.hash) {
             const { data: blob } = await httpClient
               .files({ hash: fileData.hash })
               .get()
-            if (blob) {
+            if (this.isBlobLike(blob)) {
               folderFiles[relativePath] = new Uint8Array(
                 await blob.arrayBuffer()
               )
@@ -465,7 +482,9 @@ class EditorState {
 
       zip(folderFiles, (err, data) => {
         if (err) throw err
-        const blob = new Blob([data], { type: "application/zip" })
+        const blob = new Blob([this.toArrayBuffer(data)], {
+          type: "application/zip"
+        })
         const url = URL.createObjectURL(blob)
         const a = document.createElement("a")
         a.href = url

@@ -4,12 +4,12 @@ import { Queue, Worker } from "bunqueue/client"
 import { and, eq } from "drizzle-orm"
 import { LoroDoc } from "loro-crdt"
 import { Server } from "socket.io"
-import msgpackParser from "$lib/socketio-msgpack-parser"
 import {
   getSnapshot,
   getWorkspaceUpdates,
   saveSnapshot
 } from "../backend/lib/storage"
+import msgpackParser from "../lib/socketio-msgpack-parser"
 import { db, workspaces__users, workspaceUpdates } from "./database"
 import { validateSessionToken } from "./modules/auth/auth.service"
 
@@ -158,7 +158,6 @@ io.on("connection", (socket) => {
   }
 
   socket.on("connect-to-workspace", async (id) => {
-    // Basic validation to prevent joining unauthorized workspaces after connection
     const membership = await db.query.workspaces__users.findFirst({
       where: and(
         eq(workspaces__users.userId, socket.data.userId),
@@ -200,7 +199,6 @@ io.on("connection", (socket) => {
       if (snapshot) doc.import(snapshot)
       if (updates.length > 0) doc.importBatch(updates)
 
-      // Criamos um doc temporário para extrair a versão do cliente do snapshot
       const tempDoc = new LoroDoc()
       tempDoc.import(clientSnapshot)
 

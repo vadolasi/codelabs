@@ -10,6 +10,51 @@ import wasm from "vite-plugin-wasm"
 import catppuccin from "./src/catppuccinTheme.mocha"
 
 export default defineConfig({
+  resolve: {
+    dedupe: [
+      "@codemirror/state",
+      "@codemirror/view",
+      "@codemirror/language",
+      "@codemirror/autocomplete",
+      "@codemirror/commands",
+      "@codemirror/lint",
+      "@codemirror/search",
+      "@lezer/common",
+      "@lezer/highlight",
+      "@lezer/lr"
+    ]
+  },
+  optimizeDeps: {
+    exclude: [
+      "@catppuccin/codemirror",
+      "loro-codemirror",
+      "@replit/codemirror-lang-svelte",
+      "@codemirror/autocomplete",
+      "@codemirror/commands",
+      "@codemirror/language",
+      "@codemirror/lint",
+      "@codemirror/search",
+      "@codemirror/state",
+      "@codemirror/view",
+      "@codemirror/lang-cpp",
+      "@codemirror/lang-css",
+      "@codemirror/lang-html",
+      "@codemirror/lang-javascript",
+      "@codemirror/lang-jinja",
+      "@codemirror/lang-json",
+      "@codemirror/lang-markdown",
+      "@codemirror/lang-python",
+      "@codemirror/lang-sass",
+      "@codemirror/lang-sql",
+      "@codemirror/lang-vue",
+      "@codemirror/lang-wast",
+      "@codemirror/lang-xml",
+      "@codemirror/lang-yaml",
+      "@lezer/common",
+      "@lezer/highlight",
+      "@lezer/lr"
+    ]
+  },
   plugins: [
     {
       name: "resolve-bun",
@@ -56,7 +101,7 @@ export default defineConfig({
         globPatterns: ["**/*.{js,css,html,ico,png,svg,webmanifest}"]
       },
       devOptions: {
-        enabled: true
+        enabled: false
       }
     }),
     sveltekit(),

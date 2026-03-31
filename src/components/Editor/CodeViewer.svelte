@@ -34,9 +34,9 @@ import {
   rectangularSelection
 } from "@codemirror/view"
 import { LoroExtensions } from "loro-codemirror"
-import { LoroText } from "loro-crdt"
+import { LoroMap, LoroText } from "loro-crdt"
 import { onMount } from "svelte"
-import editorState from "./editorState.svelte"
+import editorState, { type WorkspaceItemData } from "./editorState.svelte"
 import { getLanguage } from "./language"
 import { getEditorSettings, getSettingsExtensions } from "./settings"
 
@@ -54,58 +54,74 @@ const editorTheme = EditorView.theme({
 
 onMount(() => {
   view = new EditorView({ parent: editorContainer })
-  
+
   const handleSave = () => {
-    if (!editorState.currentTab) return
+    const currentTab = editorState.currentTab
+    if (!currentTab) return
+
     const content = view.state.doc.toString()
-    
+
     editorState.mirror.setState((s) => {
-      const item = s.files[editorState.currentTab!]
-      if (item) {
+      const item = s.files[currentTab] as { data: WorkspaceItemData } | undefined
+      if (item?.data.type === "file") {
         item.data.content = content
       }
     })
-    
-    editorState.unsavedPaths.delete(editorState.currentTab)
+
+    editorState.unsavedPaths.delete(currentTab)
     editorState.loroDoc.commit()
   }
 
-  window.addEventListener('editor-save', handleSave)
-  return () => window.removeEventListener('editor-save', handleSave)
+  window.addEventListener("editor-save", handleSave)
+  return () => window.removeEventListener("editor-save", handleSave)
 })
 
 $effect(() => {
   if (editorState.currentTab && editorState.loroDoc) {
     function setupEditor() {
+      const currentTab = editorState.currentTab
+      if (!currentTab) return
+
       const previousTab = editorState.previousTab
       if (previousTab && view.state) {
         editorState.saveState(previousTab, view.state.toJSON())
       }
 
-      const settings = getEditorSettings(editorState.currentTab!)
+      const settings = getEditorSettings(currentTab)
       const settingsExtensions = getSettingsExtensions(settings)
 
-      const config: EditorStateConfig = {
-        extensions: [
-          lineNumbers(),
-          highlightActiveLineGutter(),
-          highlightSpecialChars(),
-          foldGutter(),
-          drawSelection(),
-          dropCursor(),
-          EditorState.allowMultipleSelections.of(true),
-          indentOnInput(),
-          bracketMatching(),
-          closeBrackets(),
-          autocompletion(),
-          rectangularSelection(),
-          crosshairCursor(),
-          highlightActiveLine(),
-          highlightSelectionMatches(),
-          ...settingsExtensions,
-          catppuccinMocha,
-          languageCompartment.of([]),
-          LoroExtensions(
+      const extensionGroups = [
+        {
+          name: "base",
+          extension: [
+            lineNumbers(),
+            highlightActiveLineGutter(),
+            highlightSpecialChars(),
+            foldGutter(),
+            drawSelection(),
+            dropCursor(),
+            EditorState.allowMultipleSelections.of(true),
+            indentOnInput(),
+            bracketMatching(),
+            closeBrackets(),
+            autocompletion(),
+            rectangularSelection(),
+            crosshairCursor(),
+            highlightActiveLine(),
+            highlightSelectionMatches()
+          ]
+        },
+        {
+          name: "settings",
+          extension: settingsExtensions
+        },
+        {
+          name: "language-compartment",
+          extension: languageCompartment.of([])
+        },
+        {
+          name: "loro-collaboration",
+          extension: LoroExtensions(
             editorState.loroDoc,
             {
               ephemeral: editorState.ephemeralStore,
@@ -113,8 +129,12 @@ $effect(() => {
             },
             editorState.undoManager,
             () => {
-              const item = (editorState.loroDoc.getMap("files") as LoroMap).get(editorState.currentTab!) as LoroMap
-              if (!item) return new LoroText()
+              const activeTab = editorState.currentTab
+              if (!activeTab) return new LoroText()
+
+              const filesMap = editorState.loroDoc.getMap("files") as LoroMap
+              const item = filesMap.get(activeTab)
+              if (!(item instanceof LoroMap)) return new LoroText()
 
               const container = item.get("editableContent")
               if (container instanceof LoroText) {
@@ -122,14 +142,17 @@ $effect(() => {
               }
 
               const text = new LoroText()
-              const data = item.get("data") as any
-              text.update(data?.type === "file" ? data.content : "")
+              const data = item.get("data") as WorkspaceItemData | undefined
+              text.update(data?.type === "file" ? (data.content ?? "") : "")
               item.setContainer("editableContent", text)
               editorState.loroDoc.commit()
               return text
             }
-          ),
-          keymap.of([
+          )
+        },
+        {
+          name: "keymap",
+          extension: keymap.of([
             {
               key: "Mod-z",
               run: () => {
@@ -162,62 +185,100 @@ $effect(() => {
             ...completionKeymap,
             ...lintKeymap,
             indentWithTab
-          ]),
-          editorTheme,
-          EditorView.updateListener.of((update) => {
+          ])
+        },
+        {
+          name: "theme",
+          extension: [catppuccinMocha, editorTheme]
+        },
+        {
+          name: "update-listener",
+          extension: EditorView.updateListener.of((update) => {
             if (update.docChanged) {
-              const item = editorState.state.files[editorState.currentTab!]
-              if (!item) return
+              const activeTab = editorState.currentTab
+              if (!activeTab) return
+
+              const item = editorState.state.files[activeTab] as
+                | { data: WorkspaceItemData }
+                | undefined
+              if (!item || item.data.type !== "file") return
 
               const data = item.data
               const currentContent = update.state.doc.toString()
 
-              if (currentContent !== data.content) {
-                editorState.unsavedPaths.add(editorState.currentTab!)
+              if (currentContent !== (data.content ?? "")) {
+                editorState.unsavedPaths.add(activeTab)
               } else {
-                editorState.unsavedPaths.delete(editorState.currentTab!)
+                editorState.unsavedPaths.delete(activeTab)
               }
 
               editorState.loroDoc.commit()
             }
-          }),
-          Prec.highest(
+          })
+        },
+        {
+          name: "save-shortcut",
+          extension: Prec.highest(
             keymap.of([
               {
                 key: "Mod-s",
                 run(view) {
+                  const activeTab = editorState.currentTab
+                  if (!activeTab) return false
+
                   const content = view.state.doc.toString()
-                  
+
                   editorState.mirror.setState((s) => {
-                    const item = s.files[editorState.currentTab!]
-                    if (item) {
+                    const item = s.files[activeTab] as
+                      | { data: WorkspaceItemData }
+                      | undefined
+                    if (item?.data.type === "file") {
                       item.data.content = content
                     }
                   })
 
-                  editorState.unsavedPaths.delete(editorState.currentTab!)
+                  editorState.unsavedPaths.delete(activeTab)
                   editorState.loroDoc.commit()
                   return true
                 }
               }
             ])
           )
-        ]
+        }
+      ]
+
+      const config: EditorStateConfig = {
+        extensions: extensionGroups.map((group) => group.extension)
       }
 
-      const previousState = editorState.getState(editorState.currentTab!)
-      view.setState(
-        previousState
-          ? EditorState.fromJSON(previousState, config)
-          : EditorState.create(config)
-      )
-
-      getLanguage(editorState.currentTab!).then(languageSupport => {
-        if (languageSupport && view) {
-          view.dispatch({
-            effects: languageCompartment.reconfigure(languageSupport)
-          })
+      const previousState = editorState.getState(currentTab)
+      if (previousState) {
+        try {
+          view.setState(EditorState.fromJSON(previousState, config))
+        } catch (error) {
+          console.error(
+            "[CodeViewer] Failed to restore editor state from JSON. Recreating state.",
+            error
+          )
+          editorState.clearState(currentTab)
+          view.setState(EditorState.create(config))
         }
+      } else {
+        view.setState(EditorState.create(config))
+      }
+
+      getLanguage(currentTab).then((languageSupport) => {
+        if (languageSupport && view && editorState.currentTab === currentTab) {
+          try {
+            view.dispatch({
+              effects: languageCompartment.reconfigure(languageSupport)
+            })
+          } catch (error) {
+            console.error("[CodeViewer] Failed to apply language support.", error)
+          }
+        }
+      }).catch((error) => {
+        console.error("[CodeViewer] Failed to load language support.", error)
       })
     }
 
